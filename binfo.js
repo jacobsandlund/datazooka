@@ -8,10 +8,6 @@ d3.csv("flights-3m.json", function(flights) {
       formatDate = d3.time.format("%B %d, %Y"),
       formatTime = d3.time.format("%I:%M %p");
 
-  // A nest operator, for grouping the flight list.
-  var nestByDate = d3.nest()
-      .key(function(d) { return d3.time.day(d.date); });
-
   // A little coercion, since the CSV is untyped.
   flights.forEach(function(d, i) {
     d.index = i;
@@ -73,17 +69,13 @@ d3.csv("flights-3m.json", function(flights) {
       .data(charts)
       .each(function(chart) { chart.on("brush", renderAll).on("brushend", renderAll); });
 
-  // Render the initial lists.
-  var list = d3.selectAll(".list")
-      .data([flightList]);
-
   // Render the total.
   d3.selectAll("#total")
       .text(formatNumber(flight.size()));
 
   renderAll();
 
-  // Renders the specified chart or list.
+  // Renders the specified chart.
   function render(method) {
     d3.select(this).call(method);
   }
@@ -91,7 +83,6 @@ d3.csv("flights-3m.json", function(flights) {
   // Whenever the brush moves, re-rendering everything.
   function renderAll() {
     chart.each(render);
-    list.each(render);
     d3.select("#active").text(formatNumber(all.value()));
   }
 
@@ -113,54 +104,6 @@ d3.csv("flights-3m.json", function(flights) {
     charts[i].filter(null);
     renderAll();
   };
-
-  function flightList(div) {
-    var flightsByDate = nestByDate.entries(date.top(40));
-
-    div.each(function() {
-      var date = d3.select(this).selectAll(".date")
-          .data(flightsByDate, function(d) { return d.key; });
-
-      date.enter().append("div")
-          .attr("class", "date")
-        .append("div")
-          .attr("class", "day")
-          .text(function(d) { return formatDate(d.values[0].date); });
-
-      date.exit().remove();
-
-      var flight = date.order().selectAll(".flight")
-          .data(function(d) { return d.values; }, function(d) { return d.index; });
-
-      var flightEnter = flight.enter().append("div")
-          .attr("class", "flight");
-
-      flightEnter.append("div")
-          .attr("class", "time")
-          .text(function(d) { return formatTime(d.date); });
-
-      flightEnter.append("div")
-          .attr("class", "origin")
-          .text(function(d) { return d.origin; });
-
-      flightEnter.append("div")
-          .attr("class", "destination")
-          .text(function(d) { return d.destination; });
-
-      flightEnter.append("div")
-          .attr("class", "distance")
-          .text(function(d) { return formatNumber(d.distance) + " mi."; });
-
-      flightEnter.append("div")
-          .attr("class", "delay")
-          .classed("early", function(d) { return d.delay < 0; })
-          .text(function(d) { return formatChange(d.delay) + " min."; });
-
-      flight.exit().remove();
-
-      flight.order();
-    });
-  }
 
   function barChart() {
     if (!barChart.id) barChart.id = 0;
