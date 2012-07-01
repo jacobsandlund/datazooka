@@ -1,6 +1,7 @@
 
-// (It's CSV, but GitHub Pages only gzip's JSON at the moment.)
-d3.csv("flights-3m.json", function(flights) {
+(function() {
+
+  var chart, all;
 
   // Various formatters.
   var formatNumber = d3.format(",d"),
@@ -8,72 +9,35 @@ d3.csv("flights-3m.json", function(flights) {
       formatDate = d3.time.format("%B %d, %Y"),
       formatTime = d3.time.format("%I:%M %p");
 
-  // A little coercion, since the CSV is untyped.
-  flights.forEach(function(d, i) {
-    d.index = i;
-    d.date = parseDate(d.date);
-    d.delay = +d.delay;
-    d.distance = +d.distance;
-  });
+  window.renderCharts = function(charts, cross) {
 
-  // Create the crossfilter for the relevant dimensions and groups.
-  var flight = crossfilter(flights),
-      all = flight.groupAll(),
-      date = flight.dimension(function(d) { return d3.time.day(d.date); }),
-      dates = date.group(),
-      hour = flight.dimension(function(d) { return d.date.getHours() + d.date.getMinutes() / 60; }),
-      hours = hour.group(Math.floor),
-      delay = flight.dimension(function(d) { return Math.max(-60, Math.min(149, d.delay)); }),
-      delays = delay.group(function(d) { return Math.floor(d / 10) * 10; }),
-      distance = flight.dimension(function(d) { return Math.min(1999, d.distance); }),
-      distances = distance.group(function(d) { return Math.floor(d / 50) * 50; });
+    all = cross.groupAll();
 
-  var charts = [
+    // Given our array of charts, which we assume are in the same order as the
+    // .chart elements in the DOM, bind the charts to the DOM and render them.
+    // We also listen to the chart's brush events to update the display.
+    chart = d3.selectAll(".chart")
+        .data(charts)
+        .each(function(chart) {
+          chart.on("brush", renderAll).on("brushend", renderAll);
+        });
 
-    barChart()
-        .dimension(hour)
-        .group(hours)
-      .x(d3.scale.linear()
-        .domain([0, 24])
-        .rangeRound([0, 10 * 24])),
+    // Render the total.
+    d3.selectAll("#total")
+        .text(formatNumber(cross.size()));
 
-    barChart()
-        .dimension(delay)
-        .group(delays)
-      .x(d3.scale.linear()
-        .domain([-60, 150])
-        .rangeRound([0, 10 * 21])),
+    window.filter = function(filters) {
+      filters.forEach(function(d, i) { charts[i].filter(d); });
+      renderAll();
+    };
 
-    barChart()
-        .dimension(distance)
-        .group(distances)
-      .x(d3.scale.linear()
-        .domain([0, 2000])
-        .rangeRound([0, 10 * 40])),
+    window.reset = function(i) {
+      charts[i].filter(null);
+      renderAll();
+    };
 
-    barChart()
-        .dimension(date)
-        .group(dates)
-        .round(d3.time.day.round)
-      .x(d3.time.scale()
-        .domain([new Date(2001, 0, 1), new Date(2001, 3, 1)])
-        .rangeRound([0, 10 * 90]))
-        .filter([new Date(2001, 1, 1), new Date(2001, 2, 1)])
-
-  ];
-
-  // Given our array of charts, which we assume are in the same order as the
-  // .chart elements in the DOM, bind the charts to the DOM and render them.
-  // We also listen to the chart's brush events to update the display.
-  var chart = d3.selectAll(".chart")
-      .data(charts)
-      .each(function(chart) { chart.on("brush", renderAll).on("brushend", renderAll); });
-
-  // Render the total.
-  d3.selectAll("#total")
-      .text(formatNumber(flight.size()));
-
-  renderAll();
+    renderAll();
+  };
 
   // Renders the specified chart.
   function render(method) {
@@ -86,26 +50,7 @@ d3.csv("flights-3m.json", function(flights) {
     d3.select("#active").text(formatNumber(all.value()));
   }
 
-  // Like d3.time.format, but faster.
-  function parseDate(d) {
-    return new Date(2001,
-        d.substring(0, 2) - 1,
-        d.substring(2, 4),
-        d.substring(4, 6),
-        d.substring(6, 8));
-  }
-
-  window.filter = function(filters) {
-    filters.forEach(function(d, i) { charts[i].filter(d); });
-    renderAll();
-  };
-
-  window.reset = function(i) {
-    charts[i].filter(null);
-    renderAll();
-  };
-
-  function barChart() {
+  window.barChart = function barChart() {
     if (!barChart.id) barChart.id = 0;
 
     var margin = {top: 10, right: 10, bottom: 20, left: 10},
@@ -296,4 +241,4 @@ d3.csv("flights-3m.json", function(flights) {
 
     return d3.rebind(chart, brush, "on");
   }
-});
+})();
