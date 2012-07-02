@@ -54,8 +54,10 @@
     if (!barChart.id) barChart.id = 0;
 
     var margin = {top: 10, right: 10, bottom: 20, left: 10},
+        binWidth = 10,
         x,
         y = d3.scale.linear().range([100, 0]),
+        separation,
         id = barChart.id++,
         axis = d3.svg.axis().orient("bottom"),
         brush = d3.svg.brush(),
@@ -65,10 +67,21 @@
         round;
 
     function chart(div) {
-      var width = x.range()[1],
+      var groups = group.all(),
           height = y.range()[0];
 
       y.domain([0, group.top(1)[0].value]);
+      if (!x) {
+        var min = groups[0].key,
+            max = groups[groups.length - 1].key + separation;
+        x = d3.scale.linear()
+            .domain([min, max])
+            .rangeRound([0, (max - min) / separation * binWidth]);
+        axis.scale(x);
+        brush.x(x);
+      }
+      var width = x.range()[1];
+      var chartWidth = width + margin.right + margin.left;
 
       div.each(function() {
         var div = d3.select(this),
@@ -76,6 +89,7 @@
 
         // Create the skeletal chart.
         if (g.empty()) {
+          div.attr("width", chartWidth);
           div.select(".title").append("a")
               .attr("href", "javascript:reset(" + id + ")")
               .attr("class", "reset")
@@ -83,7 +97,7 @@
               .style("display", "none");
 
           g = div.append("svg")
-              .attr("width", width + margin.left + margin.right)
+              .attr("width", chartWidth)
               .attr("height", height + margin.top + margin.bottom)
             .append("g")
               .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
@@ -141,7 +155,8 @@
             d;
         while (++i < n) {
           d = groups[i];
-          path.push("M", x(d.key), ",", height, "V", y(d.value), "h9V", height);
+          path.push("M", x(d.key), ",", height, "V", y(d.value),
+                    "h", binWidth - 1, "V", height);
         }
         return path.join("");
       }
@@ -206,6 +221,18 @@
     chart.y = function(_) {
       if (!arguments.length) return y;
       y = _;
+      return chart;
+    };
+
+    chart.separation = function(_) {
+      if (!arguments.length) return separation;
+      separation = _;
+      return chart;
+    };
+
+    chart.binWidth = function(_) {
+      if (!arguments.length) return binWidth;
+      binWidth = _;
       return chart;
     };
 

@@ -39,22 +39,6 @@
   stroke: #666;
 }
 
-#hour-chart {
-  width: 260px;
-}
-
-#delay-chart {
-  width: 230px;
-}
-
-#distance-chart {
-  width: 420px;
-}
-
-#date-chart {
-  width: 920px;
-}
-
 #totals {
   position: absolute;
   left: 740px;
