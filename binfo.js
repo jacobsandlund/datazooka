@@ -14,10 +14,10 @@
   var chart, all;
 
   // Various formatters.
-  var formatNumber = d3.format(",d"),
-      formatChange = d3.format("+,d"),
-      formatDate = d3.time.format("%B %d, %Y"),
-      formatTime = d3.time.format("%I:%M %p");
+  var formatNumber = d3.format(',d'),
+      formatChange = d3.format('+,d'),
+      formatDate = d3.time.format('%B %d, %Y'),
+      formatTime = d3.time.format('%I:%M %p');
 
   window.renderCharts = function(holder, dataName, charts, cross) {
 
@@ -32,7 +32,7 @@
     // Given our array of charts, which we assume are in the same order as the
     // .chart elements in the DOM, bind the charts to the DOM and render them.
     // We also listen to the chart's brush events to update the display.
-    chart = chartHolder.selectAll(".chart")
+    chart = chartHolder.selectAll('.chart')
         .data(charts);
 
     chart.enter().append('div')
@@ -41,7 +41,7 @@
         .attr('class', 'title');
 
     chart.each(function(chart) {
-      chart.on("brush", renderAll).on("brushend", renderAll);
+      chart.on('brush', renderAll).on('brushend', renderAll);
     });
 
     var totals = holder.append('aside')
@@ -75,7 +75,7 @@
   // Whenever the brush moves, re-rendering everything.
   function renderAll() {
     chart.each(render);
-    d3.select("#active").text(formatNumber(all.value()));
+    d3.select('#active').text(formatNumber(all.value()));
   }
 
   window.barChart = function barChart() {
@@ -87,7 +87,7 @@
         y = d3.scale.linear().range([100, 0]),
         separation,
         id = barChart.id++,
-        axis = d3.svg.axis().orient("bottom"),
+        axis = d3.svg.axis().orient('bottom'),
         brush = d3.svg.brush(),
         brushDirty,
         dimension,
@@ -115,69 +115,69 @@
 
       div.each(function() {
         var div = d3.select(this),
-            g = div.select("g");
+            g = div.select('g');
 
         // Create the skeletal chart.
         if (g.empty()) {
-          div.attr("width", chartWidth);
-          div.select(".title")
+          div.attr('width', chartWidth);
+          div.select('.title')
               .text(label)
-            .append("a")
-              .attr("href", "javascript:reset(" + id + ")")
-              .attr("class", "reset")
-              .text("reset")
-              .style("display", "none");
+            .append('a')
+              .attr('href', 'javascript:reset(' + id + ')')
+              .attr('class', 'reset')
+              .text('reset')
+              .style('display', 'none');
 
-          g = div.append("svg")
-              .attr("width", chartWidth)
-              .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-              .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+          g = div.append('svg')
+              .attr('width', chartWidth)
+              .attr('height', height + margin.top + margin.bottom)
+            .append('g')
+              .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-          g.append("clipPath")
-              .attr("id", "clip-" + id)
-            .append("rect")
-              .attr("width", width)
-              .attr("height", height);
+          g.append('clipPath')
+              .attr('id', 'clip-' + id)
+            .append('rect')
+              .attr('width', width)
+              .attr('height', height);
 
-          g.selectAll(".bar")
-              .data(["background", "foreground"])
-            .enter().append("path")
-              .attr("class", function(d) { return d + " bar"; })
-              .datum(group.all());
+          g.selectAll('.bar')
+              .data(['background', 'foreground'])
+            .enter().append('path')
+              .attr('class', function(d) { return d + ' bar'; })
+              .datum(groups);
 
-          g.selectAll(".foreground.bar")
-              .attr("clip-path", "url(#clip-" + id + ")");
+          g.selectAll('.foreground.bar')
+              .attr('clip-path', 'url(#clip-' + id + ')');
 
-          g.append("g")
-              .attr("class", "axis")
-              .attr("transform", "translate(0," + height + ")")
+          g.append('g')
+              .attr('class', 'axis')
+              .attr('transform', 'translate(0,' + height + ')')
               .call(axis);
 
           // Initialize the brush component with pretty resize handles.
-          var gBrush = g.append("g").attr("class", "brush").call(brush);
-          gBrush.selectAll("rect").attr("height", height);
-          gBrush.selectAll(".resize").append("path").attr("d", resizePath);
+          var gBrush = g.append('g').attr('class', 'brush').call(brush);
+          gBrush.selectAll('rect').attr('height', height);
+          gBrush.selectAll('.resize').append('path').attr('d', resizePath);
         }
 
         // Only redraw the brush if set externally.
         if (brushDirty) {
           brushDirty = false;
-          g.selectAll(".brush").call(brush);
-          div.select(".title a").style("display", brush.empty() ? "none" : null);
+          g.selectAll('.brush').call(brush);
+          div.select('.title a').style('display', brush.empty() ? 'none' : null);
           if (brush.empty()) {
-            g.selectAll("#clip-" + id + " rect")
-                .attr("x", 0)
-                .attr("width", width);
+            g.selectAll('#clip-' + id + ' rect')
+                .attr('x', 0)
+                .attr('width', width);
           } else {
             var extent = brush.extent();
-            g.selectAll("#clip-" + id + " rect")
-                .attr("x", x(extent[0]))
-                .attr("width", x(extent[1]) - x(extent[0]));
+            g.selectAll('#clip-' + id + ' rect')
+                .attr('x', x(extent[0]))
+                .attr('width', x(extent[1]) - x(extent[0]));
           }
         }
 
-        g.selectAll(".bar").attr("d", barPath);
+        g.selectAll('.bar').attr('d', barPath);
       });
 
       function barPath(groups) {
@@ -187,51 +187,51 @@
             d;
         while (++i < n) {
           d = groups[i];
-          path.push("M", x(d.key), ",", height, "V", y(d.value),
-                    "h", binWidth - 1, "V", height);
+          path.push('M', x(d.key), ',', height, 'V', y(d.value),
+                    'h', binWidth - 1, 'V', height);
         }
-        return path.join("");
+        return path.join('');
       }
 
       function resizePath(d) {
-        var e = +(d == "e"),
+        var e = +(d == 'e'),
             x = e ? 1 : -1,
             y = height / 3;
-        return "M" + (.5 * x) + "," + y
-            + "A6,6 0 0 " + e + " " + (6.5 * x) + "," + (y + 6)
-            + "V" + (2 * y - 6)
-            + "A6,6 0 0 " + e + " " + (.5 * x) + "," + (2 * y)
-            + "Z"
-            + "M" + (2.5 * x) + "," + (y + 8)
-            + "V" + (2 * y - 8)
-            + "M" + (4.5 * x) + "," + (y + 8)
-            + "V" + (2 * y - 8);
+        return 'M' + (.5 * x) + ',' + y
+            + 'A6,6 0 0 ' + e + ' ' + (6.5 * x) + ',' + (y + 6)
+            + 'V' + (2 * y - 6)
+            + 'A6,6 0 0 ' + e + ' ' + (.5 * x) + ',' + (2 * y)
+            + 'Z'
+            + 'M' + (2.5 * x) + ',' + (y + 8)
+            + 'V' + (2 * y - 8)
+            + 'M' + (4.5 * x) + ',' + (y + 8)
+            + 'V' + (2 * y - 8);
       }
     }
 
-    brush.on("brushstart.chart", function() {
+    brush.on('brushstart.chart', function() {
       var div = d3.select(this.parentNode.parentNode.parentNode);
-      div.select(".title a").style("display", null);
+      div.select('.title a').style('display', null);
     });
 
-    brush.on("brush.chart", function() {
+    brush.on('brush.chart', function() {
       var g = d3.select(this.parentNode),
           extent = brush.extent();
-      if (round) g.select(".brush")
+      if (round) g.select('.brush')
           .call(brush.extent(extent = extent.map(round)))
-        .selectAll(".resize")
-          .style("display", null);
-      g.select("#clip-" + id + " rect")
-          .attr("x", x(extent[0]))
-          .attr("width", x(extent[1]) - x(extent[0]));
+        .selectAll('.resize')
+          .style('display', null);
+      g.select('#clip-' + id + ' rect')
+          .attr('x', x(extent[0]))
+          .attr('width', x(extent[1]) - x(extent[0]));
       dimension.filterRange(extent);
     });
 
-    brush.on("brushend.chart", function() {
+    brush.on('brushend.chart', function() {
       if (brush.empty()) {
         var div = d3.select(this.parentNode.parentNode.parentNode);
-        div.select(".title a").style("display", "none");
-        div.select("#clip-" + id + " rect").attr("x", null).attr("width", "100%");
+        div.select('.title a').style('display', 'none');
+        div.select('#clip-' + id + ' rect').attr('x', null).attr('width', '100%');
         dimension.filterAll();
       }
     });
@@ -259,6 +259,6 @@
       return chart;
     };
 
-    return d3.rebind(chart, brush, "on");
+    return d3.rebind(chart, brush, 'on');
   }
 })();
