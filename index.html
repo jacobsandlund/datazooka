@@ -117,20 +117,17 @@ d3.csv("flights-3m.json", function(flights) {
     barChart()
         .label('Time of Day')
         .dimension(function(d) { return d.date.getHours() + d.date.getMinutes() / 60; })
-        .group(Math.floor)
-        .separation(1),
+        .groupBy(1),
 
     barChart()
         .label('Arrival Delay (min.)')
         .dimension(function(d) { return Math.max(-60, Math.min(149, d.delay)); })
-        .group(function(d) { return Math.floor(d / 10) * 10; })
-        .separation(10),
+        .groupBy(10),
 
     barChart()
         .label('Distance (mi.)')
         .dimension(function(d) { return Math.min(1999, d.distance); })
-        .group(function(d) { return Math.floor(d / 50) * 50; })
-        .separation(50),
+        .groupBy(50),
 
     barChart()
         .label('Date')

@@ -42,8 +42,8 @@
       .append('div')
         .attr('class', 'title');
 
-    chart.each(function(chart) {
-      chart.on('brush', renderAll).on('brushend', renderAll);
+    chart.each(function(ch) {
+      ch.on('brush', renderAll).on('brushend', renderAll);
     });
 
     var totals = holder.append('aside')
@@ -251,6 +251,12 @@
       x = _;
       axis.scale(x);
       brush.x(x);
+      return chart;
+    };
+
+    chart.groupBy = function(groupBy) {
+      group = function(d) { return Math.floor(d / groupBy) * groupBy; };
+      separation = groupBy;
       return chart;
     };
 
