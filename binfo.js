@@ -1,6 +1,16 @@
 
 (function() {
 
+  function getterSetter(my, names) {
+    if (!Array.isArray(names)) names = [names];
+    var getSets = names.map(function(name) {
+      return [my, '.', name, ' = function(_) {',
+              'if (!arguments.length) return ', name, ';',
+              name, ' = _; return ', my, '; };'].join('');
+    });
+    return getSets.join('\n');
+  }
+
   var chart, all;
 
   // Various formatters.
@@ -67,13 +77,14 @@
         round;
 
     function chart(div) {
-      var groups = group.all(),
+      var min, max,
+          groups = group.all(),
           height = y.range()[0];
 
       y.domain([0, group.top(1)[0].value]);
       if (!x) {
-        var min = groups[0].key,
-            max = groups[groups.length - 1].key + separation;
+        min = groups[0].key;
+        max = groups[groups.length - 1].key + separation;
         x = d3.scale.linear()
             .domain([min, max])
             .rangeRound([0, (max - min) / separation * binWidth]);
@@ -204,41 +215,14 @@
       }
     });
 
-    chart.margin = function(_) {
-      if (!arguments.length) return margin;
-      margin = _;
-      return chart;
-    };
+    eval(getterSetter('chart', ['margin', 'y', 'separation', 'binWidth',
+                                'dimension', 'group', 'round']));
 
     chart.x = function(_) {
       if (!arguments.length) return x;
       x = _;
       axis.scale(x);
       brush.x(x);
-      return chart;
-    };
-
-    chart.y = function(_) {
-      if (!arguments.length) return y;
-      y = _;
-      return chart;
-    };
-
-    chart.separation = function(_) {
-      if (!arguments.length) return separation;
-      separation = _;
-      return chart;
-    };
-
-    chart.binWidth = function(_) {
-      if (!arguments.length) return binWidth;
-      binWidth = _;
-      return chart;
-    };
-
-    chart.dimension = function(_) {
-      if (!arguments.length) return dimension;
-      dimension = _;
       return chart;
     };
 
@@ -251,18 +235,6 @@
         dimension.filterAll();
       }
       brushDirty = true;
-      return chart;
-    };
-
-    chart.group = function(_) {
-      if (!arguments.length) return group;
-      group = _;
-      return chart;
-    };
-
-    chart.round = function(_) {
-      if (!arguments.length) return round;
-      round = _;
       return chart;
     };
 
