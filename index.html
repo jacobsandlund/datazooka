@@ -51,10 +51,6 @@ h1, h2 {
   text-rendering: optimizeLegibility;
 }
 
-#charts {
-  padding: 10px 0;
-}
-
 </style>
 
   </head>
@@ -77,22 +73,7 @@ h1, h2 {
     </p>
 
 
-    <div id="charts">
-      <div id="hour-chart" class="chart">
-        <div class="title">Time of Day</div>
-      </div>
-      <div id="delay-chart" class="chart">
-        <div class="title">Arrival Delay (min.)</div>
-      </div>
-      <div id="distance-chart" class="chart">
-        <div class="title">Distance (mi.)</div>
-      </div>
-      <div id="date-chart" class="chart">
-        <div class="title">Date</div>
-      </div>
-    </div>
-
-    <aside id="totals"><span id="active">-</span> of <span id="total">-</span> flights selected.</aside>
+    <div id="charts"></div>
 
     <footer>
       <span style="float:right;">
@@ -145,21 +126,25 @@ d3.csv("flights-3m.json", function(flights) {
   var charts = [
 
     barChart()
+        .label('Time of Day')
         .dimension(hour)
         .group(hours)
         .separation(1),
 
     barChart()
+        .label('Arrival Delay (min.)')
         .dimension(delay)
         .group(delays)
         .separation(10),
 
     barChart()
+        .label('Distance (mi.)')
         .dimension(distance)
         .group(distances)
         .separation(50),
 
     barChart()
+        .label('Date')
         .dimension(date)
         .group(dates)
         .round(d3.time.day.round)
@@ -170,7 +155,7 @@ d3.csv("flights-3m.json", function(flights) {
 
   ];
 
-  renderCharts(charts, flight);
+  renderCharts('#charts', 'flights', charts, flight);
 
 });
 

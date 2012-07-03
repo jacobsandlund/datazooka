@@ -19,22 +19,40 @@
       formatDate = d3.time.format("%B %d, %Y"),
       formatTime = d3.time.format("%I:%M %p");
 
-  window.renderCharts = function(charts, cross) {
+  window.renderCharts = function(holder, dataName, charts, cross) {
+
+    holder = d3.select(holder);
 
     all = cross.groupAll();
+
+    // Create skeleton.
+    var chartHolder = holder.append('div')
+        .attr('class', 'charts');
 
     // Given our array of charts, which we assume are in the same order as the
     // .chart elements in the DOM, bind the charts to the DOM and render them.
     // We also listen to the chart's brush events to update the display.
-    chart = d3.selectAll(".chart")
-        .data(charts)
-        .each(function(chart) {
-          chart.on("brush", renderAll).on("brushend", renderAll);
-        });
+    chart = chartHolder.selectAll(".chart")
+        .data(charts);
 
-    // Render the total.
-    d3.selectAll("#total")
-        .text(formatNumber(cross.size()));
+    chart.enter().append('div')
+        .attr('class', 'chart')
+      .append('div')
+        .attr('class', 'title');
+
+    chart.each(function(chart) {
+      chart.on("brush", renderAll).on("brushend", renderAll);
+    });
+
+    var totals = holder.append('aside')
+        .attr('class', 'totals');
+    totals.append('span')
+        .attr('class', 'active')
+        .text('-');
+    totals.append('span').text(' of ');
+    totals.append('span')
+        .attr('class', 'total')
+        .text(formatNumber(cross.size()) + ' ' + dataName + ' selected.');
 
     window.filter = function(filters) {
       filters.forEach(function(d, i) { charts[i].filter(d); });
@@ -74,6 +92,7 @@
         brushDirty,
         dimension,
         group,
+        label,
         round;
 
     function chart(div) {
@@ -101,7 +120,9 @@
         // Create the skeletal chart.
         if (g.empty()) {
           div.attr("width", chartWidth);
-          div.select(".title").append("a")
+          div.select(".title")
+              .text(label)
+            .append("a")
               .attr("href", "javascript:reset(" + id + ")")
               .attr("class", "reset")
               .text("reset")
@@ -216,7 +237,7 @@
     });
 
     eval(getterSetter('chart', ['margin', 'y', 'separation', 'binWidth',
-                                'dimension', 'group', 'round']));
+                                'dimension', 'group', 'round', 'label']));
 
     chart.x = function(_) {
       if (!arguments.length) return x;

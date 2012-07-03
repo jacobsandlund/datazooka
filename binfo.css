@@ -1,4 +1,8 @@
 
+.charts {
+  padding: 10px 0;
+}
+
 .chart {
   display: inline-block;
   height: 151px;
@@ -39,7 +43,7 @@
   stroke: #666;
 }
 
-#totals {
+.totals {
   position: absolute;
   left: 740px;
   font-size: smaller;
