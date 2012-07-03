@@ -11,7 +11,7 @@
     return getSets.join('\n');
   }
 
-  var chart, all;
+  var chart, all, cross;
 
   // Various formatters.
   var formatNumber = d3.format(',d'),
@@ -19,7 +19,9 @@
       formatDate = d3.time.format('%B %d, %Y'),
       formatTime = d3.time.format('%I:%M %p');
 
-  window.renderCharts = function(holder, dataName, charts, cross) {
+  window.renderCharts = function(holder, dataName, charts, data) {
+
+    cross = crossfilter(data);
 
     holder = d3.select(holder);
 
@@ -75,7 +77,7 @@
   // Whenever the brush moves, re-rendering everything.
   function renderAll() {
     chart.each(render);
-    d3.select('#active').text(formatNumber(all.value()));
+    d3.select('.active').text(formatNumber(all.value()));
   }
 
   window.barChart = function barChart() {
@@ -97,10 +99,15 @@
 
     function chart(div) {
       var min, max,
-          groups = group.all(),
           height = y.range()[0];
 
+      if (typeof dimension === 'function') {
+        dimension = cross.dimension(dimension);
+        group = group ? dimension.group(group) : dimension.group();
+      }
+      groups = group.all();
       y.domain([0, group.top(1)[0].value]);
+
       if (!x) {
         min = groups[0].key;
         max = groups[groups.length - 1].key + separation;

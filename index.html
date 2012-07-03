@@ -112,50 +112,37 @@ d3.csv("flights-3m.json", function(flights) {
         d.substring(6, 8));
   }
 
-  // Create the crossfilter for the relevant dimensions and groups.
-  var flight = crossfilter(flights),
-      date = flight.dimension(function(d) { return d3.time.day(d.date); }),
-      dates = date.group(),
-      hour = flight.dimension(function(d) { return d.date.getHours() + d.date.getMinutes() / 60; }),
-      hours = hour.group(Math.floor),
-      delay = flight.dimension(function(d) { return Math.max(-60, Math.min(149, d.delay)); }),
-      delays = delay.group(function(d) { return Math.floor(d / 10) * 10; }),
-      distance = flight.dimension(function(d) { return Math.min(1999, d.distance); }),
-      distances = distance.group(function(d) { return Math.floor(d / 50) * 50; });
-
   var charts = [
 
     barChart()
         .label('Time of Day')
-        .dimension(hour)
-        .group(hours)
+        .dimension(function(d) { return d.date.getHours() + d.date.getMinutes() / 60; })
+        .group(Math.floor)
         .separation(1),
 
     barChart()
         .label('Arrival Delay (min.)')
-        .dimension(delay)
-        .group(delays)
+        .dimension(function(d) { return Math.max(-60, Math.min(149, d.delay)); })
+        .group(function(d) { return Math.floor(d / 10) * 10; })
         .separation(10),
 
     barChart()
         .label('Distance (mi.)')
-        .dimension(distance)
-        .group(distances)
+        .dimension(function(d) { return Math.min(1999, d.distance); })
+        .group(function(d) { return Math.floor(d / 50) * 50; })
         .separation(50),
 
     barChart()
         .label('Date')
-        .dimension(date)
-        .group(dates)
+        .dimension(function(d) { return d3.time.day(d.date); })
         .round(d3.time.day.round)
       .x(d3.time.scale()
         .domain([new Date(2001, 0, 1), new Date(2001, 3, 1)])
         .range([0, 900]))
-        .filter([new Date(2001, 1, 1), new Date(2001, 2, 1)])
 
   ];
 
-  renderCharts('#charts', 'flights', charts, flight);
+  renderCharts('#charts', 'flights', charts, flights);
 
 });
 
