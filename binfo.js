@@ -11,40 +11,23 @@
     return getSets.join('\n');
   }
 
-  var chart, all, cross;
+  var chart, all, cross, holder,
+      dataSets = {};
 
-  // Various formatters.
-  var formatNumber = d3.format(',d'),
-      formatChange = d3.format('+,d'),
-      formatDate = d3.time.format('%B %d, %Y'),
-      formatTime = d3.time.format('%I:%M %p');
+  var formatNumber = d3.format(',d');
 
-  window.renderCharts = function(holder, dataName, charts, data) {
+  window.dataSet = function(dataName, charts, data) {
+    var chartMap = {};
+    charts.forEach(function(chart) { chartMap[chart.id()] = chart; });
+    dataSets[dataName] = {charts: chartMap, data: data};
+  };
 
-    cross = crossfilter(data);
-
-    holder = d3.select(holder);
-
-    all = cross.groupAll();
+  window.setHolder = function(_) {
+    holder = d3.select(_);
 
     // Create skeleton.
-    var chartHolder = holder.append('div')
+    holder.append('div')
         .attr('class', 'charts');
-
-    // Given our array of charts, which we assume are in the same order as the
-    // .chart elements in the DOM, bind the charts to the DOM and render them.
-    // We also listen to the chart's brush events to update the display.
-    chart = chartHolder.selectAll('.chart')
-        .data(charts);
-
-    chart.enter().append('div')
-        .attr('class', 'chart')
-      .append('div')
-        .attr('class', 'title');
-
-    chart.each(function(ch) {
-      ch.on('brush', renderAll).on('brushend', renderAll);
-    });
 
     var totals = holder.append('aside')
         .attr('class', 'totals');
@@ -54,15 +37,47 @@
     totals.append('span').text(' of ');
     totals.append('span')
         .attr('class', 'total')
+  };
+
+  window.renderCharts = function(dataName, chartIds) {
+
+    var data = dataSets[dataName].data,
+        chartMap = dataSets[dataName].charts;
+
+    charts = chartIds.map(function(id) { return chartMap[id]; });
+
+    cross = crossfilter(data);
+
+    all = cross.groupAll();
+
+    // Given our array of charts, which we assume are in the same order as the
+    // .chart elements in the DOM, bind the charts to the DOM and render them.
+    // We also listen to the chart's brush events to update the display.
+    chart = holder.select('.charts').selectAll('.chart')
+        .data(charts);
+
+    chart.enter().append('div')
+        .attr('class', 'chart')
+      .append('div')
+        .attr('class', 'title');
+
+    chart.exit().remove();
+
+    chart.each(function(ch) {
+      ch.on('brush', renderAll).on('brushend', renderAll);
+    });
+
+    holder.select('.total')
         .text(formatNumber(cross.size()) + ' ' + dataName + ' selected.');
+
 
     window.filter = function(filters) {
       filters.forEach(function(d, i) { charts[i].filter(d); });
       renderAll();
     };
 
-    window.reset = function(i) {
-      charts[i].filter(null);
+    window.reset = function(id) {
+      chartMap[id].filter(null);
       renderAll();
     };
 
@@ -81,14 +96,13 @@
   }
 
   window.barChart = function barChart() {
-    if (!barChart.id) barChart.id = 0;
 
     var margin = {top: 10, right: 10, bottom: 20, left: 10},
         binWidth = 10,
         x,
         y = d3.scale.linear().range([100, 0]),
         separation,
-        id = barChart.id++,
+        id,
         axis = d3.svg.axis().orient('bottom'),
         brush = d3.svg.brush(),
         brushDirty,
@@ -130,7 +144,7 @@
           div.select('.title')
               .text(label)
             .append('a')
-              .attr('href', 'javascript:reset(' + id + ')')
+              .attr('href', 'javascript:reset("' + id + '")')
               .attr('class', 'reset')
               .text('reset')
               .style('display', 'none');
@@ -243,7 +257,7 @@
       }
     });
 
-    eval(getterSetter('chart', ['margin', 'y', 'separation', 'binWidth',
+    eval(getterSetter('chart', ['id', 'margin', 'y', 'separation', 'binWidth',
                                 'dimension', 'group', 'round', 'label']));
 
     chart.x = function(_) {

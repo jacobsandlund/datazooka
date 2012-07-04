@@ -79,7 +79,7 @@ h1, h2 {
       <span style="float:right;">
         Released under the <a href="http://www.apache.org/licenses/LICENSE-2.0.html">Apache License 2.0</a>.
       </span>
-      Copyright 2012 Jake Sandlund
+      Copyright 2012 Jake Sandlund, <a href="http://squareup.com">Square, Inc.</a>
     </footer>
 
   </div>
@@ -115,21 +115,25 @@ d3.csv("flights-3m.json", function(flights) {
   var charts = [
 
     barChart()
+        .id('time')
         .label('Time of Day')
         .dimension(function(d) { return d.date.getHours() + d.date.getMinutes() / 60; })
         .groupBy(1),
 
     barChart()
+        .id('delay')
         .label('Arrival Delay (min.)')
         .dimension(function(d) { return Math.max(-60, Math.min(149, d.delay)); })
         .groupBy(10),
 
     barChart()
+        .id('distance')
         .label('Distance (mi.)')
         .dimension(function(d) { return Math.min(1999, d.distance); })
         .groupBy(50),
 
     barChart()
+        .id('date')
         .label('Date')
         .dimension(function(d) { return d3.time.day(d.date); })
         .round(d3.time.day.round)
@@ -139,7 +143,9 @@ d3.csv("flights-3m.json", function(flights) {
 
   ];
 
-  renderCharts('#charts', 'flights', charts, flights);
+  dataSet('flights', charts, flights);
+  setHolder('#charts');
+  renderCharts('flights', ['time', 'delay', 'distance']);
 
 });
 
