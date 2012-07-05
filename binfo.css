@@ -1,18 +1,19 @@
 
 .charts {
   padding: 10px 0;
+  overflow: hidden;
 }
 
 .chart {
+  float: left;
   display: inline-block;
   height: 151px;
   margin-bottom: 20px;
 }
 
 .reset {
-  padding-left: 1em;
+  margin: 0 0 -5px 10px;
   font-size: smaller;
-  color: #ccc;
 }
 
 .background.bar {

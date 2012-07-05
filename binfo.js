@@ -11,7 +11,8 @@
     return getSets.join('\n');
   }
 
-  var chart, all, cross, holder,
+  var chart, all, cross, holder, currentDataName,
+      currentChartIds = [],
       dataSets = {};
 
   var formatNumber = d3.format(',d');
@@ -36,27 +37,42 @@
         .text('-');
     totals.append('span').text(' of ');
     totals.append('span')
-        .attr('class', 'total')
+        .attr('class', 'total');
   };
 
   window.renderCharts = function(dataName, chartIds) {
 
     var data = dataSets[dataName].data,
-        chartMap = dataSets[dataName].charts;
+        chartMap = dataSets[dataName].charts,
+        charts = chartIds.map(function(id) { return chartMap[id]; });
 
-    charts = chartIds.map(function(id) { return chartMap[id]; });
+    var removed = currentChartIds.filter(function(id) {
+      return chartIds.indexOf(id) < 0;
+    });
+    var added = chartIds.filter(function(id) {
+      return currentChartIds.indexOf(id) < 0;
+    });
 
-    cross = crossfilter(data);
+    if (!cross || currentDataName !== dataName || removed.length) {
+      cross = crossfilter(data);
+      added = chartIds;
+    }
+    currentChartIds = chartIds;
+    currentDataName = dataName;
+
+    added.forEach(function(id) { chartMap[id].computeCross(); });
 
     all = cross.groupAll();
+
 
     // Given our array of charts, which we assume are in the same order as the
     // .chart elements in the DOM, bind the charts to the DOM and render them.
     // We also listen to the chart's brush events to update the display.
     chart = holder.select('.charts').selectAll('.chart')
-        .data(charts);
+        .data(charts, function(d) { return d.id(); });
 
-    chart.enter().append('div')
+    chart.enter()
+      .append('div')
         .attr('class', 'chart')
       .append('div')
         .attr('class', 'title');
@@ -85,8 +101,8 @@
   };
 
   // Renders the specified chart.
-  function render(method) {
-    d3.select(this).call(method);
+  function render(chart) {
+    d3.select(this).call(chart);
   }
 
   // Whenever the brush moves, re-rendering everything.
@@ -107,19 +123,17 @@
         brush = d3.svg.brush(),
         brushDirty,
         dimension,
+        computeDimension,
         group,
+        computeGroup,
         label,
         round;
 
     function chart(div) {
       var min, max,
-          height = y.range()[0];
+          height = y.range()[0],
+          groups = group.all();
 
-      if (typeof dimension === 'function') {
-        dimension = cross.dimension(dimension);
-        group = group ? dimension.group(group) : dimension.group();
-      }
-      groups = group.all();
       y.domain([0, group.top(1)[0].value]);
 
       if (!x) {
@@ -143,10 +157,11 @@
           div.attr('width', chartWidth);
           div.select('.title')
               .text(label)
-            .append('a')
-              .attr('href', 'javascript:reset("' + id + '")')
+            .append('input')
+              .attr('type', 'button')
+              .attr('value', 'reset')
+              .on('click', function() { reset(id); })
               .attr('class', 'reset')
-              .text('reset')
               .style('display', 'none');
 
           g = div.append('svg')
@@ -164,8 +179,7 @@
           g.selectAll('.bar')
               .data(['background', 'foreground'])
             .enter().append('path')
-              .attr('class', function(d) { return d + ' bar'; })
-              .datum(groups);
+              .attr('class', function(d) { return d + ' bar'; });
 
           g.selectAll('.foreground.bar')
               .attr('clip-path', 'url(#clip-' + id + ')');
@@ -185,7 +199,7 @@
         if (brushDirty) {
           brushDirty = false;
           g.selectAll('.brush').call(brush);
-          div.select('.title a').style('display', brush.empty() ? 'none' : null);
+          div.select('.reset').style('display', brush.empty() ? 'none' : null);
           if (brush.empty()) {
             g.selectAll('#clip-' + id + ' rect')
                 .attr('x', 0)
@@ -198,7 +212,9 @@
           }
         }
 
-        g.selectAll('.bar').attr('d', barPath);
+        g.selectAll('.bar')
+            .datum(groups)
+            .attr('d', barPath);
       });
 
       function barPath(groups) {
@@ -218,21 +234,21 @@
         var e = +(d == 'e'),
             x = e ? 1 : -1,
             y = height / 3;
-        return 'M' + (.5 * x) + ',' + y
-            + 'A6,6 0 0 ' + e + ' ' + (6.5 * x) + ',' + (y + 6)
-            + 'V' + (2 * y - 6)
-            + 'A6,6 0 0 ' + e + ' ' + (.5 * x) + ',' + (2 * y)
-            + 'Z'
-            + 'M' + (2.5 * x) + ',' + (y + 8)
-            + 'V' + (2 * y - 8)
-            + 'M' + (4.5 * x) + ',' + (y + 8)
-            + 'V' + (2 * y - 8);
+        return 'M' + (0.5 * x) + ',' + y +
+               'A6,6 0 0 ' + e + ' ' + (6.5 * x) + ',' + (y + 6) +
+               'V' + (2 * y - 6) +
+               'A6,6 0 0 ' + e + ' ' + (0.5 * x) + ',' + (2 * y) +
+               'Z' +
+               'M' + (2.5 * x) + ',' + (y + 8) +
+               'V' + (2 * y - 8) +
+               'M' + (4.5 * x) + ',' + (y + 8) +
+               'V' + (2 * y - 8);
       }
     }
 
     brush.on('brushstart.chart', function() {
       var div = d3.select(this.parentNode.parentNode.parentNode);
-      div.select('.title a').style('display', null);
+      div.select('.reset').style('display', null);
     });
 
     brush.on('brush.chart', function() {
@@ -251,14 +267,31 @@
     brush.on('brushend.chart', function() {
       if (brush.empty()) {
         var div = d3.select(this.parentNode.parentNode.parentNode);
-        div.select('.title a').style('display', 'none');
+        div.select('.reset').style('display', 'none');
         div.select('#clip-' + id + ' rect').attr('x', null).attr('width', '100%');
         dimension.filterAll();
       }
     });
 
     eval(getterSetter('chart', ['id', 'margin', 'y', 'separation', 'binWidth',
-                                'dimension', 'group', 'round', 'label']));
+                                'round', 'label']));
+
+    chart.computeCross = function() {
+      dimension = cross.dimension(computeDimension);
+      group = computeGroup ? dimension.group(computeGroup) : dimension.group();
+    };
+
+    chart.dimension = function(_) {
+      if (!arguments.length) return computeDimension;
+      computeDimension = _;
+      return chart;
+    };
+
+    chart.group = function(_) {
+      if (!arguments.length) return computeGroup;
+      computeGroup = _;
+      return chart;
+    };
 
     chart.x = function(_) {
       if (!arguments.length) return x;
@@ -269,7 +302,7 @@
     };
 
     chart.groupBy = function(groupBy) {
-      group = function(d) { return Math.floor(d / groupBy) * groupBy; };
+      computeGroup = function(d) { return Math.floor(d / groupBy) * groupBy; };
       separation = groupBy;
       return chart;
     };
@@ -287,5 +320,5 @@
     };
 
     return d3.rebind(chart, brush, 'on');
-  }
+  };
 })();
