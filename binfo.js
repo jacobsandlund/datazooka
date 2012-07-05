@@ -11,8 +11,16 @@
     return getSets.join('\n');
   }
 
-  var chart, all, cross, holder, currentDataName,
+
+
+  var chart,
+      all,
+      cross,
+      holder,
+      currentDataName,
+      chartMap,
       currentChartIds = [],
+      currentFilters = {},
       dataSets = {};
 
   var formatNumber = d3.format(',d');
@@ -40,11 +48,11 @@
         .attr('class', 'total');
   };
 
-  window.renderCharts = function(dataName, chartIds) {
+  window.renderCharts = function(dataName, chartIds, filters) {
 
-    var data = dataSets[dataName].data,
-        chartMap = dataSets[dataName].charts,
-        charts = chartIds.map(function(id) { return chartMap[id]; });
+    var data = dataSets[dataName].data;
+    chartMap = dataSets[dataName].charts;
+    var charts = chartIds.map(function(id) { return chartMap[id]; });
 
     var removed = currentChartIds.filter(function(id) {
       return chartIds.indexOf(id) < 0;
@@ -59,8 +67,16 @@
     }
     currentChartIds = chartIds;
     currentDataName = dataName;
+    currentFilters = filters;
 
     added.forEach(function(id) { chartMap[id].computeCross(); });
+
+    filters = filters || {};
+    chartIds.forEach(function(id) {
+      if (filters[id]) {
+        chartMap[id].filter(filters[id]);
+      }
+    });
 
     all = cross.groupAll();
 
@@ -86,17 +102,16 @@
     holder.select('.total')
         .text(formatNumber(cross.size()) + ' ' + dataName + ' selected.');
 
+    renderAll();
+  };
 
-    window.filter = function(filters) {
-      filters.forEach(function(d, i) { charts[i].filter(d); });
-      renderAll();
-    };
+  window.filter = function(id, range) {
+    chartMap[id].filter(range);
+    renderAll();
+  };
 
-    window.reset = function(id) {
-      chartMap[id].filter(null);
-      renderAll();
-    };
-
+  window.reset = function(id) {
+    chartMap[id].filter(null);
     renderAll();
   };
 
