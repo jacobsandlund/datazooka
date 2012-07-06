@@ -143,8 +143,8 @@ d3.csv("flights-3m.json", function(flights) {
 
   ];
 
-  dataSet('flights', charts, flights);
   setHolder('#charts');
+  dataSet('flights', charts, flights);
   renderCharts('flights', ['time', 'delay', 'distance']);
 
 });

@@ -25,16 +25,33 @@
 
   var formatNumber = d3.format(',d');
 
-  window.dataSet = function(dataName, charts, data) {
-    var chartMap = {};
-    charts.forEach(function(chart) { chartMap[chart.id()] = chart; });
-    dataSets[dataName] = {charts: chartMap, data: data};
-  };
-
   window.setHolder = function(_) {
     holder = d3.select(_);
 
     // Create skeleton.
+    var config = holder.append('div')
+        .attr('class', 'configuration');
+    config.append('select')
+        .attr('class', 'dataName');
+
+    config.append('select')
+        .attr('class', 'chartIds')
+        .attr('multiple', 'multiple');
+
+    config.append('input')
+        .attr('type', 'button')
+        .attr('value', 'Update')
+        .on('click', function() {
+          var charts = [];
+          holder.selectAll('.chartIds option').each(function() {
+            if (this.selected) {
+              charts.push(this.value);
+            }
+          });
+          var dataName = holder.select('.dataName').property('value');
+          renderCharts(dataName, charts);
+        });
+
     holder.append('div')
         .attr('class', 'charts');
 
@@ -46,6 +63,29 @@
     totals.append('span').text(' of ');
     totals.append('span')
         .attr('class', 'total');
+  };
+
+  window.changeDataName = function() {
+    var dataName = holder.select('.dataName').property('value');
+    var options = holder.select('.chartIds').selectAll('option')
+        .data(dataSets[dataName].chartIds);
+    options.enter().append('option');
+    options
+        .attr('value', function(d) { return d; })
+        .text(function(d) { return d; });
+  };
+
+  window.dataSet = function(dataName, charts, data) {
+    var chartMap = {};
+    charts.forEach(function(chart) { chartMap[chart.id()] = chart; });
+    dataSets[dataName] = {charts: chartMap, data: data,
+                          chartIds: charts.map(function(d) { return d.id(); })};
+    holder.select('.dataName').append('option')
+        .attr('value', dataName)
+        .text(dataName);
+    if (holder.selectAll('.dataName option').length <= 1) {
+      changeDataName();
+    }
   };
 
   window.renderCharts = function(dataName, chartIds, filters) {
@@ -337,3 +377,4 @@
     return d3.rebind(chart, brush, 'on');
   };
 })();
+
