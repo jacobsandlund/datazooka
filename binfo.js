@@ -86,12 +86,23 @@
     if (holder.selectAll('.dataName option').length <= 1) {
       changeDataName();
     }
+    if (renderLater && renderLater[0] === dataName) {
+      renderCharts.apply(null, renderLater);
+      renderLater = null;
+    }
   };
+
+  var renderLater;
 
   window.renderCharts = function(dataName, chartIds, filters) {
 
+    if (!dataSets[dataName]) {
+      renderLater = [dataName, chartIds, filters];
+      return;
+    }
     var data = dataSets[dataName].data;
     chartMap = dataSets[dataName].charts;
+
     var charts = chartIds.map(function(id) { return chartMap[id]; });
 
     var removed = currentChartIds.filter(function(id) {

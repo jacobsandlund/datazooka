@@ -92,6 +92,9 @@ h1, h2 {
 
 <script>
 
+setHolder('#charts');
+renderCharts('flights', ['time', 'delay', 'distance']);
+
 // (It's CSV, but GitHub Pages only gzip's JSON at the moment.)
 d3.csv("flights-3m.json", function(flights) {
 
@@ -142,11 +145,7 @@ d3.csv("flights-3m.json", function(flights) {
         .range([0, 900]))
 
   ];
-
-  setHolder('#charts');
   dataSet('flights', charts, flights);
-  renderCharts('flights', ['time', 'delay', 'distance']);
-
 });
 
 </script>
