@@ -11,6 +11,21 @@
     return getSets.join('\n');
   }
 
+  window.renderFromHash = function() {
+    var hash = window.location.hash.slice(1).replace(/\+/g, ' '),
+        params = {};
+    if (hash) {
+      params = JSON.parse(decodeURIComponent(hash));
+    }
+    var dataName = params['data'],
+        charts = params['charts'],
+        filters = params['filters'];
+    if (!dataName) {
+      return false;
+    }
+    renderCharts(dataName, charts, filters);
+    return true;
+  };
 
 
   var chart,
@@ -94,12 +109,19 @@
 
   var renderLater;
 
+  window.onhashchange = renderFromHash;
+
   window.renderCharts = function(dataName, chartIds, filters) {
 
     if (!dataSets[dataName]) {
       renderLater = [dataName, chartIds, filters];
       return;
     }
+
+    filters = filters || {};
+    var params = {data: dataName, charts: chartIds, filters: filters};
+    var hash = '#' + encodeURIComponent(JSON.stringify(params));
+    window.history.replaceState({}, '', hash);
     var data = dataSets[dataName].data;
     chartMap = dataSets[dataName].charts;
 
@@ -122,7 +144,6 @@
 
     added.forEach(function(id) { chartMap[id].computeCross(); });
 
-    filters = filters || {};
     chartIds.forEach(function(id) {
       if (filters[id]) {
         chartMap[id].filter(filters[id]);
