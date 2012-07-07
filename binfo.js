@@ -11,22 +11,6 @@
     return getSets.join('\n');
   }
 
-  window.renderFromHash = function() {
-    var hash = window.location.hash.slice(1).replace(/\+/g, ' '),
-        params = {};
-    if (hash) {
-      params = JSON.parse(decodeURIComponent(hash));
-    }
-    var dataName = params['data'],
-        charts = params['charts'],
-        filters = params['filters'];
-    if (!dataName) {
-      return false;
-    }
-    renderCharts(dataName, charts, filters);
-    return true;
-  };
-
 
   var chart,
       all,
@@ -109,6 +93,51 @@
 
   var renderLater;
 
+  // Yarin's answer on this SO post:
+  // http://stackoverflow.com/questions/4197591/
+  // parsing-url-hash-fragment-identifier-with-javascript
+  function getHashParams() {
+    var hashParams = {};
+    var e,
+        a = /\+/g,  // Regex for replacing addition symbol with a space
+        r = /([^&;=]+)=?([^&;]*)/g,
+        d = function (s) { return decodeURIComponent(s.replace(a, ' ')); },
+        q = window.location.hash.substring(1);
+
+    while (e = r.exec(q)) {
+      hashParams[d(e[1])] = d(e[2]);
+    }
+    return hashParams;
+  }
+
+  window.renderFromHash = function() {
+    var params = getHashParams();
+    var dataName = params['data'],
+        charts = params['charts'] && params['charts'].split(','),
+        filters = params['filters'] && params['filters'].split(',');
+
+    var myFilters = {};
+    if (filters) {
+      filters.forEach(function(f) {
+        var filterMap = f.split(':');
+        var filterVals = filterMap.slice(1);
+        filterVals = filterVals.map(function(d) {
+          if (d === 'null') {
+            return null;
+          } else {
+            return +d;
+          }
+        });
+        myFilters[filterMap[0]] = filterVals;
+      });
+    }
+    if (!dataName) {
+      return false;
+    }
+    renderCharts(dataName, charts, myFilters);
+    return true;
+  };
+
   window.onhashchange = renderFromHash;
 
   window.renderCharts = function(dataName, chartIds, filters) {
@@ -119,8 +148,18 @@
     }
 
     filters = filters || {};
-    var params = {data: dataName, charts: chartIds, filters: filters};
-    var hash = '#' + encodeURIComponent(JSON.stringify(params));
+    var filter,
+        chartString = 'charts=' + chartIds.join(','),
+        filterString = 'filters=',
+        filterArray = [];
+    for (filter in filters) {
+      if (filters.hasOwnProperty(filter)) {
+        filterArray.push(filter + ':' + filters[filter].join(':'));
+      }
+    }
+    filterString += filterArray.join(',');
+    var params = ['data=' + dataName, chartString, filterString].join('&');
+    var hash = '#' + params;
     window.history.replaceState({}, '', hash);
     var data = dataSets[dataName].data;
     chartMap = dataSets[dataName].charts;
@@ -143,12 +182,6 @@
     currentFilters = filters;
 
     added.forEach(function(id) { chartMap[id].computeCross(); });
-
-    chartIds.forEach(function(id) {
-      if (filters[id]) {
-        chartMap[id].filter(filters[id]);
-      }
-    });
 
     all = cross.groupAll();
 
@@ -174,7 +207,19 @@
     holder.select('.total')
         .text(formatNumber(cross.size()) + ' ' + dataName + ' selected.');
 
+
     renderAll();
+
+    chartIds.forEach(function(id) {
+      if (filters[id]) {
+        chartMap[id].filter(filters[id]);
+      } else {
+        chartMap[id].filter(null);
+      }
+    });
+
+    renderAll();
+
   };
 
   window.filter = function(id, range) {
