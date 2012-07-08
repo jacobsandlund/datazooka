@@ -169,28 +169,28 @@
 
     added.forEach(function(id) { chartMap[id].computeCross(); });
 
-    all = cross.groupAll();
+    if (added.length || removed.length) {
+      all = cross.groupAll();
 
+      chart = holder.select('.charts').selectAll('.chart')
+          .data(charts, function(d) { return d.id(); });
 
-    // Given our array of charts, which we assume are in the same order as the
-    // .chart elements in the DOM, bind the charts to the DOM and render them.
-    // We also listen to the chart's brush events to update the display.
-    chart = holder.select('.charts').selectAll('.chart')
-        .data(charts, function(d) { return d.id(); });
+      chart.enter()
+        .append('div')
+          .attr('class', 'chart')
+        .append('div')
+          .attr('class', 'title');
 
-    chart.enter()
-      .append('div')
-        .attr('class', 'chart')
-      .append('div')
-        .attr('class', 'title');
+      chart.exit().remove();
 
-    chart.exit().remove();
+      chart.order();
 
-    holder.select('.total')
-        .text(formatNumber(cross.size()) + ' ' + dataName + ' selected.');
+      holder.select('.total')
+          .text(formatNumber(cross.size()) + ' ' + dataName + ' selected.');
 
+      renderAll();
+    }
 
-    renderAll();
 
     chartIds.forEach(function(id) {
       if (filters[id]) {
