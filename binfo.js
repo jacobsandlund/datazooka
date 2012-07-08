@@ -121,16 +121,8 @@
     var myFilters = {};
     if (filters) {
       filters.forEach(function(f) {
-        var filterMap = f.split(':');
-        var filterVals = filterMap.slice(1);
-        filterVals = filterVals.map(function(d) {
-          if (d === 'null') {
-            return null;
-          } else {
-            return d;
-          }
-        });
-        myFilters[filterMap[0]] = filterVals;
+        var filterMap = f.split('*');
+        myFilters[filterMap[0]] = filterMap.slice(1);
       });
     }
     if (!dataName) {
@@ -210,13 +202,19 @@
   };
 
   function updateHash() {
-    var filter,
+    var filter, filterData,
         chartString = 'charts=' + currentChartIds.join(','),
         filterString = 'filters=',
         filterArray = [];
     for (filter in currentFilters) {
       if (currentFilters.hasOwnProperty(filter) && currentFilters[filter]) {
-        filterArray.push(filter + ':' + currentFilters[filter].join(':'));
+        filterData = currentFilters[filter].map(function(d) {
+          if (typeof d === 'object') {
+            d = d.valueOf();
+          }
+          return encodeURIComponent(d);
+        }).join('*');
+        filterArray.push(filter + '*' + filterData);
       }
     }
     filterString += filterArray.join(',');
