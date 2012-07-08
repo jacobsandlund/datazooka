@@ -51,3 +51,8 @@
   width: 220px;
 }
 
+.percent {
+  text-anchor: middle;
+  font: 10px sans-serif;
+}
+

@@ -263,7 +263,7 @@
 
   window.barChart = function barChart() {
 
-    var margin = {top: 10, right: 10, bottom: 20, left: 10},
+    var margin = {top: 20, right: 10, bottom: 20, left: 10},
         binWidth = 10,
         x,
         y = d3.scale.linear().range([100, 0]),
@@ -271,10 +271,12 @@
         id,
         axis = d3.svg.axis().orient('bottom'),
         brush = d3.svg.brush(),
+        percentFmt = d3.format('.3p'),
         brushDirty,
         dimension,
         computeDimension,
         group,
+        groupAll,
         computeGroup,
         label,
         round;
@@ -345,6 +347,8 @@
           gBrush.selectAll('.resize').append('path').attr('d', resizePath);
         }
 
+        var percentText;
+
         // Only redraw the brush if set externally.
         if (brushDirty) {
           brushDirty = false;
@@ -354,13 +358,22 @@
             g.selectAll('#clip-' + id + ' rect')
                 .attr('x', 0)
                 .attr('width', width);
+            g.selectAll('.percent').data([]).exit().remove();
           } else {
             var extent = brush.extent();
             g.selectAll('#clip-' + id + ' rect')
                 .attr('x', x(extent[0]))
                 .attr('width', x(extent[1]) - x(extent[0]));
+            percentText = g.selectAll('.percent').data([1]);
+            percentText.enter().append('text')
+                .attr('class', 'percent')
+                .attr('y', -4);
+            percentText
+                .attr('x', (x(extent[1]) + x(extent[0])) / 2);
           }
         }
+        var percent = all.value() / groupAll.value();
+        percentText = g.selectAll('.percent').text(percentFmt(percent));
 
         g.selectAll('.bar')
             .datum(groups)
@@ -423,6 +436,7 @@
     chart.computeCross = function() {
       dimension = cross.dimension(computeDimension);
       group = computeGroup ? dimension.group(computeGroup) : dimension.group();
+      groupAll = dimension.groupAll();
     };
 
     chart.dimension = function(_) {
