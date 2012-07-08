@@ -18,6 +18,9 @@
       holder,
       currentDataName,
       chartMap,
+      currentHash,
+      hashUpdatedRecently = false,
+      hashNeedsUpdated = false,
       currentChartIds = [],
       currentFilters = {},
       dataSets = {};
@@ -219,8 +222,21 @@
     }
     filterString += filterArray.join(',');
     var params = ['data=' + currentDataName, chartString, filterString].join('&');
-    var hash = '#' + params;
-    window.history.replaceState({}, '', hash);
+    currentHash = '#' + params;
+    hashNeedsUpdated = true;
+    if (!hashUpdatedRecently) {
+      updateWindowHash();
+    }
+  }
+
+  function updateWindowHash() {
+    hashUpdatedRecently = false;
+    if (hashNeedsUpdated) {
+      window.history.replaceState({}, '', currentHash);
+      setTimeout(updateWindowHash, 300);
+      hashUpdatedRecently = true;
+      hashNeedsUpdated = false;
+    }
   }
 
   window.filter = function(id, range) {
