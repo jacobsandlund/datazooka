@@ -104,17 +104,19 @@
         d = function (s) { return decodeURIComponent(s.replace(a, ' ')); },
         q = window.location.hash.substring(1);
 
-    while (e = r.exec(q)) {
+    e = r.exec(q);
+    while (e) {
       hashParams[d(e[1])] = d(e[2]);
+      e = r.exec(q);
     }
     return hashParams;
   }
 
   window.renderFromHash = function() {
     var params = getHashParams();
-    var dataName = params['data'],
-        charts = params['charts'] && params['charts'].split(','),
-        filters = params['filters'] && params['filters'].split(',');
+    var dataName = params.data,
+        charts = params.charts && params.charts.split(','),
+        filters = params.filters && params.filters.split(',');
 
     var myFilters = {};
     if (filters) {
@@ -125,7 +127,7 @@
           if (d === 'null') {
             return null;
           } else {
-            return +d;
+            return d;
           }
         });
         myFilters[filterMap[0]] = filterVals;
@@ -148,19 +150,6 @@
     }
 
     filters = filters || {};
-    var filter,
-        chartString = 'charts=' + chartIds.join(','),
-        filterString = 'filters=',
-        filterArray = [];
-    for (filter in filters) {
-      if (filters.hasOwnProperty(filter)) {
-        filterArray.push(filter + ':' + filters[filter].join(':'));
-      }
-    }
-    filterString += filterArray.join(',');
-    var params = ['data=' + dataName, chartString, filterString].join('&');
-    var hash = '#' + params;
-    window.history.replaceState({}, '', hash);
     var data = dataSets[dataName].data;
     chartMap = dataSets[dataName].charts;
 
@@ -181,6 +170,8 @@
     currentDataName = dataName;
     currentFilters = filters;
 
+    updateHash();
+
     added.forEach(function(id) { chartMap[id].computeCross(); });
 
     all = cross.groupAll();
@@ -200,10 +191,6 @@
 
     chart.exit().remove();
 
-    chart.each(function(ch) {
-      ch.on('brush', renderAll).on('brushend', renderAll);
-    });
-
     holder.select('.total')
         .text(formatNumber(cross.size()) + ' ' + dataName + ' selected.');
 
@@ -222,14 +209,31 @@
 
   };
 
+  function updateHash() {
+    var filter,
+        chartString = 'charts=' + currentChartIds.join(','),
+        filterString = 'filters=',
+        filterArray = [];
+    for (filter in currentFilters) {
+      if (currentFilters.hasOwnProperty(filter) && currentFilters[filter]) {
+        filterArray.push(filter + ':' + currentFilters[filter].join(':'));
+      }
+    }
+    filterString += filterArray.join(',');
+    var params = ['data=' + currentDataName, chartString, filterString].join('&');
+    var hash = '#' + params;
+    window.history.replaceState({}, '', hash);
+  }
+
   window.filter = function(id, range) {
+    currentFilters[id] = range;
     chartMap[id].filter(range);
     renderAll();
+    updateHash();
   };
 
   window.reset = function(id) {
-    chartMap[id].filter(null);
-    renderAll();
+    filter(id, null);
   };
 
   // Renders the specified chart.
@@ -386,22 +390,16 @@
     brush.on('brush.chart', function() {
       var g = d3.select(this.parentNode),
           extent = brush.extent();
-      if (round) g.select('.brush')
-          .call(brush.extent(extent = extent.map(round)))
-        .selectAll('.resize')
-          .style('display', null);
-      g.select('#clip-' + id + ' rect')
-          .attr('x', x(extent[0]))
-          .attr('width', x(extent[1]) - x(extent[0]));
-      dimension.filterRange(extent);
+      if (round) {
+        g.select('.brush')
+            .call(brush.extent(extent = extent.map(round)));
+      }
+      filter(id, extent);
     });
 
     brush.on('brushend.chart', function() {
       if (brush.empty()) {
-        var div = d3.select(this.parentNode.parentNode.parentNode);
-        div.select('.reset').style('display', 'none');
-        div.select('#clip-' + id + ' rect').attr('x', null).attr('width', '100%');
-        dimension.filterAll();
+        filter(id, null);
       }
     });
 
