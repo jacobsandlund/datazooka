@@ -40,9 +40,9 @@
         .attr('class', 'chartIds')
         .attr('multiple', 'multiple');
 
-    config.append('input')
-        .attr('type', 'button')
-        .attr('value', 'Update')
+    config.append('div')
+        .text('Update')
+        .attr('class', 'button')
         .on('click', function() {
           var charts = [];
           holder.selectAll('.chartIds option').each(function() {
@@ -309,12 +309,6 @@
           div.attr('width', chartWidth);
           div.select('.title')
               .text(label)
-            .append('input')
-              .attr('type', 'button')
-              .attr('value', 'reset')
-              .on('click', function() { reset(id); })
-              .attr('class', 'reset')
-              .style('display', 'none');
 
           g = div.append('svg')
               .attr('width', chartWidth)
@@ -345,6 +339,18 @@
           var gBrush = g.append('g').attr('class', 'brush').call(brush);
           gBrush.selectAll('rect').attr('height', height);
           gBrush.selectAll('.resize').append('path').attr('d', resizePath);
+
+          // The filter toggle and endpoints
+          var filterBar = div.append('div');
+          filterBar.append('div')
+              .text('Filter')
+              .attr('class', 'filter button')
+              .classed('down', !brush.empty())
+              .on('click', function() {
+                var el = d3.select(this);
+                el.classed('down', !el.classed('down'));
+                reset(id);
+              });
         }
 
         var percentText;
@@ -353,7 +359,7 @@
         if (brushDirty) {
           brushDirty = false;
           g.selectAll('.brush').call(brush);
-          div.select('.reset').style('display', brush.empty() ? 'none' : null);
+          div.select('.filter.button').classed('down', !brush.empty());
           if (brush.empty()) {
             g.selectAll('#clip-' + id + ' rect')
                 .attr('x', 0)
@@ -411,7 +417,7 @@
 
     brush.on('brushstart.chart', function() {
       var div = d3.select(this.parentNode.parentNode.parentNode);
-      div.select('.reset').style('display', null);
+      div.select('.filter.button').classed('down', true);
     });
 
     brush.on('brush.chart', function() {
