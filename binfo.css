@@ -28,6 +28,12 @@
   padding: 6px 11px;
   margin-left: 3px;
   margin-right: 3px;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .button:hover {
@@ -44,9 +50,20 @@
   border-color: #888 #BABABA #BABABA #888;
 }
 
+.filter-bar {
+  width: 145px;
+  margin: 0px auto;
+}
+
 .filter.button {
   font-size: 12px;
   padding: 2px 5px;
+  margin-right: 0px;
+}
+
+.range {
+  width: 32px;
+  margin-left: 8px;
 }
 
 .background.bar {

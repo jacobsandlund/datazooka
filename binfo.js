@@ -279,6 +279,8 @@
         groupAll,
         computeGroup,
         label,
+        filterRange = [0, 0],
+        filterActive,
         round;
 
     function chart(div) {
@@ -341,15 +343,31 @@
           gBrush.selectAll('.resize').append('path').attr('d', resizePath);
 
           // The filter toggle and endpoints
-          var filterBar = div.append('div');
+          var filterBar = div.append('div').attr('class', 'filter-bar');
           filterBar.append('div')
               .text('Filter')
               .attr('class', 'filter button')
               .classed('down', !brush.empty())
               .on('click', function() {
                 var el = d3.select(this);
-                el.classed('down', !el.classed('down'));
-                reset(id);
+                if (!filterActive) {
+                  filter(id, filterRange);
+                } else {
+                  reset(id);
+                }
+              });
+          filterBar.selectAll('.range').data(['left', 'right'])
+            .enter().append('input')
+              .attr('type', 'text')
+              .attr('class', function(d) { return 'range ' + d; })
+              .property('value', function(d, i) { return filterRange[i]; })
+              .on('change', function(d, i) {
+                filterRange[i] = this.value;
+                var left = x(filterRange[0]),
+                    right = x(filterRange[1]);
+                if (left <= right && left >= 0 && right < width) {
+                  filter(id, filterRange);
+                }
               });
         }
 
@@ -359,13 +377,10 @@
         if (brushDirty) {
           brushDirty = false;
           g.selectAll('.brush').call(brush);
-          div.select('.filter.button').classed('down', !brush.empty());
-          if (brush.empty()) {
-            g.selectAll('#clip-' + id + ' rect')
-                .attr('x', 0)
-                .attr('width', width);
-            g.selectAll('.percent').data([]).exit().remove();
-          } else {
+          div.select('.filter.button').classed('down', filterActive);
+          div.selectAll('.range')
+              .property('value', function(d, i) { return filterRange[i]; });
+          if (filterActive) {
             var extent = brush.extent();
             g.selectAll('#clip-' + id + ' rect')
                 .attr('x', x(extent[0]))
@@ -376,6 +391,11 @@
                 .attr('y', -4);
             percentText
                 .attr('x', (x(extent[1]) + x(extent[0])) / 2);
+          } else {
+            g.selectAll('#clip-' + id + ' rect')
+                .attr('x', 0)
+                .attr('width', width);
+            g.selectAll('.percent').data([]).exit().remove();
           }
         }
         var percent = all.value() / groupAll.value();
@@ -473,9 +493,16 @@
 
     chart.filter = function(_) {
       if (_) {
+        filterActive = true;
+        filterRange = _;
         brush.extent(_);
-        dimension.filterRange(_);
+        if (_[0] === _[1]) {
+          dimension.filterExact(_[0]);
+        } else {
+          dimension.filterRange(_);
+        }
       } else {
+        filterActive = false;
         brush.clear();
         dimension.filterAll();
       }
