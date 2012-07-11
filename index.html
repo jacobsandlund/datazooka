@@ -98,8 +98,8 @@ h1, h2 {
 
 <script>
 
-setHolder('#charts');
-renderFromHash() || renderCharts('flights', ['time', 'delay', 'distance']);
+binfo.holder('#charts');
+binfo.renderFromHash() || binfo.render('flights', ['time', 'delay', 'distance']);
 
 // (It's CSV, but GitHub Pages only gzip's JSON at the moment.)
 d3.csv("flights-3m.json", function(flights) {
@@ -146,7 +146,7 @@ d3.csv("flights-3m.json", function(flights) {
           .range([0, 900]))
     }
   };
-  dataSet('flights', charts, flights);
+  binfo.data('flights', charts, flights);
 });
 
 </script>

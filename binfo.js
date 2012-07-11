@@ -1,274 +1,283 @@
 
-(function() {
+var binfo = (function() {
 
-  function getterSetter(my, names) {
-    if (!Array.isArray(names)) names = [names];
-    var getSets = names.map(function(name) {
-      return [my, '.', name, ' = function(_) {',
-              'if (!arguments.length) return ', name, ';',
-              name, ' = _; return ', my, '; };'].join('');
-    });
-    return getSets.join('\n');
-  }
-
-
-  var chartSelection,
-      all,
-      cross,
+  var binfo = {},
       holder,
-      currentDataName,
-      binfos,
-      currentHash,
-      hashUpdatedRecently = false,
-      hashNeedsUpdated = false,
-      currentChartIds = [],
-      currentFilters = {},
+      renderLater,
       dataSets = {};
 
-  var formatNumber = d3.format(',d');
+  (function setup() {
 
-  window.setHolder = function(_) {
-    holder = d3.select(_);
+    binfo.holder = function(_) {
+      holder = d3.select(_);
 
-    // Create skeleton.
-    var config = holder.append('div')
-        .attr('class', 'configuration');
-    config.append('select')
-        .attr('class', 'dataName');
+      // Create skeleton.
+      var config = holder.append('div')
+          .attr('class', 'configuration');
+      config.append('select')
+          .attr('class', 'dataName');
 
-    config.append('select')
-        .attr('class', 'chartIds')
-        .attr('multiple', 'multiple');
+      config.append('select')
+          .attr('class', 'chartIds')
+          .attr('multiple', 'multiple');
 
-    config.append('div')
-        .text('Update')
-        .attr('class', 'button')
-        .on('click', function() {
-          var charts = [];
-          holder.selectAll('.chartIds option').each(function() {
-            if (this.selected) {
-              charts.push(this.value);
-            }
+      config.append('div')
+          .text('Update')
+          .attr('class', 'button')
+          .on('click', function() {
+            var charts = [];
+            holder.selectAll('.chartIds option').each(function() {
+              if (this.selected) {
+                charts.push(this.value);
+              }
+            });
+            var dataName = holder.select('.dataName').property('value');
+            binfo.render(dataName, charts);
           });
-          var dataName = holder.select('.dataName').property('value');
-          renderCharts(dataName, charts);
-        });
 
-    holder.append('div')
-        .attr('class', 'charts');
+      holder.append('div')
+          .attr('class', 'charts');
 
-    var totals = holder.append('aside')
-        .attr('class', 'totals');
-    totals.append('span')
-        .attr('class', 'active')
-        .text('-');
-    totals.append('span').text(' of ');
-    totals.append('span')
-        .attr('class', 'total');
-  };
+      var totals = holder.append('aside')
+          .attr('class', 'totals');
+      totals.append('span')
+          .attr('class', 'active')
+          .text('-');
+      totals.append('span').text(' of ');
+      totals.append('span')
+          .attr('class', 'total');
+    };
 
-  window.changeDataName = function() {
-    var dataName = holder.select('.dataName').property('value');
-    var options = holder.select('.chartIds').selectAll('option')
-        .data(dataSets[dataName].chartIds);
-    options.enter().append('option');
-    options
-        .attr('value', function(d) { return d; })
-        .text(function(d) { return d; });
-  };
-
-  window.dataSet = function(dataName, charts, data) {
-    var binfos = {},
-        chartIds = [],
-        id;
-    for (id in charts) {
-      if (charts.hasOwnProperty(id)) {
-        charts[id].id = id;
-        chartIds.push(id);
-        binfos[id] = binfo(charts[id]);
+    binfo.data = function(dataName, charts, data) {
+      var binfos = {},
+          chartIds = [],
+          id;
+      for (id in charts) {
+        if (charts.hasOwnProperty(id)) {
+          charts[id].id = id;
+          chartIds.push(id);
+          binfos[id] = binfoUnit(charts[id]);
+        }
       }
-    }
-    dataSets[dataName] = {binfos: binfos, data: data, chartIds: chartIds};
-    holder.select('.dataName').append('option')
-        .attr('value', dataName)
-        .text(dataName);
-    if (holder.selectAll('.dataName option').length <= 1) {
-      changeDataName();
-    }
-    if (renderLater && renderLater[0] === dataName) {
-      renderCharts.apply(null, renderLater);
-      renderLater = null;
-    }
-  };
+      dataSets[dataName] = {binfos: binfos, data: data, chartIds: chartIds};
+      holder.select('.dataName').append('option')
+          .attr('value', dataName)
+          .text(dataName);
+      if (holder.selectAll('.dataName option').length <= 1) {
+        changeDataName();
+      }
+      if (renderLater && renderLater[0] === dataName) {
+        binfo.render.apply(null, renderLater);
+        renderLater = null;
+      }
+    };
 
-  var renderLater;
+    function changeDataName() {
+      var dataName = holder.select('.dataName').property('value');
+      var options = holder.select('.chartIds').selectAll('option')
+          .data(dataSets[dataName].chartIds);
+      options.enter().append('option');
+      options
+          .attr('value', function(d) { return d; })
+          .text(function(d) { return d; });
+    };
 
-  // Yarin's answer on this SO post:
-  // http://stackoverflow.com/questions/4197591/
-  // parsing-url-hash-fragment-identifier-with-javascript
-  function getHashParams() {
-    var hashParams = {};
-    var e,
-        a = /\+/g,  // Regex for replacing addition symbol with a space
-        r = /([^&;=]+)=?([^&;]*)/g,
-        d = function (s) { return decodeURIComponent(s.replace(a, ' ')); },
-        q = window.location.hash.substring(1);
+  })();
 
-    e = r.exec(q);
-    while (e) {
-      hashParams[d(e[1])] = d(e[2]);
+
+
+  (function hashRetrieval() {
+
+    // Yarin's answer on this SO post:
+    // http://stackoverflow.com/questions/4197591/
+    // parsing-url-hash-fragment-identifier-with-javascript
+    function getHashParams() {
+      var hashParams = {};
+      var e,
+          a = /\+/g,  // Regex for replacing addition symbol with a space
+          r = /([^&;=]+)=?([^&;]*)/g,
+          d = function (s) { return decodeURIComponent(s.replace(a, ' ')); },
+          q = window.location.hash.substring(1);
+
       e = r.exec(q);
+      while (e) {
+        hashParams[d(e[1])] = d(e[2]);
+        e = r.exec(q);
+      }
+      return hashParams;
     }
-    return hashParams;
-  }
 
-  window.renderFromHash = function() {
-    var params = getHashParams();
-    var dataName = params.data,
-        charts = params.charts && params.charts.split(','),
-        filters = params.filters && params.filters.split(',');
+    function renderFromHash() {
+      var params = getHashParams();
+      var dataName = params.data,
+          charts = params.charts && params.charts.split(','),
+          filters = params.filters && params.filters.split(',');
 
-    var myFilters = {};
-    if (filters) {
-      filters.forEach(function(f) {
-        var filterMap = f.split('*');
-        myFilters[filterMap[0]] = filterMap.slice(1);
+      var myFilters = {};
+      if (filters) {
+        filters.forEach(function(f) {
+          var filterMap = f.split('*');
+          myFilters[filterMap[0]] = filterMap.slice(1);
+        });
+      }
+      if (!dataName) {
+        return false;
+      }
+      binfo.render(dataName, charts, myFilters);
+      return true;
+    };
+
+    window.onhashchange = renderFromHash;
+
+    binfo.renderFromHash = renderFromHash;
+
+  })();
+
+
+  var cross,
+      all;
+
+  (function rendering() {
+    var chartSelection,
+        binfos,
+        currentDataName,
+        currentHash,
+        hashUpdatedRecently = false,
+        hashNeedsUpdated = false,
+        currentChartIds = [],
+        currentFilters = {},
+        formatNumber = d3.format(',d');
+
+
+    binfo.render = function(dataName, chartIds, filters) {
+
+      if (!dataSets[dataName]) {
+        renderLater = [dataName, chartIds, filters];
+        return;
+      }
+
+      filters = filters || {};
+      var data = dataSets[dataName].data;
+      binfos = dataSets[dataName].binfos;
+
+      var charts = chartIds.map(function(id) { return binfos[id]; });
+
+      var removed = currentChartIds.filter(function(id) {
+        return chartIds.indexOf(id) < 0;
       });
-    }
-    if (!dataName) {
-      return false;
-    }
-    renderCharts(dataName, charts, myFilters);
-    return true;
-  };
+      var added = chartIds.filter(function(id) {
+        return currentChartIds.indexOf(id) < 0;
+      });
 
-  window.onhashchange = renderFromHash;
+      if (!cross || currentDataName !== dataName || removed.length) {
+        cross = crossfilter(data);
+        added = chartIds;
+      }
+      currentChartIds = chartIds;
+      currentDataName = dataName;
+      currentFilters = filters;
 
-  window.renderCharts = function(dataName, chartIds, filters) {
+      updateHash();
 
-    if (!dataSets[dataName]) {
-      renderLater = [dataName, chartIds, filters];
-      return;
-    }
+      added.forEach(function(id) { binfos[id].computeCross(); });
 
-    filters = filters || {};
-    var data = dataSets[dataName].data;
-    binfos = dataSets[dataName].binfos;
+      if (added.length || removed.length) {
+        all = cross.groupAll();
 
-    var charts = chartIds.map(function(id) { return binfos[id]; });
+        chartSelection = holder.select('.charts').selectAll('.chart')
+            .data(charts, function(d) { return d.id; });
 
-    var removed = currentChartIds.filter(function(id) {
-      return chartIds.indexOf(id) < 0;
-    });
-    var added = chartIds.filter(function(id) {
-      return currentChartIds.indexOf(id) < 0;
-    });
+        chartSelection.enter()
+          .append('div')
+            .attr('class', 'chart')
+          .append('div')
+            .attr('class', 'title');
 
-    if (!cross || currentDataName !== dataName || removed.length) {
-      cross = crossfilter(data);
-      added = chartIds;
-    }
-    currentChartIds = chartIds;
-    currentDataName = dataName;
-    currentFilters = filters;
+        chartSelection.exit().remove();
 
-    updateHash();
+        chartSelection.order();
 
-    added.forEach(function(id) { binfos[id].computeCross(); });
+        holder.select('.total')
+            .text(formatNumber(cross.size()) + ' ' + dataName + ' selected.');
 
-    if (added.length || removed.length) {
-      all = cross.groupAll();
+        renderAll();
+      }
 
-      chartSelection = holder.select('.charts').selectAll('.chart')
-          .data(charts, function(d) { return d.id; });
 
-      chartSelection.enter()
-        .append('div')
-          .attr('class', 'chart')
-        .append('div')
-          .attr('class', 'title');
-
-      chartSelection.exit().remove();
-
-      chartSelection.order();
-
-      holder.select('.total')
-          .text(formatNumber(cross.size()) + ' ' + dataName + ' selected.');
+      chartIds.forEach(function(id) {
+        if (filters[id]) {
+          binfos[id].filter(filters[id]);
+        } else {
+          binfos[id].filter(null);
+        }
+      });
 
       renderAll();
-    }
 
+    };
 
-    chartIds.forEach(function(id) {
-      if (filters[id]) {
-        binfos[id].filter(filters[id]);
-      } else {
-        binfos[id].filter(null);
+    function updateHash() {
+      var filter, filterData,
+          chartString = 'charts=' + currentChartIds.join(','),
+          filterString = 'filters=',
+          filterArray = [];
+      for (filter in currentFilters) {
+        if (currentFilters.hasOwnProperty(filter) && currentFilters[filter]) {
+          filterData = currentFilters[filter].map(function(d) {
+            if (typeof d === 'object') {
+              d = d.valueOf();
+            }
+            return encodeURIComponent(d);
+          }).join('*');
+          filterArray.push(filter + '*' + filterData);
+        }
       }
-    });
-
-    renderAll();
-
-  };
-
-  function updateHash() {
-    var filter, filterData,
-        chartString = 'charts=' + currentChartIds.join(','),
-        filterString = 'filters=',
-        filterArray = [];
-    for (filter in currentFilters) {
-      if (currentFilters.hasOwnProperty(filter) && currentFilters[filter]) {
-        filterData = currentFilters[filter].map(function(d) {
-          if (typeof d === 'object') {
-            d = d.valueOf();
-          }
-          return encodeURIComponent(d);
-        }).join('*');
-        filterArray.push(filter + '*' + filterData);
+      filterString += filterArray.join(',');
+      var params = ['data=' + currentDataName, chartString, filterString].join('&');
+      currentHash = '#' + params;
+      hashNeedsUpdated = true;
+      if (!hashUpdatedRecently) {
+        updateWindowHash();
       }
     }
-    filterString += filterArray.join(',');
-    var params = ['data=' + currentDataName, chartString, filterString].join('&');
-    currentHash = '#' + params;
-    hashNeedsUpdated = true;
-    if (!hashUpdatedRecently) {
-      updateWindowHash();
+
+    function updateWindowHash() {
+      hashUpdatedRecently = false;
+      if (hashNeedsUpdated) {
+        window.history.replaceState({}, '', currentHash);
+        setTimeout(updateWindowHash, 300);
+        hashUpdatedRecently = true;
+        hashNeedsUpdated = false;
+      }
     }
-  }
 
-  function updateWindowHash() {
-    hashUpdatedRecently = false;
-    if (hashNeedsUpdated) {
-      window.history.replaceState({}, '', currentHash);
-      setTimeout(updateWindowHash, 300);
-      hashUpdatedRecently = true;
-      hashNeedsUpdated = false;
+    window.filter = function(id, range) {
+      currentFilters[id] = range;
+      binfos[id].filter(range);
+      renderAll();
+      updateHash();
+    };
+
+    window.reset = function(id) {
+      filter(id, null);
+    };
+
+    // Renders the specified chart.
+    function render(chart) {
+      d3.select(this).call(chart.chart);
     }
-  }
 
-  window.filter = function(id, range) {
-    currentFilters[id] = range;
-    binfos[id].filter(range);
-    renderAll();
-    updateHash();
-  };
+    // Whenever the brush moves, re-rendering everything.
+    function renderAll() {
+      chartSelection.each(render);
+      d3.select('.active').text(formatNumber(all.value()));
+    }
 
-  window.reset = function(id) {
-    filter(id, null);
-  };
+  })();
 
-  // Renders the specified chart.
-  function render(chart) {
-    d3.select(this).call(chart.chart);
-  }
 
-  // Whenever the brush moves, re-rendering everything.
-  function renderAll() {
-    chartSelection.each(render);
-    d3.select('.active').text(formatNumber(all.value()));
-  }
 
-  function binfo(spec) {
+  function binfoUnit(spec) {
     var defn = binfoDefinition(spec);
     defn.chart = chartCreator(defn, spec);
     return defn;
@@ -544,5 +553,8 @@
 
     return d3.rebind(chart, brush, 'on');
   };
+
+  return binfo;
+
 })();
 
