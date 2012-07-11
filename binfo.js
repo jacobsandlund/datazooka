@@ -12,12 +12,12 @@
   }
 
 
-  var chart,
+  var chartSelection,
       all,
       cross,
       holder,
       currentDataName,
-      chartMap,
+      binfos,
       currentHash,
       hashUpdatedRecently = false,
       hashNeedsUpdated = false,
@@ -78,10 +78,17 @@
   };
 
   window.dataSet = function(dataName, charts, data) {
-    var chartMap = {};
-    charts.forEach(function(chart) { chartMap[chart.id()] = chart; });
-    dataSets[dataName] = {charts: chartMap, data: data,
-                          chartIds: charts.map(function(d) { return d.id(); })};
+    var binfos = {},
+        chartIds = [],
+        id;
+    for (id in charts) {
+      if (charts.hasOwnProperty(id)) {
+        charts[id].id = id;
+        chartIds.push(id);
+        binfos[id] = binfo(charts[id]);
+      }
+    }
+    dataSets[dataName] = {binfos: binfos, data: data, chartIds: chartIds};
     holder.select('.dataName').append('option')
         .attr('value', dataName)
         .text(dataName);
@@ -146,9 +153,9 @@
 
     filters = filters || {};
     var data = dataSets[dataName].data;
-    chartMap = dataSets[dataName].charts;
+    binfos = dataSets[dataName].binfos;
 
-    var charts = chartIds.map(function(id) { return chartMap[id]; });
+    var charts = chartIds.map(function(id) { return binfos[id]; });
 
     var removed = currentChartIds.filter(function(id) {
       return chartIds.indexOf(id) < 0;
@@ -167,23 +174,23 @@
 
     updateHash();
 
-    added.forEach(function(id) { chartMap[id].computeCross(); });
+    added.forEach(function(id) { binfos[id].computeCross(); });
 
     if (added.length || removed.length) {
       all = cross.groupAll();
 
-      chart = holder.select('.charts').selectAll('.chart')
-          .data(charts, function(d) { return d.id(); });
+      chartSelection = holder.select('.charts').selectAll('.chart')
+          .data(charts, function(d) { return d.id; });
 
-      chart.enter()
+      chartSelection.enter()
         .append('div')
           .attr('class', 'chart')
         .append('div')
           .attr('class', 'title');
 
-      chart.exit().remove();
+      chartSelection.exit().remove();
 
-      chart.order();
+      chartSelection.order();
 
       holder.select('.total')
           .text(formatNumber(cross.size()) + ' ' + dataName + ' selected.');
@@ -194,9 +201,9 @@
 
     chartIds.forEach(function(id) {
       if (filters[id]) {
-        chartMap[id].filter(filters[id]);
+        binfos[id].filter(filters[id]);
       } else {
-        chartMap[id].filter(null);
+        binfos[id].filter(null);
       }
     });
 
@@ -241,7 +248,7 @@
 
   window.filter = function(id, range) {
     currentFilters[id] = range;
-    chartMap[id].filter(range);
+    binfos[id].filter(range);
     renderAll();
     updateHash();
   };
@@ -252,53 +259,119 @@
 
   // Renders the specified chart.
   function render(chart) {
-    d3.select(this).call(chart);
+    d3.select(this).call(chart.chart);
   }
 
   // Whenever the brush moves, re-rendering everything.
   function renderAll() {
-    chart.each(render);
+    chartSelection.each(render);
     d3.select('.active').text(formatNumber(all.value()));
   }
 
-  window.barChart = function barChart() {
+  function binfo(spec) {
+    var defn = binfoDefinition(spec);
+    defn.chart = chartCreator(defn, spec);
+    return defn;
+  }
 
-    var margin = {top: 20, right: 10, bottom: 20, left: 10},
-        binWidth = 10,
-        x,
-        y = d3.scale.linear().range([100, 0]),
-        separation,
-        id,
+  function binfoDefinition(spec) {
+
+    var charts = [],
+        filterRange = [0, 0],
+        filterActive,
+        dimension,
+        dimensionFunc,
+        group,
+        groupFunc,
+        groupAll,
+        separation;
+
+    if (spec.groupBy) {
+      groupFunc = function(d) { return Math.floor(d / spec.groupBy) * spec.groupBy; };
+      separation = spec.groupBy;
+    } else {
+      groupFunc = spec.groupFunc;
+      separation = spec.separation;
+    }
+
+    var me = {};
+
+    me.id = spec.id;
+    me.label = spec.label;
+    me.round = spec.round;
+    me.dimensionFunc = dimensionFunc = spec.dimension;
+    me.groupFunc = groupFunc;
+    me.separation = separation;
+
+    me.dimension = function() { return dimension; };
+    me.group = function() { return group; };
+    me.groupAll = function() { return groupAll; };
+    me.filterActive = function() { return filterActive; };
+    me.filterRange = function() { return filterRange; };
+
+    me.filter = function(_) {
+      if (_) {
+        filterActive = true;
+        filterRange = _;
+        if (_[0] === _[1]) {
+          dimension.filterExact(_[0]);
+        } else {
+          dimension.filterRange(_);
+        }
+      } else {
+        filterActive = false;
+        dimension.filterAll();
+      }
+      charts.forEach(function(c) { c.filter(_); });
+      return me;
+    };
+
+    me.computeCross = function() {
+      dimension = cross.dimension(dimensionFunc);
+      group = groupFunc ? dimension.group(groupFunc) : dimension.group();
+      groupAll = dimension.groupAll();
+    };
+
+    me.addChart = function(chart) {
+      if (charts.indexOf(chart) === -1) {
+        charts.push(chart);
+      }
+    };
+
+    me.removeChart = function(chart) {
+      charts.splice(charts.indexOf(chart), 1);
+    };
+
+    return me;
+  }
+
+  function chartCreator(defn, spec) {
+
+    var margin = spec.margin || {top: 20, right: 10, bottom: 20, left: 10},
+        binWidth = spec.binWidth || 10,
+        x = spec.x,
+        y = spec.y || d3.scale.linear().range([100, 0]),
         axis = d3.svg.axis().orient('bottom'),
         brush = d3.svg.brush(),
         percentFmt = d3.format('.3p'),
-        brushDirty,
-        dimension,
-        computeDimension,
-        group,
-        groupAll,
-        computeGroup,
-        label,
-        filterRange = [0, 0],
-        filterActive,
-        round;
+        brushDirty;
 
     function chart(div) {
       var min, max,
           height = y.range()[0],
-          groups = group.all();
+          groups = defn.group().all();
 
-      y.domain([0, group.top(1)[0].value]);
+      y.domain([0, defn.group().top(1)[0].value]);
 
       if (!x) {
         min = groups[0].key;
-        max = groups[groups.length - 1].key + separation;
+        max = groups[groups.length - 1].key + defn.separation;
         x = d3.scale.linear()
             .domain([min, max])
-            .rangeRound([0, (max - min) / separation * binWidth]);
-        axis.scale(x);
-        brush.x(x);
+            .rangeRound([0, (max - min) / defn.separation * binWidth]);
       }
+      axis.scale(x);
+      brush.x(x);
       var width = x.range()[1];
       var chartWidth = width + margin.right + margin.left;
 
@@ -310,7 +383,7 @@
         if (g.empty()) {
           div.attr('width', chartWidth);
           div.select('.title')
-              .text(label)
+              .text(defn.label)
 
           g = div.append('svg')
               .attr('width', chartWidth)
@@ -319,7 +392,7 @@
               .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
           g.append('clipPath')
-              .attr('id', 'clip-' + id)
+              .attr('id', 'clip-' + defn.id)
             .append('rect')
               .attr('width', width)
               .attr('height', height);
@@ -330,7 +403,7 @@
               .attr('class', function(d) { return d + ' bar'; });
 
           g.selectAll('.foreground.bar')
-              .attr('clip-path', 'url(#clip-' + id + ')');
+              .attr('clip-path', 'url(#clip-' + defn.id + ')');
 
           g.append('g')
               .attr('class', 'axis')
@@ -350,23 +423,24 @@
               .classed('down', !brush.empty())
               .on('click', function() {
                 var el = d3.select(this);
-                if (!filterActive) {
-                  filter(id, filterRange);
+                if (!defn.filterActive()) {
+                  filter(defn.id, defn.filterRange());
                 } else {
-                  reset(id);
+                  reset(defn.id);
                 }
               });
           filterBar.selectAll('.range').data(['left', 'right'])
             .enter().append('input')
               .attr('type', 'text')
               .attr('class', function(d) { return 'range ' + d; })
-              .property('value', function(d, i) { return filterRange[i]; })
+              .property('value', function(d, i) { return defn.filterRange()[i]; })
               .on('change', function(d, i) {
-                filterRange[i] = this.value;
-                var left = x(filterRange[0]),
-                    right = x(filterRange[1]);
+                var range = defn.filterRange();
+                range[i] = this.value;
+                var left = x(range[0]),
+                    right = x(range[1]);
                 if (left <= right && left >= 0 && right < width) {
-                  filter(id, filterRange);
+                  filter(defn.id, range);
                 }
               });
         }
@@ -377,12 +451,12 @@
         if (brushDirty) {
           brushDirty = false;
           g.selectAll('.brush').call(brush);
-          div.select('.filter.button').classed('down', filterActive);
+          div.select('.filter.button').classed('down', defn.filterActive());
           div.selectAll('.range')
-              .property('value', function(d, i) { return filterRange[i]; });
-          if (filterActive) {
+              .property('value', function(d, i) { return defn.filterRange()[i]; });
+          if (defn.filterActive()) {
             var extent = brush.extent();
-            g.selectAll('#clip-' + id + ' rect')
+            g.selectAll('#clip-' + defn.id + ' rect')
                 .attr('x', x(extent[0]))
                 .attr('width', x(extent[1]) - x(extent[0]));
             percentText = g.selectAll('.percent').data([1]);
@@ -392,13 +466,13 @@
             percentText
                 .attr('x', (x(extent[1]) + x(extent[0])) / 2);
           } else {
-            g.selectAll('#clip-' + id + ' rect')
+            g.selectAll('#clip-' + defn.id + ' rect')
                 .attr('x', 0)
                 .attr('width', width);
             g.selectAll('.percent').data([]).exit().remove();
           }
         }
-        var percent = all.value() / groupAll.value();
+        var percent = all.value() / defn.groupAll().value();
         percentText = g.selectAll('.percent').text(percentFmt(percent));
 
         g.selectAll('.bar')
@@ -443,72 +517,30 @@
     brush.on('brush.chart', function() {
       var g = d3.select(this.parentNode),
           extent = brush.extent();
-      if (round) {
+      if (defn.round) {
         g.select('.brush')
-            .call(brush.extent(extent = extent.map(round)));
+            .call(brush.extent(extent = extent.map(defn.round)));
       }
-      filter(id, extent);
+      filter(defn.id, extent);
     });
 
     brush.on('brushend.chart', function() {
       if (brush.empty()) {
-        filter(id, null);
+        filter(defn.id, null);
       }
     });
 
-    eval(getterSetter('chart', ['id', 'margin', 'y', 'separation', 'binWidth',
-                                'round', 'label']));
-
-    chart.computeCross = function() {
-      dimension = cross.dimension(computeDimension);
-      group = computeGroup ? dimension.group(computeGroup) : dimension.group();
-      groupAll = dimension.groupAll();
-    };
-
-    chart.dimension = function(_) {
-      if (!arguments.length) return computeDimension;
-      computeDimension = _;
-      return chart;
-    };
-
-    chart.group = function(_) {
-      if (!arguments.length) return computeGroup;
-      computeGroup = _;
-      return chart;
-    };
-
-    chart.x = function(_) {
-      if (!arguments.length) return x;
-      x = _;
-      axis.scale(x);
-      brush.x(x);
-      return chart;
-    };
-
-    chart.groupBy = function(groupBy) {
-      computeGroup = function(d) { return Math.floor(d / groupBy) * groupBy; };
-      separation = groupBy;
-      return chart;
-    };
-
     chart.filter = function(_) {
       if (_) {
-        filterActive = true;
-        filterRange = _;
         brush.extent(_);
-        if (_[0] === _[1]) {
-          dimension.filterExact(_[0]);
-        } else {
-          dimension.filterRange(_);
-        }
       } else {
-        filterActive = false;
         brush.clear();
-        dimension.filterAll();
       }
       brushDirty = true;
       return chart;
     };
+
+    defn.addChart(chart);
 
     return d3.rebind(chart, brush, 'on');
   };
