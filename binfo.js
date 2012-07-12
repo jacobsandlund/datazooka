@@ -1,6 +1,8 @@
 
 (function() {
 
+  //"use strict";
+
   var binfo = {};
   var chartMe = binfoCharts(binfo);
   var setupMe = binfoSetup(binfo, chartMe);
@@ -62,6 +64,26 @@
       totals.append('span').text(' of ');
       totals.append('span')
           .attr('class', 'total');
+    };
+
+    binfo.definitionsFromJSON = function(dataName, definitions) {
+      var id, defn,
+          evil = [],
+          evalParts = ['dimension', 'group', 'x', 'y', 'round'];
+      for (id in definitions) {
+        if (definitions.hasOwnProperty(id)) {
+          defn = definitions[id];
+          evalParts.forEach(function(part) {
+            if (!defn[part]) {
+              return;
+            }
+            evil = evil.concat(['definitions["', id, '"].', part,
+                                ' = ', defn[part], ';']);
+          });
+        }
+      }
+      eval(evil.join(''));
+      binfo.definitions(dataName, definitions);
     };
 
     binfo.definitions = function(dataName, definitions) {
@@ -322,7 +344,7 @@
         groupFunc = function(d) { return Math.floor(d / spec.groupBy) * spec.groupBy; };
         separation = spec.groupBy;
       } else {
-        groupFunc = spec.groupFunc;
+        groupFunc = spec.group;
         separation = spec.separation;
       }
 
