@@ -1,12 +1,28 @@
 
-var binfo = (function() {
+(function() {
 
-  var binfo = {},
-      holder,
-      renderLater,
-      dataSets = {};
+  var binfo = {};
+  var chartMe = binfoCharts(binfo);
+  var setupMe = binfoSetup(binfo, chartMe);
+  hashRetrieval(binfo);
+  rendering(binfo, setupMe);
 
-  (function setup() {
+  window.binfo = binfo;
+
+
+  function binfoSetup(binfo, chartMe) {
+
+    var holder,
+        renderLater,
+        dataSets = {},
+        me = {};
+
+    me.holder = function() { return holder; };
+    me.renderLater = function(_) {
+      if (!arguments.length) return renderLater;
+      renderLater = _;
+    };
+    me.dataSets = function() { return dataSets; };
 
     binfo.holder = function(_) {
       holder = d3.select(_);
@@ -56,7 +72,7 @@ var binfo = (function() {
         if (charts.hasOwnProperty(id)) {
           charts[id].id = id;
           chartIds.push(id);
-          binfos[id] = binfoUnit(charts[id]);
+          binfos[id] = chartMe.binfoUnit(charts[id]);
         }
       }
       dataSets[dataName] = {binfos: binfos, data: data, chartIds: chartIds};
@@ -82,11 +98,11 @@ var binfo = (function() {
           .text(function(d) { return d; });
     };
 
-  })();
+    return me;
+  }
 
 
-
-  (function hashRetrieval() {
+  function hashRetrieval(binfo) {
 
     // Yarin's answer on this SO post:
     // http://stackoverflow.com/questions/4197591/
@@ -131,14 +147,14 @@ var binfo = (function() {
 
     binfo.renderFromHash = renderFromHash;
 
-  })();
+  }
 
 
-  var cross,
-      all;
+  function rendering(binfo, setupMe) {
 
-  (function rendering() {
     var chartSelection,
+        cross,
+        crossAll,
         binfos,
         currentDataName,
         currentHash,
@@ -151,8 +167,11 @@ var binfo = (function() {
 
     binfo.render = function(dataName, chartIds, filters) {
 
+      var dataSets = setupMe.dataSets(),
+          holder = setupMe.holder();
+
       if (!dataSets[dataName]) {
-        renderLater = [dataName, chartIds, filters];
+        setupMe.renderLater([dataName, chartIds, filters]);
         return;
       }
 
@@ -171,6 +190,7 @@ var binfo = (function() {
 
       if (!cross || currentDataName !== dataName || removed.length) {
         cross = crossfilter(data);
+        crossAll = cross.groupAll();
         added = chartIds;
       }
       currentChartIds = chartIds;
@@ -179,10 +199,9 @@ var binfo = (function() {
 
       updateHash();
 
-      added.forEach(function(id) { binfos[id].computeCross(); });
+      added.forEach(function(id) { binfos[id].setCross(cross, crossAll); });
 
       if (added.length || removed.length) {
-        all = cross.groupAll();
 
         chartSelection = holder.select('.charts').selectAll('.chart')
             .data(charts, function(d) { return d.id; });
@@ -251,15 +270,11 @@ var binfo = (function() {
       }
     }
 
-    window.filter = function(id, range) {
+    binfo.filter = function(id, range) {
       currentFilters[id] = range;
       binfos[id].filter(range);
       renderAll();
       updateHash();
-    };
-
-    window.reset = function(id) {
-      filter(id, null);
     };
 
     // Renders the specified chart.
@@ -270,291 +285,297 @@ var binfo = (function() {
     // Whenever the brush moves, re-rendering everything.
     function renderAll() {
       chartSelection.each(render);
-      d3.select('.active').text(formatNumber(all.value()));
+      d3.select('.active').text(formatNumber(crossAll.value()));
     }
 
-  })();
-
-
-
-  function binfoUnit(spec) {
-    var defn = binfoDefinition(spec);
-    defn.chart = chartCreator(defn, spec);
-    return defn;
   }
 
-  function binfoDefinition(spec) {
 
-    var charts = [],
-        filterRange = [0, 0],
-        filterActive,
-        dimension,
-        dimensionFunc,
-        group,
-        groupFunc,
-        groupAll,
-        separation;
+  function binfoCharts(binfo) {
 
-    if (spec.groupBy) {
-      groupFunc = function(d) { return Math.floor(d / spec.groupBy) * spec.groupBy; };
-      separation = spec.groupBy;
-    } else {
-      groupFunc = spec.groupFunc;
-      separation = spec.separation;
+    var chartMe = {};
+
+    chartMe.binfoUnit = function(spec) {
+      var defn = binfoDefinition(spec);
+      defn.chart = chartCreator(defn, spec);
+      return defn;
     }
 
-    var me = {};
+    function binfoDefinition(spec) {
 
-    me.id = spec.id;
-    me.label = spec.label;
-    me.round = spec.round;
-    me.dimensionFunc = dimensionFunc = spec.dimension;
-    me.groupFunc = groupFunc;
-    me.separation = separation;
+      var charts = [],
+          filterRange = [0, 0],
+          filterActive,
+          crossAll,
+          dimension,
+          dimensionFunc,
+          group,
+          groupFunc,
+          groupAll,
+          separation;
 
-    me.dimension = function() { return dimension; };
-    me.group = function() { return group; };
-    me.groupAll = function() { return groupAll; };
-    me.filterActive = function() { return filterActive; };
-    me.filterRange = function() { return filterRange; };
-
-    me.filter = function(_) {
-      if (_) {
-        filterActive = true;
-        filterRange = _;
-        if (_[0] === _[1]) {
-          dimension.filterExact(_[0]);
-        } else {
-          dimension.filterRange(_);
-        }
+      if (spec.groupBy) {
+        groupFunc = function(d) { return Math.floor(d / spec.groupBy) * spec.groupBy; };
+        separation = spec.groupBy;
       } else {
-        filterActive = false;
-        dimension.filterAll();
+        groupFunc = spec.groupFunc;
+        separation = spec.separation;
       }
-      charts.forEach(function(c) { c.filter(_); });
+
+      var me = {};
+
+      me.id = spec.id;
+      me.label = spec.label;
+      me.round = spec.round;
+      me.dimensionFunc = dimensionFunc = spec.dimension;
+      me.groupFunc = groupFunc;
+      me.separation = separation;
+
+      me.crossAll = function() { return crossAll; };
+      me.group = function() { return group; };
+      me.groupAll = function() { return groupAll; };
+      me.filterActive = function() { return filterActive; };
+      me.filterRange = function() { return filterRange; };
+
+      me.filter = function(_) {
+        if (_) {
+          filterActive = true;
+          filterRange = _;
+          if (_[0] === _[1]) {
+            dimension.filterExact(_[0]);
+          } else {
+            dimension.filterRange(_);
+          }
+        } else {
+          filterActive = false;
+          dimension.filterAll();
+        }
+        charts.forEach(function(c) { c.filter(_); });
+        return me;
+      };
+
+      me.setCross = function(cross, all) {
+        crossAll = all;
+        dimension = cross.dimension(dimensionFunc);
+        group = groupFunc ? dimension.group(groupFunc) : dimension.group();
+        groupAll = dimension.groupAll();
+      };
+
+      me.addChart = function(chart) {
+        if (charts.indexOf(chart) === -1) {
+          charts.push(chart);
+        }
+      };
+
+      me.removeChart = function(chart) {
+        charts.splice(charts.indexOf(chart), 1);
+      };
+
       return me;
-    };
+    }
 
-    me.computeCross = function() {
-      dimension = cross.dimension(dimensionFunc);
-      group = groupFunc ? dimension.group(groupFunc) : dimension.group();
-      groupAll = dimension.groupAll();
-    };
+    function chartCreator(defn, spec) {
 
-    me.addChart = function(chart) {
-      if (charts.indexOf(chart) === -1) {
-        charts.push(chart);
-      }
-    };
+      var margin = spec.margin || {top: 20, right: 10, bottom: 20, left: 10},
+          binWidth = spec.binWidth || 10,
+          x = spec.x,
+          y = spec.y || d3.scale.linear().range([100, 0]),
+          axis = d3.svg.axis().orient('bottom'),
+          brush = d3.svg.brush(),
+          percentFmt = d3.format('.3p'),
+          brushDirty;
 
-    me.removeChart = function(chart) {
-      charts.splice(charts.indexOf(chart), 1);
-    };
+      function chart(div) {
+        var min, max,
+            height = y.range()[0],
+            groups = defn.group().all();
 
-    return me;
-  }
+        y.domain([0, defn.group().top(1)[0].value]);
 
-  function chartCreator(defn, spec) {
+        if (!x) {
+          min = groups[0].key;
+          max = groups[groups.length - 1].key + defn.separation;
+          x = d3.scale.linear()
+              .domain([min, max])
+              .rangeRound([0, (max - min) / defn.separation * binWidth]);
+        }
+        axis.scale(x);
+        brush.x(x);
+        var width = x.range()[1];
+        var chartWidth = width + margin.right + margin.left;
 
-    var margin = spec.margin || {top: 20, right: 10, bottom: 20, left: 10},
-        binWidth = spec.binWidth || 10,
-        x = spec.x,
-        y = spec.y || d3.scale.linear().range([100, 0]),
-        axis = d3.svg.axis().orient('bottom'),
-        brush = d3.svg.brush(),
-        percentFmt = d3.format('.3p'),
-        brushDirty;
+        div.each(function() {
+          var div = d3.select(this),
+              g = div.select('g');
 
-    function chart(div) {
-      var min, max,
-          height = y.range()[0],
-          groups = defn.group().all();
+          // Create the skeletal chart.
+          if (g.empty()) {
+            div.attr('width', chartWidth);
+            div.select('.title')
+                .text(defn.label)
 
-      y.domain([0, defn.group().top(1)[0].value]);
+            g = div.append('svg')
+                .attr('width', chartWidth)
+                .attr('height', height + margin.top + margin.bottom)
+              .append('g')
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-      if (!x) {
-        min = groups[0].key;
-        max = groups[groups.length - 1].key + defn.separation;
-        x = d3.scale.linear()
-            .domain([min, max])
-            .rangeRound([0, (max - min) / defn.separation * binWidth]);
-      }
-      axis.scale(x);
-      brush.x(x);
-      var width = x.range()[1];
-      var chartWidth = width + margin.right + margin.left;
+            g.append('clipPath')
+                .attr('id', 'clip-' + defn.id)
+              .append('rect')
+                .attr('width', width)
+                .attr('height', height);
 
-      div.each(function() {
-        var div = d3.select(this),
-            g = div.select('g');
+            g.selectAll('.bar')
+                .data(['background', 'foreground'])
+              .enter().append('path')
+                .attr('class', function(d) { return d + ' bar'; });
 
-        // Create the skeletal chart.
-        if (g.empty()) {
-          div.attr('width', chartWidth);
-          div.select('.title')
-              .text(defn.label)
+            g.selectAll('.foreground.bar')
+                .attr('clip-path', 'url(#clip-' + defn.id + ')');
 
-          g = div.append('svg')
-              .attr('width', chartWidth)
-              .attr('height', height + margin.top + margin.bottom)
-            .append('g')
-              .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+            g.append('g')
+                .attr('class', 'axis')
+                .attr('transform', 'translate(0,' + height + ')')
+                .call(axis);
 
-          g.append('clipPath')
-              .attr('id', 'clip-' + defn.id)
-            .append('rect')
-              .attr('width', width)
-              .attr('height', height);
+            // Initialize the brush component with pretty resize handles.
+            var gBrush = g.append('g').attr('class', 'brush').call(brush);
+            gBrush.selectAll('rect').attr('height', height);
+            gBrush.selectAll('.resize').append('path').attr('d', resizePath);
+
+            // The filter toggle and endpoints
+            var filterBar = div.append('div').attr('class', 'filter-bar');
+            filterBar.append('div')
+                .text('Filter')
+                .attr('class', 'filter button')
+                .classed('down', !brush.empty())
+                .on('click', function() {
+                  var el = d3.select(this);
+                  if (!defn.filterActive()) {
+                    binfo.filter(defn.id, defn.filterRange());
+                  } else {
+                    binfo.filter(defn.id, null);
+                  }
+                });
+            filterBar.selectAll('.range').data(['left', 'right'])
+              .enter().append('input')
+                .attr('type', 'text')
+                .attr('class', function(d) { return 'range ' + d; })
+                .property('value', function(d, i) { return defn.filterRange()[i]; })
+                .on('change', function(d, i) {
+                  var range = defn.filterRange();
+                  range[i] = this.value;
+                  var left = x(range[0]),
+                      right = x(range[1]);
+                  if (left <= right && left >= 0 && right < width) {
+                    binfo.filter(defn.id, range);
+                  }
+                });
+          }
+
+          var percentText;
+
+          // Only redraw the brush if set externally.
+          if (brushDirty) {
+            brushDirty = false;
+            g.selectAll('.brush').call(brush);
+            div.select('.filter.button').classed('down', defn.filterActive());
+            div.selectAll('.range')
+                .property('value', function(d, i) { return defn.filterRange()[i]; });
+            if (defn.filterActive()) {
+              var extent = brush.extent();
+              g.selectAll('#clip-' + defn.id + ' rect')
+                  .attr('x', x(extent[0]))
+                  .attr('width', x(extent[1]) - x(extent[0]));
+              percentText = g.selectAll('.percent').data([1]);
+              percentText.enter().append('text')
+                  .attr('class', 'percent')
+                  .attr('y', -4);
+              percentText
+                  .attr('x', (x(extent[1]) + x(extent[0])) / 2);
+            } else {
+              g.selectAll('#clip-' + defn.id + ' rect')
+                  .attr('x', 0)
+                  .attr('width', width);
+              g.selectAll('.percent').data([]).exit().remove();
+            }
+          }
+          var percent = defn.crossAll().value() / defn.groupAll().value();
+          percentText = g.selectAll('.percent').text(percentFmt(percent));
 
           g.selectAll('.bar')
-              .data(['background', 'foreground'])
-            .enter().append('path')
-              .attr('class', function(d) { return d + ' bar'; });
+              .datum(groups)
+              .attr('d', barPath);
+        });
 
-          g.selectAll('.foreground.bar')
-              .attr('clip-path', 'url(#clip-' + defn.id + ')');
-
-          g.append('g')
-              .attr('class', 'axis')
-              .attr('transform', 'translate(0,' + height + ')')
-              .call(axis);
-
-          // Initialize the brush component with pretty resize handles.
-          var gBrush = g.append('g').attr('class', 'brush').call(brush);
-          gBrush.selectAll('rect').attr('height', height);
-          gBrush.selectAll('.resize').append('path').attr('d', resizePath);
-
-          // The filter toggle and endpoints
-          var filterBar = div.append('div').attr('class', 'filter-bar');
-          filterBar.append('div')
-              .text('Filter')
-              .attr('class', 'filter button')
-              .classed('down', !brush.empty())
-              .on('click', function() {
-                var el = d3.select(this);
-                if (!defn.filterActive()) {
-                  filter(defn.id, defn.filterRange());
-                } else {
-                  reset(defn.id);
-                }
-              });
-          filterBar.selectAll('.range').data(['left', 'right'])
-            .enter().append('input')
-              .attr('type', 'text')
-              .attr('class', function(d) { return 'range ' + d; })
-              .property('value', function(d, i) { return defn.filterRange()[i]; })
-              .on('change', function(d, i) {
-                var range = defn.filterRange();
-                range[i] = this.value;
-                var left = x(range[0]),
-                    right = x(range[1]);
-                if (left <= right && left >= 0 && right < width) {
-                  filter(defn.id, range);
-                }
-              });
-        }
-
-        var percentText;
-
-        // Only redraw the brush if set externally.
-        if (brushDirty) {
-          brushDirty = false;
-          g.selectAll('.brush').call(brush);
-          div.select('.filter.button').classed('down', defn.filterActive());
-          div.selectAll('.range')
-              .property('value', function(d, i) { return defn.filterRange()[i]; });
-          if (defn.filterActive()) {
-            var extent = brush.extent();
-            g.selectAll('#clip-' + defn.id + ' rect')
-                .attr('x', x(extent[0]))
-                .attr('width', x(extent[1]) - x(extent[0]));
-            percentText = g.selectAll('.percent').data([1]);
-            percentText.enter().append('text')
-                .attr('class', 'percent')
-                .attr('y', -4);
-            percentText
-                .attr('x', (x(extent[1]) + x(extent[0])) / 2);
-          } else {
-            g.selectAll('#clip-' + defn.id + ' rect')
-                .attr('x', 0)
-                .attr('width', width);
-            g.selectAll('.percent').data([]).exit().remove();
+        function barPath(groups) {
+          var path = [],
+              i = -1,
+              n = groups.length,
+              d;
+          while (++i < n) {
+            d = groups[i];
+            path.push('M', x(d.key), ',', height, 'V', y(d.value),
+                      'h', binWidth - 1, 'V', height);
           }
+          return path.join('');
         }
-        var percent = all.value() / defn.groupAll().value();
-        percentText = g.selectAll('.percent').text(percentFmt(percent));
 
-        g.selectAll('.bar')
-            .datum(groups)
-            .attr('d', barPath);
+        function resizePath(d) {
+          var e = +(d == 'e'),
+              x = e ? 1 : -1,
+              y = height / 3;
+          return 'M' + (0.5 * x) + ',' + y +
+                'A6,6 0 0 ' + e + ' ' + (6.5 * x) + ',' + (y + 6) +
+                'V' + (2 * y - 6) +
+                'A6,6 0 0 ' + e + ' ' + (0.5 * x) + ',' + (2 * y) +
+                'Z' +
+                'M' + (2.5 * x) + ',' + (y + 8) +
+                'V' + (2 * y - 8) +
+                'M' + (4.5 * x) + ',' + (y + 8) +
+                'V' + (2 * y - 8);
+        }
+      }
+
+      brush.on('brushstart.chart', function() {
+        var div = d3.select(this.parentNode.parentNode.parentNode);
+        div.select('.filter.button').classed('down', true);
       });
 
-      function barPath(groups) {
-        var path = [],
-            i = -1,
-            n = groups.length,
-            d;
-        while (++i < n) {
-          d = groups[i];
-          path.push('M', x(d.key), ',', height, 'V', y(d.value),
-                    'h', binWidth - 1, 'V', height);
+      brush.on('brush.chart', function() {
+        var g = d3.select(this.parentNode),
+            extent = brush.extent();
+        if (defn.round) {
+          g.select('.brush')
+              .call(brush.extent(extent = extent.map(defn.round)));
         }
-        return path.join('');
-      }
+        binfo.filter(defn.id, extent);
+      });
 
-      function resizePath(d) {
-        var e = +(d == 'e'),
-            x = e ? 1 : -1,
-            y = height / 3;
-        return 'M' + (0.5 * x) + ',' + y +
-               'A6,6 0 0 ' + e + ' ' + (6.5 * x) + ',' + (y + 6) +
-               'V' + (2 * y - 6) +
-               'A6,6 0 0 ' + e + ' ' + (0.5 * x) + ',' + (2 * y) +
-               'Z' +
-               'M' + (2.5 * x) + ',' + (y + 8) +
-               'V' + (2 * y - 8) +
-               'M' + (4.5 * x) + ',' + (y + 8) +
-               'V' + (2 * y - 8);
-      }
-    }
+      brush.on('brushend.chart', function() {
+        if (brush.empty()) {
+          binfo.filter(defn.id, null);
+        }
+      });
 
-    brush.on('brushstart.chart', function() {
-      var div = d3.select(this.parentNode.parentNode.parentNode);
-      div.select('.filter.button').classed('down', true);
-    });
+      chart.filter = function(_) {
+        if (_) {
+          brush.extent(_);
+        } else {
+          brush.clear();
+        }
+        brushDirty = true;
+        return chart;
+      };
 
-    brush.on('brush.chart', function() {
-      var g = d3.select(this.parentNode),
-          extent = brush.extent();
-      if (defn.round) {
-        g.select('.brush')
-            .call(brush.extent(extent = extent.map(defn.round)));
-      }
-      filter(defn.id, extent);
-    });
+      defn.addChart(chart);
 
-    brush.on('brushend.chart', function() {
-      if (brush.empty()) {
-        filter(defn.id, null);
-      }
-    });
-
-    chart.filter = function(_) {
-      if (_) {
-        brush.extent(_);
-      } else {
-        brush.clear();
-      }
-      brushDirty = true;
-      return chart;
+      return d3.rebind(chart, brush, 'on');
     };
 
-    defn.addChart(chart);
-
-    return d3.rebind(chart, brush, 'on');
-  };
-
-  return binfo;
+    return chartMe;
+  }
 
 })();
 
