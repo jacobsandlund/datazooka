@@ -80,6 +80,10 @@
             evil = evil.concat(['definitions["', id, '"].', part,
                                 ' = ', defn[part], ';']);
           });
+          if (defn.type && defn.type.slice(0, 8) === 'function') {
+            evil = evil.concat(['definitions["', id, '"].type = ',
+                                defn.type, ';']);
+          }
         }
       }
       eval(evil.join(''));
@@ -106,6 +110,9 @@
       if (holder.selectAll('.dataName option').length <= 1) {
         changeDataName();
       }
+      if (dataSets[dataName].dataUntyped) {
+        binfo.dataFromUntyped(dataName, dataSets[dataName].dataUntyped);
+      }
     };
 
     function changeDataName() {
@@ -116,6 +123,30 @@
       options
           .attr('value', function(d) { return d; })
           .text(function(d) { return d; });
+    };
+
+    binfo.dataFromUntyped = function(dataName, data) {
+      if (!dataSets[dataName]) {
+        dataSets[dataName] = {dataUntyped: data};
+        return;
+      }
+      var binfos = dataSets[dataName].binfos,
+          ids = dataSets[dataName].binfoIds,
+          unit;
+      data.forEach(function(d) {
+        ids.forEach(function(id) {
+          unit = binfos[id];
+          if (unit.derived) {
+            return;
+          }
+          if (typeof unit.type === 'function') {
+            d[id] = unit.type(d[id]);
+          } else if (unit.type === 'number') {
+            d[id] = +d[id];
+          }
+        });
+      });
+      binfo.data(dataName, data);
     };
 
     binfo.data = function(dataName, data) {
@@ -199,7 +230,8 @@
       var dataSets = setupMe.dataSets(),
           holder = setupMe.holder();
 
-      if (!(dataSets[dataName] && dataSets[dataName].data)) {
+      if (!(dataSets[dataName] && dataSets[dataName].data &&
+            dataSets[dataName].binfos)) {
         setupMe.renderLater([dataName, binfoIds, filters]);
         return;
       }
@@ -356,6 +388,8 @@
       me.id = spec.id;
       me.label = spec.label;
       me.round = spec.round;
+      me.type = spec.type;
+      me.derived = spec.derived;
       me.dimensionFunc = dimensionFunc = spec.dimension;
       me.groupFunc = groupFunc;
       me.separation = separation;
