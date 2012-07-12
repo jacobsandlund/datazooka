@@ -100,6 +100,31 @@ h1, h2 {
 
 binfo.holder('#charts');
 binfo.renderFromHash() || binfo.render('flights', ['time', 'delay', 'distance']);
+binfo.definitions('flights', {
+  time: {
+    label: 'Time of Day',
+    dimension: function(d) { return d.date.getHours() + d.date.getMinutes() / 60; },
+    groupBy: 1
+  },
+  delay: {
+    label: 'Arrival Delay (min.)',
+    dimension: function(d) { return Math.max(-60, Math.min(149, d.delay)); },
+    groupBy: 10
+  },
+  distance: {
+    label: 'Distance (mi.)',
+    dimension: function(d) { return Math.min(1999, d.distance); },
+    groupBy: 50
+  },
+  date: {
+    label: 'Date',
+    dimension: function(d) { return d3.time.day(d.date); },
+    round: d3.time.day.round,
+    x: (d3.time.scale()
+        .domain([new Date(2001, 0, 1), new Date(2001, 3, 1)])
+        .range([0, 900]))
+  }
+});
 
 // (It's CSV, but GitHub Pages only gzip's JSON at the moment.)
 d3.csv("flights-3m.json", function(flights) {
@@ -120,33 +145,7 @@ d3.csv("flights-3m.json", function(flights) {
         d.substring(4, 6),
         d.substring(6, 8));
   }
-
-  var charts = {
-    time: {
-      label: 'Time of Day',
-      dimension: function(d) { return d.date.getHours() + d.date.getMinutes() / 60; },
-      groupBy: 1
-    },
-    delay: {
-      label: 'Arrival Delay (min.)',
-      dimension: function(d) { return Math.max(-60, Math.min(149, d.delay)); },
-      groupBy: 10
-    },
-    distance: {
-      label: 'Distance (mi.)',
-      dimension: function(d) { return Math.min(1999, d.distance); },
-      groupBy: 50
-    },
-    date: {
-      label: 'Date',
-      dimension: function(d) { return d3.time.day(d.date); },
-      round: d3.time.day.round,
-      x: (d3.time.scale()
-          .domain([new Date(2001, 0, 1), new Date(2001, 3, 1)])
-          .range([0, 900]))
-    }
-  };
-  binfo.data('flights', charts, flights);
+  binfo.data('flights', flights);
 });
 
 </script>

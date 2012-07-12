@@ -64,38 +64,42 @@
           .attr('class', 'total');
     };
 
-    binfo.data = function(dataName, charts, data) {
+    binfo.definitions = function(dataName, definitions) {
       var binfos = {},
-          chartIds = [],
+          binfoIds = [],
           id;
-      for (id in charts) {
-        if (charts.hasOwnProperty(id)) {
-          charts[id].id = id;
-          chartIds.push(id);
-          binfos[id] = chartMe.binfoUnit(charts[id]);
+      for (id in definitions) {
+        if (definitions.hasOwnProperty(id)) {
+          definitions[id].id = id;
+          binfoIds.push(id);
+          binfos[id] = chartMe.binfoUnit(definitions[id]);
         }
       }
-      dataSets[dataName] = {binfos: binfos, data: data, chartIds: chartIds};
+      dataSets[dataName] = {binfos: binfos, binfoIds: binfoIds};
       holder.select('.dataName').append('option')
           .attr('value', dataName)
           .text(dataName);
       if (holder.selectAll('.dataName option').length <= 1) {
         changeDataName();
       }
-      if (renderLater && renderLater[0] === dataName) {
-        binfo.render.apply(null, renderLater);
-        renderLater = null;
-      }
     };
 
     function changeDataName() {
       var dataName = holder.select('.dataName').property('value');
       var options = holder.select('.chartIds').selectAll('option')
-          .data(dataSets[dataName].chartIds);
+          .data(dataSets[dataName].binfoIds);
       options.enter().append('option');
       options
           .attr('value', function(d) { return d; })
           .text(function(d) { return d; });
+    };
+
+    binfo.data = function(dataName, data) {
+      dataSets[dataName].data = data;
+      if (renderLater && renderLater[0] === dataName) {
+        binfo.render.apply(null, renderLater);
+        renderLater = null;
+      }
     };
 
     return me;
@@ -165,13 +169,13 @@
         formatNumber = d3.format(',d');
 
 
-    binfo.render = function(dataName, chartIds, filters) {
+    binfo.render = function(dataName, binfoIds, filters) {
 
       var dataSets = setupMe.dataSets(),
           holder = setupMe.holder();
 
       if (!dataSets[dataName]) {
-        setupMe.renderLater([dataName, chartIds, filters]);
+        setupMe.renderLater([dataName, binfoIds, filters]);
         return;
       }
 
@@ -179,21 +183,21 @@
       var data = dataSets[dataName].data;
       binfos = dataSets[dataName].binfos;
 
-      var charts = chartIds.map(function(id) { return binfos[id]; });
+      var charts = binfoIds.map(function(id) { return binfos[id]; });
 
       var removed = currentChartIds.filter(function(id) {
-        return chartIds.indexOf(id) < 0;
+        return binfoIds.indexOf(id) < 0;
       });
-      var added = chartIds.filter(function(id) {
+      var added = binfoIds.filter(function(id) {
         return currentChartIds.indexOf(id) < 0;
       });
 
       if (!cross || currentDataName !== dataName || removed.length) {
         cross = crossfilter(data);
         crossAll = cross.groupAll();
-        added = chartIds;
+        added = binfoIds;
       }
-      currentChartIds = chartIds;
+      currentChartIds = binfoIds;
       currentDataName = dataName;
       currentFilters = filters;
 
@@ -223,7 +227,7 @@
       }
 
 
-      chartIds.forEach(function(id) {
+      binfoIds.forEach(function(id) {
         if (filters[id]) {
           binfos[id].filter(filters[id]);
         } else {
