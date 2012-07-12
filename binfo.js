@@ -97,7 +97,9 @@
           binfos[id] = chartMe.binfoUnit(definitions[id]);
         }
       }
-      dataSets[dataName] = {binfos: binfos, binfoIds: binfoIds};
+      dataSets[dataName] = dataSets[dataName] || {};
+      dataSets[dataName].binfos = binfos;
+      dataSets[dataName].binfoIds = binfoIds;
       holder.select('.dataName').append('option')
           .attr('value', dataName)
           .text(dataName);
@@ -117,6 +119,7 @@
     };
 
     binfo.data = function(dataName, data) {
+      dataSets[dataName] = dataSets[dataName] || {};
       dataSets[dataName].data = data;
       if (renderLater && renderLater[0] === dataName) {
         binfo.render.apply(null, renderLater);
@@ -196,7 +199,7 @@
       var dataSets = setupMe.dataSets(),
           holder = setupMe.holder();
 
-      if (!dataSets[dataName]) {
+      if (!(dataSets[dataName] && dataSets[dataName].data)) {
         setupMe.renderLater([dataName, binfoIds, filters]);
         return;
       }
