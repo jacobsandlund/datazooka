@@ -104,6 +104,12 @@ var before = Math.random() < 0.5
 console.log(before ? 'definitions first' : 'data first');
 
 function definitions() {
+  d3.json('fork_defs.json', function(j) {
+    binfo.definitionsFromJSON('forks', j);
+  });
+  d3.json('upstream_defs.json', function(j) {
+    binfo.definitionsFromJSON('upstreams', j);
+  });
   d3.json('test.json', function(jsonDefinitions) {
     binfo.definitionsFromJSON('flights', jsonDefinitions);
   });
@@ -115,6 +121,12 @@ if (before) definitions();
 d3.csv("flights-3m.json", function(flights) {
   binfo.dataFromUntyped('flights', flights);
   if (!before) definitions();
+});
+d3.csv("forks.csv", function(forks) {
+  binfo.dataFromUntyped('forks', forks);
+});
+d3.csv("upstreams.csv", function(upstreams) {
+  binfo.dataFromUntyped('upstreams', upstreams);
 });
 
 </script>
