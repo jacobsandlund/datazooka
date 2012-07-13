@@ -420,7 +420,7 @@
         if (_) {
           filterActive = true;
           filterRange = _;
-          if (_[0] === _[1]) {
+          if (+_[0] === +_[1]) {
             dimension.filterExact(_[0]);
           } else {
             dimension.filterRange(_);
