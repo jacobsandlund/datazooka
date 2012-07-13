@@ -3,7 +3,7 @@
 
   //"use strict";
 
-  var binfo = {};
+  var binfo = {numGroups: 30};
   var chartMe = binfoCharts(binfo);
   var setupMe = binfoSetup(binfo, chartMe);
   hashRetrieval(binfo);
@@ -33,7 +33,8 @@
       var config = holder.append('div')
           .attr('class', 'configuration');
       config.append('select')
-          .attr('class', 'dataName');
+          .attr('class', 'dataName')
+          .on('change', changeDataName);
 
       config.append('select')
           .attr('class', 'chartIds')
@@ -123,10 +124,11 @@
       options
           .attr('value', function(d) { return d; })
           .text(function(d) { return d; });
+      options.exit().remove();
     };
 
     binfo.dataFromUntyped = function(dataName, data) {
-      if (!dataSets[dataName]) {
+      if (!(dataSets[dataName] && dataSets[dataName].binfos)) {
         dataSets[dataName] = {dataUntyped: data};
         return;
       }
@@ -375,12 +377,26 @@
           groupAll,
           separation;
 
+      function groupFuncBy(groupBy) {
+        return function(d) { return Math.floor(d / groupBy) * groupBy; };
+      }
+
       if (spec.groupBy) {
-        groupFunc = function(d) { return Math.floor(d / spec.groupBy) * spec.groupBy; };
         separation = spec.groupBy;
+        groupFunc = groupFuncBy(separation);
       } else {
-        groupFunc = spec.group;
+        if (spec.groupIdentity) {
+          groupFunc = function(d) { return d; };
+        } else {
+          groupFunc = spec.group;
+        }
         separation = spec.separation;
+      }
+
+      if (spec.dimension) {
+        dimensionFunc = spec.dimension;
+      } else {
+        dimensionFunc = function(d) { return d[spec.id]; };
       }
 
       var me = {};
@@ -390,10 +406,10 @@
       me.round = spec.round;
       me.type = spec.type;
       me.derived = spec.derived;
-      me.dimensionFunc = dimensionFunc = spec.dimension;
-      me.groupFunc = groupFunc;
-      me.separation = separation;
 
+      me.dimensionFunc = function() { return dimensionFunc; };
+      me.groupFunc = function() { return groupFunc; };
+      me.separation = function() { return separation; };
       me.crossAll = function() { return crossAll; };
       me.group = function() { return group; };
       me.groupAll = function() { return groupAll; };
@@ -420,7 +436,18 @@
       me.setCross = function(cross, all) {
         crossAll = all;
         dimension = cross.dimension(dimensionFunc);
-        group = groupFunc ? dimension.group(groupFunc) : dimension.group();
+        if (!groupFunc) {
+          var top = dimension.top(Infinity),
+              max = +dimensionFunc(top[0]),
+              min = +dimensionFunc(top[top.length - 1]),
+              domain = Math.abs(max - min),
+              scale = d3.scale.linear().domain([0, domain]),
+              ticks = scale.ticks(spec.numGroups || binfo.numGroups);
+
+          separation = ticks[1] - ticks[0];
+          groupFunc = groupFuncBy(separation);
+        }
+        group = dimension.group(groupFunc);
         groupAll = dimension.groupAll();
       };
 
@@ -457,10 +484,10 @@
 
         if (!x) {
           min = groups[0].key;
-          max = groups[groups.length - 1].key + defn.separation;
+          max = groups[groups.length - 1].key + defn.separation();
           x = d3.scale.linear()
               .domain([min, max])
-              .rangeRound([0, (max - min) / defn.separation * binWidth]);
+              .rangeRound([0, (max - min) / defn.separation() * binWidth]);
         }
         axis.scale(x);
         brush.x(x);

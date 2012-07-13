@@ -3,26 +3,24 @@
     "label": "Time of Day",
     "type": "number",
     "derived": true,
-    "dimension": "function(d) { return d.date.getHours() + d.date.getMinutes() / 60; }",
-    "groupBy": 1
+    "dimension": "function(d) { return d.date.getHours() + d.date.getMinutes() / 60; }"
   },
   "delay": {
     "label": "Arrival Delay (min.)",
     "type": "number",
-    "dimension": "function(d) { return Math.max(-60, Math.min(149, d.delay)); }",
-    "groupBy": 10
+    "dimension": "function(d) { return Math.max(-60, Math.min(149, d.delay)); }"
   },
   "distance": {
     "label": "Distance (mi.)",
     "type": "number",
-    "dimension": "function(d) { return Math.min(1999, d.distance); }",
-    "groupBy": 50
+    "dimension": "function(d) { return Math.min(1999, d.distance); }"
   },
   "date": {
     "label": "Date",
     "type": "function(d) { return new Date(2001, d.slice(0, 2) - 1, d.slice(2, 4), d.slice(4, 6), d.slice(6, 8)); }",
     "dimension": "function(d) { return d3.time.day(d.date); }",
     "round": "d3.time.day.round",
+    "groupIdentity": true,
     "x": "d3.time.scale().domain([new Date(2001, 0, 1), new Date(2001, 3, 1)]).range([0, 900])"
   }
 }
