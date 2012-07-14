@@ -1,4 +1,4 @@
-contributors,forks_size,upstream_commits,upstream_contributions,upstream_name
-41,779,309,107,harvesthq/chosen
-3,28,290,4,chjj/marked
-4,101,156,11,ccampbell/mousetrap
+contributors,created_at,files,fork,forks,language,open_issues,project_size,pushed_at,repo_size,upstream_commits,upstream_contributions,upstream_name,watchers
+41,2011-04-18T15:07:41Z,18,false,830,,233,364,2012-07-06T20:58:48Z,1256,309,107,harvesthq/chosen,7910
+5,2008-06-20T22:07:15Z,87,false,538,,1,1136,2012-06-03T20:23:01Z,1568,118,7,ryanb/dotfiles,1321
+4,2012-07-05T03:13:55Z,8,false,108,,15,144,2012-07-12T02:16:44Z,848,156,11,ccampbell/mousetrap,1769
