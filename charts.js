@@ -61,23 +61,26 @@
 
 
           axisHolder = g.append('g')
-              .attr('class', 'axis')
-              .attr('transform', 'translate(0,' + height + ')');
+              .attr('class', 'axis');
           if (defn.ordinal) {
-            axisHolder.classed('ordinal', true);
+            axisHolder
+                .attr('transform', 'matrix(0,-1,1,0,0,' + height + ')')
+                .classed('ordinal', true);
             axisHolder.append('line')
                 .attr('x1', 0)
                 .attr('y1', 0)
-                .attr('x2', width)
-                .attr('y2', 0);
+                .attr('x2', 0)
+                .attr('y2', width);
             axisHolder.selectAll('text')
                 .data(defn.ordinal())
               .enter().append('text')
-                .attr('x', function(d, i) { return (i + 0.5) * binWidth; })
-                .attr('y', 4)
+                .attr('y', function(d, i) { return (i + 0.9) * binWidth; })
+                .attr('x', -6)
                 .text(function(d) { return d; });
           } else {
-            axisHolder.call(axis);
+            axisHolder
+                .attr('transform', 'translate(0,' + height + ')')
+                .call(axis);
           }
 
           // Initialize the brush component with pretty resize handles.

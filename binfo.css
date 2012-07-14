@@ -85,7 +85,7 @@
 }
 
 .axis.ordinal {
-  writing-mode: tb;
+  text-anchor: end;
 }
 
 .brush rect.extent {
