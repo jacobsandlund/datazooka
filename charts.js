@@ -19,6 +19,10 @@
         chartWidth,
         brushDirty;
 
+    if (defn.ordinal) {
+      margin.bottom += 120;
+    }
+
     function chart(div) {
       defn.update();
 
@@ -26,7 +30,8 @@
 
       div.each(function() {
         var div = d3.select(this),
-            g = div.select('g');
+            g = div.select('g'),
+            axisHolder;
 
         // Create the skeletal chart.
         if (g.empty()) {
@@ -54,11 +59,25 @@
           g.selectAll('.foreground.bar')
               .attr('clip-path', 'url(#clip-' + defn.id + ')');
 
-          if (!defn.ordinal) {
-            g.append('g')
-                .attr('class', 'axis')
-                .attr('transform', 'translate(0,' + height + ')')
-                .call(axis);
+
+          axisHolder = g.append('g')
+              .attr('class', 'axis')
+              .attr('transform', 'translate(0,' + height + ')');
+          if (defn.ordinal) {
+            axisHolder.classed('ordinal', true);
+            axisHolder.append('line')
+                .attr('x1', 0)
+                .attr('y1', 0)
+                .attr('x2', width)
+                .attr('y2', 0);
+            axisHolder.selectAll('text')
+                .data(defn.ordinal())
+              .enter().append('text')
+                .attr('x', function(d, i) { return (i + 0.5) * binWidth; })
+                .attr('y', 4)
+                .text(function(d) { return d; });
+          } else {
+            axisHolder.call(axis);
           }
 
           // Initialize the brush component with pretty resize handles.
@@ -220,7 +239,7 @@
     defn.addChart(chart);
 
     return d3.rebind(chart, brush, 'on');
-  }
+  };
 
 }(window.binfo));
 

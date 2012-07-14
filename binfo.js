@@ -526,7 +526,7 @@
   }
 
 
-  var binfo = {numGroups: 30, tickSpacing: 40, binWidth: 10, chartHeight: 100};
+  var binfo = {numGroups: 35, tickSpacing: 44, binWidth: 12, chartHeight: 100};
   var chartMe = binfoCharts(binfo);
   var setupMe = binfoSetup(binfo, chartMe);
   hashRetrieval(binfo);

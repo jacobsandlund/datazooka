@@ -51,12 +51,12 @@
 }
 
 .filter-bar {
+  font-size: 12px;
   width: 145px;
   margin: 0px auto;
 }
 
 .filter.button {
-  font-size: 12px;
   padding: 2px 5px;
   margin-right: 0px;
 }
@@ -81,7 +81,11 @@
 }
 
 .axis text {
-  font: 10px sans-serif;
+  font: 12px sans-serif;
+}
+
+.axis.ordinal {
+  writing-mode: tb;
 }
 
 .brush rect.extent {
@@ -103,6 +107,6 @@
 
 .percent {
   text-anchor: middle;
-  font: 10px sans-serif;
+  font: 12px sans-serif;
 }
 
