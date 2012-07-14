@@ -1,16 +1,7 @@
 
 (function() {
 
-  //"use strict";
-
-  var binfo = {numGroups: 30, tickSpacing: 40};
-  var chartMe = binfoCharts(binfo);
-  var setupMe = binfoSetup(binfo, chartMe);
-  hashRetrieval(binfo);
-  rendering(binfo, setupMe);
-
-  window.binfo = binfo;
-
+  "use strict";
 
   function binfoSetup(binfo, chartMe) {
 
@@ -68,19 +59,23 @@
     };
 
     binfo.definitionsFromJSON = function(dataName, definitions) {
+      /*jshint evil:true */
       var id, defn,
           evil = [],
           evalParts = ['dimension', 'group', 'x', 'y', 'round'];
+      function makeEvil(defn, id) {
+        return function(part) {
+          if (!defn[part]) {
+            return;
+          }
+          evil = evil.concat(['definitions["', id, '"].', part,
+                              ' = ', defn[part], ';']);
+        };
+      }
       for (id in definitions) {
         if (definitions.hasOwnProperty(id)) {
           defn = definitions[id];
-          evalParts.forEach(function(part) {
-            if (!defn[part]) {
-              return;
-            }
-            evil = evil.concat(['definitions["', id, '"].', part,
-                                ' = ', defn[part], ';']);
-          });
+          evalParts.forEach(makeEvil(defn, id));
           if (defn.type && defn.type.slice(0, 8) === 'function') {
             evil = evil.concat(['definitions["', id, '"].type = ',
                                 defn.type, ';']);
@@ -125,7 +120,7 @@
           .attr('value', function(d) { return d; })
           .text(function(d) { return d; });
       options.exit().remove();
-    };
+    }
 
     binfo.dataFromUntyped = function(dataName, data) {
       if (!(dataSets[dataName] && dataSets[dataName].binfos)) {
@@ -151,6 +146,7 @@
             break;
           case 'date':
             d[id] = new Date(d[id]);
+            break;
           default:
             // string, so no modification needed
           }
@@ -211,7 +207,7 @@
       }
       binfo.render(dataName, charts, myFilters);
       return true;
-    };
+    }
 
     window.onhashchange = renderFromHash;
 
@@ -311,14 +307,15 @@
           chartString = 'charts=' + currentChartIds.join(','),
           filterString = 'filters=',
           filterArray = [];
+      function filterEncode(d) {
+        if (typeof d === 'object') {
+          d = d.valueOf();
+        }
+        return encodeURIComponent(d);
+      }
       for (filter in currentFilters) {
         if (currentFilters.hasOwnProperty(filter) && currentFilters[filter]) {
-          filterData = currentFilters[filter].map(function(d) {
-            if (typeof d === 'object') {
-              d = d.valueOf();
-            }
-            return encodeURIComponent(d);
-          }).join('*');
+          filterData = currentFilters[filter].map(filterEncode).join('*');
           filterArray.push(filter + '*' + filterData);
         }
       }
@@ -350,6 +347,7 @@
 
     // Renders the specified chart.
     function render(chart) {
+      /*jshint validthis:true */
       d3.select(this).call(chart.chart);
     }
 
@@ -370,7 +368,7 @@
       var defn = binfoDefinition(spec);
       defn.chart = chartCreator(defn, spec);
       return defn;
-    }
+    };
 
     function binfoDefinition(spec) {
 
@@ -523,7 +521,7 @@
           if (g.empty()) {
             div.attr('width', chartWidth);
             div.select('.title')
-                .text(defn.label)
+                .text(defn.label);
 
             g = div.append('svg')
                 .attr('width', chartWidth)
@@ -634,7 +632,7 @@
         }
 
         function resizePath(d) {
-          var e = +(d == 'e'),
+          var e = +(d === 'e'),
               x = e ? 1 : -1,
               y = height / 3;
           return 'M' + (0.5 * x) + ',' + y +
@@ -683,10 +681,20 @@
       defn.addChart(chart);
 
       return d3.rebind(chart, brush, 'on');
-    };
+    }
 
     return chartMe;
   }
 
-})();
+
+  var binfo = {numGroups: 30, tickSpacing: 40};
+  var chartMe = binfoCharts(binfo);
+  var setupMe = binfoSetup(binfo, chartMe);
+  hashRetrieval(binfo);
+  rendering(binfo, setupMe);
+
+  window.binfo = binfo;
+
+
+}());
 
