@@ -8,40 +8,21 @@
   charts.chartCreator = function(defn, spec) {
 
     var margin = spec.margin || {top: 20, right: 10, bottom: 20, left: 10},
-        binWidth = spec.binWidth || 10,
+        binWidth = spec.binWidth || binfo.binWidth,
+        height = spec.chartHeight || binfo.chartHeight,
         x = spec.x,
-        y = spec.y || d3.scale.linear().range([100, 0]),
+        y = spec.y || d3.scale.linear().range([height, 0]),
         axis = d3.svg.axis().orient('bottom'),
         brush = d3.svg.brush(),
         percentFmt = d3.format('.3p'),
+        width,
+        chartWidth,
         brushDirty;
 
     function chart(div) {
-      var min, max,
-          height = y.range()[0],
-          groups = defn.group().all();
+      defn.update();
 
-      y.domain([0, defn.group().top(1)[0].value]);
-
-      if (!x) {
-        min = groups[0].key;
-        max = groups[groups.length - 1].key + defn.separation();
-        if (defn.type === 'date') {
-          x = d3.time.scale();
-        } else {
-          x = d3.scale.linear();
-        }
-        x   .domain([min, max])
-            .rangeRound([0, (max - min) / defn.separation() * binWidth]);
-      }
-      axis.scale(x);
-      brush.x(x);
-      var width = x.range()[1];
-      if (defn.ticks || defn.tickSpacing) {
-        var ticks = defn.ticks || Math.round(width / defn.tickSpacing);
-        axis.ticks(ticks);
-      }
-      var chartWidth = width + margin.right + margin.left;
+      y.domain([0, defn.maxY()]);
 
       div.each(function() {
         var div = d3.select(this),
@@ -144,7 +125,7 @@
         percentText = g.selectAll('.percent').text(percentFmt(percent));
 
         g.selectAll('.bar')
-            .datum(groups)
+            .datum(defn.groups())
             .attr('d', barPath);
       });
 
@@ -197,6 +178,30 @@
         binfo.filter(defn.id, null);
       }
     });
+
+    chart.setCross = function() {
+      var minX = defn.minX(),
+          maxX = defn.maxX(),
+          ticks;
+
+      if (!spec.x) {
+        if (defn.type === 'date') {
+          x = d3.time.scale();
+        } else {
+          x = d3.scale.linear();
+        }
+        x   .domain([minX, maxX])
+            .rangeRound([0, defn.numGroups() * binWidth]);
+      }
+      axis.scale(x);
+      brush.x(x);
+      width = x.range()[1];
+      if (defn.ticks || defn.tickSpacing) {
+        ticks = defn.ticks || Math.round(width / defn.tickSpacing);
+        axis.ticks(ticks);
+      }
+      chartWidth = width + margin.right + margin.left;
+    };
 
     chart.filter = function(_) {
       if (_) {

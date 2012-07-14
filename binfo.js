@@ -379,8 +379,12 @@
           dimension,
           dimensionFunc,
           group,
+          groups,
           groupFunc,
           groupAll,
+          minX = spec.minX,
+          maxX = spec.maxX,
+          maxY = spec.maxY,
           separation;
 
       function groupFuncBy(groupBy) {
@@ -423,9 +427,17 @@
       me.separation = function() { return separation; };
       me.crossAll = function() { return crossAll; };
       me.group = function() { return group; };
+      me.groups = function() { return groups; };
       me.groupAll = function() { return groupAll; };
+      me.minX = function() { return minX; };
+      me.maxX = function() { return maxX; };
+      me.maxY = function() { return maxY; };
       me.filterActive = function() { return filterActive; };
       me.filterRange = function() { return filterRange; };
+
+      me.numGroups = function() {
+        return (maxX - minX) / separation;
+      };
 
       me.filter = function(_) {
         if (_) {
@@ -459,7 +471,15 @@
           groupFunc = groupFuncBy(separation);
         }
         group = dimension.group(groupFunc);
+        groups = group.all();
         groupAll = dimension.groupAll();
+        if (!spec.minX) {
+          minX = groups[0].key;
+        }
+        if (!spec.maxX) {
+          maxX = groups[groups.length - 1].key + separation;
+        }
+        charts.forEach(function(c) { c.setCross(); });
       };
 
       me.addChart = function(chart) {
@@ -472,6 +492,12 @@
         charts.splice(charts.indexOf(chart), 1);
       };
 
+      me.update = function() {
+        if (!spec.maxY) {
+          maxY = group.top(1)[0].value;
+        }
+      };
+
       return me;
     }
 
@@ -479,7 +505,7 @@
   }
 
 
-  var binfo = {numGroups: 30, tickSpacing: 40};
+  var binfo = {numGroups: 30, tickSpacing: 40, binWidth: 10, chartHeight: 100};
   var chartMe = binfoCharts(binfo);
   var setupMe = binfoSetup(binfo, chartMe);
   hashRetrieval(binfo);
