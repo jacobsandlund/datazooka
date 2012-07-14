@@ -124,9 +124,9 @@
         var percent = defn.crossAll().value() / defn.groupAll().value();
         percentText = g.selectAll('.percent').text(percentFmt(percent));
 
+        var path = barPath(defn.groups());
         g.selectAll('.bar')
-            .datum(defn.groups())
-            .attr('d', barPath);
+            .attr('d', path);
       });
 
       function barPath(groups) {
