@@ -54,10 +54,12 @@
           g.selectAll('.foreground.bar')
               .attr('clip-path', 'url(#clip-' + defn.id + ')');
 
-          g.append('g')
-              .attr('class', 'axis')
-              .attr('transform', 'translate(0,' + height + ')')
-              .call(axis);
+          if (!defn.ordinal) {
+            g.append('g')
+                .attr('class', 'axis')
+                .attr('transform', 'translate(0,' + height + ')')
+                .call(axis);
+          }
 
           // Initialize the brush component with pretty resize handles.
           var gBrush = g.append('g').attr('class', 'brush').call(brush);
@@ -193,7 +195,9 @@
         x   .domain([minX, maxX])
             .rangeRound([0, defn.numGroups() * binWidth]);
       }
-      axis.scale(x);
+      if (!defn.ordinal) {
+        axis.scale(x);
+      }
       brush.x(x);
       width = x.range()[1];
       if (defn.ticks || defn.tickSpacing) {

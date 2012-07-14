@@ -378,38 +378,19 @@
           crossAll,
           dimension,
           dimensionFunc,
+          internalDimensionFunc,
           group,
           groups,
           groupFunc,
           groupAll,
+          ordinal,
+          indexFromOrdinal,
           minX = spec.minX,
           maxX = spec.maxX,
           maxY = spec.maxY,
-          separation;
+          separation = spec.separation,
+          me = {};
 
-      function groupFuncBy(groupBy) {
-        return function(d) { return Math.floor(d / groupBy) * groupBy; };
-      }
-
-      if (spec.groupBy) {
-        separation = spec.groupBy;
-        groupFunc = groupFuncBy(separation);
-      } else {
-        if (spec.groupIdentity) {
-          groupFunc = function(d) { return d; };
-        } else {
-          groupFunc = spec.group;
-        }
-        separation = spec.separation;
-      }
-
-      if (spec.dimension) {
-        dimensionFunc = spec.dimension;
-      } else {
-        dimensionFunc = function(d) { return d[spec.id]; };
-      }
-
-      var me = {};
 
       me.id = spec.id;
       me.label = spec.label;
@@ -422,6 +403,40 @@
       }
       me.ticks = spec.ticks;
 
+      function groupFuncBy(groupBy) {
+        return function(d) { return Math.floor(d / groupBy) * groupBy; };
+      }
+
+      dimensionFunc = spec.dimension || function(d) { return d[spec.id]; };
+      if (spec.ordinal) {
+        separation = 1;
+        me.round = Math.round;
+        internalDimensionFunc = dimensionFunc;
+        dimensionFunc = function(d) {
+          d = internalDimensionFunc(d);
+          var index = indexFromOrdinal[d];
+          if (typeof index !== 'undefined') {
+            return index;
+          }
+          indexFromOrdinal[d] = ordinal.length;
+          ordinal.push(d);
+          return ordinal.length - 1;
+        };
+      }
+
+
+      if (spec.group) {
+        groupFunc = spec.group;
+      } else if (spec.groupBy) {
+        separation = spec.separation || spec.groupBy;
+        groupFunc = groupFuncBy(separation);
+      } else if (spec.groupIdentity || spec.ordinal) {
+        groupFunc = function(d) { return d; };
+      }
+
+      if (spec.ordinal) {
+        me.ordinal = function() { return ordinal; };
+      }
       me.dimensionFunc = function() { return dimensionFunc; };
       me.groupFunc = function() { return groupFunc; };
       me.separation = function() { return separation; };
@@ -458,8 +473,14 @@
 
       me.setCross = function(cross, all) {
         crossAll = all;
+        if (me.ordinal) {
+          indexFromOrdinal = {};
+          ordinal = [];
+        }
         dimension = cross.dimension(dimensionFunc);
         if (!groupFunc) {
+          // Using d3.scale.linear to get a human-friendly way to
+          // group the values into "numGroups"
           var top = dimension.top(Infinity),
               max = +dimensionFunc(top[0]),
               min = +dimensionFunc(top[top.length - 1]),
