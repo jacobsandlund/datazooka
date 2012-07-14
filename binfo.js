@@ -3,7 +3,7 @@
 
   //"use strict";
 
-  var binfo = {numGroups: 30};
+  var binfo = {numGroups: 30, tickSpacing: 40};
   var chartMe = binfoCharts(binfo);
   var setupMe = binfoSetup(binfo, chartMe);
   hashRetrieval(binfo);
@@ -143,8 +143,16 @@
           }
           if (typeof unit.type === 'function') {
             d[id] = unit.type(d[id]);
-          } else if (unit.type === 'number') {
+            return;
+          }
+          switch (unit.type) {
+          case 'number':
             d[id] = +d[id];
+            break;
+          case 'date':
+            d[id] = new Date(d[id]);
+          default:
+            // string, so no modification needed
           }
         });
       });
@@ -404,8 +412,13 @@
       me.id = spec.id;
       me.label = spec.label;
       me.round = spec.round;
-      me.type = spec.type;
+      me.type = spec.type || 'number';
       me.derived = spec.derived;
+      me.tickSpacing = spec.tickSpacing || binfo.tickSpacing;
+      if (spec.tickSpacing === false) {
+        me.tickSpacing = false;
+      }
+      me.ticks = spec.ticks;
 
       me.dimensionFunc = function() { return dimensionFunc; };
       me.groupFunc = function() { return groupFunc; };
@@ -485,13 +498,21 @@
         if (!x) {
           min = groups[0].key;
           max = groups[groups.length - 1].key + defn.separation();
-          x = d3.scale.linear()
-              .domain([min, max])
+          if (defn.type === 'date') {
+            x = d3.time.scale();
+          } else {
+            x = d3.scale.linear();
+          }
+          x   .domain([min, max])
               .rangeRound([0, (max - min) / defn.separation() * binWidth]);
         }
         axis.scale(x);
         brush.x(x);
         var width = x.range()[1];
+        if (defn.ticks || defn.tickSpacing) {
+          var ticks = defn.ticks || Math.round(width / defn.tickSpacing);
+          axis.ticks(ticks);
+        }
         var chartWidth = width + margin.right + margin.left;
 
         div.each(function() {
