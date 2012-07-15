@@ -15,7 +15,13 @@
       if (!arguments.length) return renderLater;
       renderLater = _;
     };
-    me.dataSets = function() { return dataSets; };
+    me.dataSet = function(dataName) {
+      var set = dataSets[dataName];
+      if (!set || !set.complete) {
+        return null;
+      }
+      return set;
+    };
 
     binfo.holder = function(_) {
       holder = d3.select(_);
@@ -105,19 +111,38 @@
           binfos[id] = chartMe.binfoUnit(definitions[id]);
         }
       }
-      dataSets[dataName] = dataSets[dataName] || {};
-      dataSets[dataName].binfos = binfos;
-      dataSets[dataName].binfoIds = binfoIds;
+      setDataSet(dataName, {binfos: binfos, binfoIds: binfoIds});
       holder.select('.dataName').append('option')
           .attr('value', dataName)
           .text(dataName);
       if (holder.selectAll('.dataName option').length <= 1) {
         changeDataName();
       }
-      if (dataSets[dataName].dataUntyped) {
-        binfo.dataFromUntyped(dataName, dataSets[dataName].dataUntyped);
-      }
     };
+
+    function setDataSet(dataName, set) {
+      var i,
+          dataSet = dataSets[dataName] = dataSets[dataName] || {};
+
+      for (i in set) {
+        if (set.hasOwnProperty(i)) {
+          dataSet[i] = set[i];
+        }
+      }
+      if (dataSet.dataUntyped) {
+        var dataUntyped = dataSet.dataUntyped;
+        delete dataSet.dataUntyped;
+        binfo.dataFromUntyped(dataName, dataUntyped);
+      }
+      if (dataSet.data && dataSet.binfos) {
+        dataSet.complete = true;
+        if (renderLater && renderLater[0] === dataName) {
+          binfo.render.apply(null, renderLater);
+          renderLater = null;
+        }
+      }
+    }
+
 
     function changeDataName() {
       var dataName = holder.select('.dataName').property('value');
@@ -164,12 +189,7 @@
     };
 
     binfo.data = function(dataName, data) {
-      dataSets[dataName] = dataSets[dataName] || {};
-      dataSets[dataName].data = data;
-      if (renderLater && renderLater[0] === dataName) {
-        binfo.render.apply(null, renderLater);
-        renderLater = null;
-      }
+      setDataSet(dataName, {data: data});
     };
 
     return me;
@@ -241,18 +261,17 @@
 
     binfo.render = function(dataName, binfoIds, filters) {
 
-      var dataSets = setupMe.dataSets(),
+      var dataSet = setupMe.dataSet(dataName),
           holder = setupMe.holder();
 
-      if (!(dataSets[dataName] && dataSets[dataName].data &&
-            dataSets[dataName].binfos)) {
+      if (!dataSet) {
         setupMe.renderLater([dataName, binfoIds, filters]);
         return;
       }
 
       filters = filters || {};
-      var data = dataSets[dataName].data;
-      binfos = dataSets[dataName].binfos;
+      var data = dataSet.data;
+      binfos = dataSet.binfos;
 
       var charts = binfoIds.map(function(id) { return binfos[id]; });
 
