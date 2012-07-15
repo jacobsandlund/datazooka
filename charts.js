@@ -8,6 +8,7 @@
   charts.chartCreator = function(defn, spec) {
 
     var margin = spec.margin || {top: 20, right: 10, bottom: 20, left: 10},
+        orientFlip = spec.orientFlip,
         binWidth = spec.binWidth || binfo.binWidth,
         height = spec.chartHeight || binfo.chartHeight,
         x = spec.x,
@@ -17,11 +18,26 @@
         percentFmt = d3.format('.3p'),
         width,
         chartWidth,
+        chartHeight,
         brushDirty;
 
-    if (defn.ordinal) {
-      margin.bottom += 120;
+    if (defn.ordinal && typeof orientFlip === 'undefined') {
+      orientFlip = true;
     }
+
+    if (orientFlip) {
+      margin.right += 25;
+      margin.left += 10;
+    }
+    if (defn.ordinal) {
+      var ordinalMargin = 120;
+      if (orientFlip) {
+        margin.left += ordinalMargin;
+      } else {
+        margin.bottom += ordinalMargin;
+      }
+    }
+
 
     function chart(div) {
       defn.update();
@@ -35,15 +51,21 @@
 
         // Create the skeletal chart.
         if (g.empty()) {
-          div.attr('width', chartWidth);
           div.select('.title')
               .text(defn.label);
+          div.attr('width', chartWidth);
 
           g = div.append('svg')
               .attr('width', chartWidth)
-              .attr('height', height + margin.top + margin.bottom)
-            .append('g')
-              .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+              .attr('height', chartHeight)
+            .append('g');
+          if (orientFlip) {
+            g   .attr('transform', 'matrix(0,1,-1,0,' +
+                      (chartWidth - margin.right) + ',' + margin.top + ')')
+                .classed('orient-flip', true);
+          } else {
+            g.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+          }
 
           g.append('clipPath')
               .attr('id', 'clip-' + defn.id)
@@ -87,6 +109,10 @@
           var gBrush = g.append('g').attr('class', 'brush').call(brush);
           gBrush.selectAll('rect').attr('height', height);
           gBrush.selectAll('.resize').append('path').attr('d', resizePath);
+          if (orientFlip) {
+            gBrush.selectAll('.resize')
+                .style('cursor', 'ns-resize');
+          }
 
           // The filter toggle and endpoints
           var filterBar = div.append('div').attr('class', 'filter-bar');
@@ -226,7 +252,15 @@
         ticks = defn.ticks || Math.round(width / defn.tickSpacing);
         axis.ticks(ticks);
       }
-      chartWidth = width + margin.right + margin.left;
+      chartWidth = margin.right + margin.left;
+      chartHeight = margin.top + margin.bottom;
+      if (orientFlip) {
+        chartWidth += height;
+        chartHeight += width;
+      } else {
+        chartWidth += width;
+        chartHeight += height;
+      }
     };
 
     chart.filter = function(_) {
