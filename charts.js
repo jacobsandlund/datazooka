@@ -281,6 +281,39 @@
     };
 
 
+    charts.compareChart = function(defn) {
+
+      var chartWidth = 200,
+          chartHeight = 200;
+
+
+      function chart(div) {
+
+        div.each(function() {
+          var div = d3.select(this),
+              g = div.select('g'),
+              axisHolder;
+
+          // Create the skeletal chart.
+          if (g.empty()) {
+            div.select('.title')
+                .text(defn.label);
+            div.attr('width', chartWidth);
+
+            g = div.append('svg')
+                .attr('width', chartWidth)
+                .attr('height', chartHeight)
+              .append('g');
+
+            g.append('text').text(defn.xb.id);
+            g.append('text').text(defn.yb.id);
+          }
+        });
+
+      }
+
+      return chart;
+    };
 
 
     return charts;

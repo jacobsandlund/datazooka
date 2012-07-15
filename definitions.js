@@ -12,6 +12,13 @@
       return defn;
     };
 
+    definitions.binfoCompare = function(id, binfos) {
+      var defn = compareDefinition(id, binfos);
+      defn.chart = chartsMe.compareChart(defn);
+      return defn;
+    };
+
+
     function unitDefinition(spec) {
 
       var charts = [],
@@ -202,6 +209,32 @@
           maxY = group.top(1)[0].value;
         }
       };
+
+      return me;
+    }
+
+
+    function compareDefinition(id, binfos) {
+
+      var ids = id.split('*'),
+          xb = binfos[ids[0]],
+          yb = binfos[ids[1]],
+          me = {};
+
+
+      me.id = id;
+      me.xb = xb;
+      me.yb = yb;
+      me.label = 'Comparing ' + xb.label + ' and ' + yb.label;
+
+      me.addBinfoIds = function(binfoIds) {
+        if (binfoIds.indexOf(xb.id) < 0) {
+          binfoIds.push(xb.id);
+        }
+        if (binfoIds.indexOf(yb.id) < 0) {
+          binfoIds.push(yb.id);
+        }
+      }
 
       return me;
     }

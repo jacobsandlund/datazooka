@@ -188,6 +188,7 @@
       }
       if (dataSet.data && dataSet.binfos) {
         dataSet.complete = true;
+        dataSet.compares = {};
         dataSet.binfoIds.forEach(function(b) {
           dataSet.binfos[b].data(dataSet.data);
         });
@@ -305,7 +306,7 @@
   binfo._register('hashRetrieval', hashRetrieval, []);
 
 
-  function rendering(setupMe) {
+  function rendering(setupMe, definitionsMe) {
 
     var chartSelection,
         cross,
@@ -330,6 +331,7 @@
       }
 
       filters = filters || {};
+      compareIds = compareIds || [];
       var data = dataSet.data,
           compares = dataSet.compares,
           holder = setupMe.holder();
@@ -337,6 +339,13 @@
       binfos = dataSet.binfos;
 
       var charts = binfoIds.map(function(id) { return binfos[id]; });
+      compareIds.forEach(function(id) {
+        if (!compares[id]) {
+          compares[id] = definitionsMe.binfoCompare(id, binfos);
+        }
+        compares[id].addBinfoIds(binfoIds);
+        charts.push(compares[id]);
+      });
 
       var removed = currentChartIds.filter(function(id) {
         return binfoIds.indexOf(id) < 0;
@@ -449,7 +458,7 @@
 
   }
 
-  binfo._register('rendering', rendering, ['setup']);
+  binfo._register('rendering', rendering, ['setup', 'definitions']);
 
 }());
 
