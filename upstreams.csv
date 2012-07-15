@@ -1,5 +1,6 @@
 contributors,files,project_size,repo_size,upstream_commits,upstream_contributions,upstream_created_at,upstream_fork,upstream_forks,upstream_language,upstream_name,upstream_open_issues,upstream_pushed_at,upstream_watchers
+356,6537,99200,154720,6711,3691,2009-05-27T16:29:46Z,false,2114,JavaScript,joyent/node,505,2012-07-13T23:44:23Z,16493
+3,187,892,1280,291,4,2011-07-24T13:15:51Z,false,31,JavaScript,chjj/marked,20,2012-07-13T16:34:31Z,613
+41,18,364,1256,309,107,2011-04-18T15:07:41Z,false,832,JavaScript,harvesthq/chosen,234,2012-07-06T20:58:48Z,7920
 5,87,1136,1568,118,7,2008-06-20T22:07:15Z,false,539,VimL,ryanb/dotfiles,1,2012-06-03T20:23:01Z,1322
 4,8,144,848,156,11,2012-07-05T03:13:55Z,false,110,JavaScript,ccampbell/mousetrap,15,2012-07-12T02:16:44Z,1789
-3,187,892,1280,291,4,2011-07-24T13:15:51Z,false,31,JavaScript,chjj/marked,20,2012-07-13T16:34:31Z,612
-41,18,364,1256,309,107,2011-04-18T15:07:41Z,false,832,JavaScript,harvesthq/chosen,234,2012-07-06T20:58:48Z,7918
