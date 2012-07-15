@@ -329,6 +329,7 @@
         hashUpdatedRecently = false,
         hashNeedsUpdated = false,
         currentChartIds = [],
+        currentCompareIds = [],
         currentFilters = {},
         formatNumber = d3.format(',d');
 
@@ -375,6 +376,7 @@
         addedCompares = compareIds;
       }
       currentChartIds = binfoIds;
+      currentCompareIds = compareIds;
       currentDataName = dataName;
       currentFilters = filters;
 
@@ -420,6 +422,7 @@
     function updateHash() {
       var filter, filterData,
           chartString = 'charts=' + currentChartIds.join(','),
+          compareString = 'compares=' + currentCompareIds.join(','),
           filterString = 'filters=',
           filterArray = [];
       function filterEncode(d) {
@@ -435,7 +438,8 @@
         }
       }
       filterString += filterArray.join(',');
-      var params = ['data=' + currentDataName, chartString, filterString].join('&');
+      var params = ['data=' + currentDataName, chartString,
+                    compareString, filterString].join('&');
       currentHash = '#' + params;
       hashNeedsUpdated = true;
       if (!hashUpdatedRecently) {

@@ -76,6 +76,7 @@
           axis = d3.svg.axis().orient('bottom'),
           brush = d3.svg.brush(),
           percentFmt = d3.format('.3p'),
+          path,
           brushDirty;
 
       if (defn.ordinal && typeof orientFlip === 'undefined') {
@@ -184,6 +185,7 @@
 
       my.update = function() {
         y.domain([0, defn.maxY()]);
+        path = barPath(defn.groups());
       };
 
       my.updateChart = function(div, g) {
@@ -218,7 +220,6 @@
         var percent = defn.crossAll().value() / defn.groupAll().value();
         percentText = g.selectAll('.percent').text(percentFmt(percent));
 
-        var path = barPath(defn.groups());
         g.selectAll('.bar')
             .attr('d', path);
       };
@@ -241,14 +242,14 @@
             x = e ? 1 : -1,
             y = dim.height / 3;
         return 'M' + (0.5 * x) + ',' + y +
-              'A6,6 0 0 ' + e + ' ' + (6.5 * x) + ',' + (y + 6) +
-              'V' + (2 * y - 6) +
-              'A6,6 0 0 ' + e + ' ' + (0.5 * x) + ',' + (2 * y) +
-              'Z' +
-              'M' + (2.5 * x) + ',' + (y + 8) +
-              'V' + (2 * y - 8) +
-              'M' + (4.5 * x) + ',' + (y + 8) +
-              'V' + (2 * y - 8);
+               'A6,6 0 0 ' + e + ' ' + (6.5 * x) + ',' + (y + 6) +
+               'V' + (2 * y - 6) +
+               'A6,6 0 0 ' + e + ' ' + (0.5 * x) + ',' + (2 * y) +
+               'Z' +
+               'M' + (2.5 * x) + ',' + (y + 8) +
+               'V' + (2 * y - 8) +
+               'M' + (4.5 * x) + ',' + (y + 8) +
+               'V' + (2 * y - 8);
       }
 
       brush.on('brushstart.chart', function() {
@@ -320,6 +321,7 @@
 
       var my = {},
           chart = baseChart(defn, spec, my),
+          path,
           dim = my.dim;
 
 
@@ -327,6 +329,7 @@
       };
 
       my.update = function() {
+        console.log('updating');
       };
 
       my.updateChart = function(div, g) {

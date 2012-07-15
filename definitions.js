@@ -112,7 +112,11 @@
       me.filterRange = function() { return filterRange; };
 
       me.numGroups = function() {
-        return (maxX - minX) / separation;
+        return Math.round((maxX - minX) / separation);
+      };
+
+      me.groupIndex = function(val) {
+        return Math.floor((val - minX) / separation);
       };
 
       me.data = function(data) {
@@ -213,6 +217,14 @@
       var ids = spec.id.split('*'),
           xb = spec.binfos[ids[0]],
           yb = spec.binfos[ids[1]],
+          xbDimensionFunc,
+          ybDimensionFunc,
+          xbGroupFunc,
+          ybGroupFunc,
+          ybNumGroups,
+          dimensionFunc,
+          group,
+          groups,
           me = {};
 
 
@@ -220,6 +232,14 @@
       me.xb = xb;
       me.yb = yb;
       me.label = 'Comparing ' + xb.label + ' and ' + yb.label;
+      me.group = function() { return group; };
+      me.groups = function() { return groups; };
+
+      dimensionFunc = function(d) {
+        var x = xb.groupIndex(xbGroupFunc(xbDimensionFunc(d))),
+            y = yb.groupIndex(ybGroupFunc(ybDimensionFunc(d)));
+        return x + y * ybNumGroups;
+      };
 
       me.addBinfoIds = function(binfoIds) {
         if (binfoIds.indexOf(xb.id) < 0) {
@@ -231,6 +251,14 @@
       };
 
       me.setCross = function(cross, crossAll) {
+        xbDimensionFunc = xb.dimensionFunc();
+        ybDimensionFunc = yb.dimensionFunc();
+        xbGroupFunc = xb.groupFunc();
+        ybGroupFunc = yb.groupFunc();
+        ybNumGroups = yb.numGroups();
+        var dimension = cross.dimension(dimensionFunc);
+        group = dimension.group();
+        groups = group.all();
       };
 
       me.update = function() {
