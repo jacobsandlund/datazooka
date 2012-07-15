@@ -12,16 +12,16 @@
       return defn;
     };
 
-    definitions.binfoCompare = function(id, binfos) {
-      var defn = compareDefinition(id, binfos);
-      defn.chart = chartsMe.compareChart(defn);
+    definitions.binfoCompare = function(spec) {
+      var defn = compareDefinition(spec);
+      defn.chart = chartsMe.compareChart(defn, spec);
       return defn;
     };
 
 
     function unitDefinition(spec) {
 
-      var charts = [],
+      var chart,
           filterRange = [0, 0],
           filterActive,
           crossAll,
@@ -162,7 +162,7 @@
           filterActive = false;
           dimension.filterAll();
         }
-        charts.forEach(function(c) { c.filter(_); });
+        chart.filter(_);
         return me;
       };
 
@@ -191,17 +191,11 @@
         if (!spec.maxX) {
           maxX = groups[groups.length - 1].key + separation;
         }
-        charts.forEach(function(c) { c.setCross(); });
+        chart.setCross();
       };
 
-      me.addChart = function(chart) {
-        if (charts.indexOf(chart) === -1) {
-          charts.push(chart);
-        }
-      };
-
-      me.removeChart = function(chart) {
-        charts.splice(charts.indexOf(chart), 1);
+      me.setChart = function(_) {
+        chart = _;
       };
 
       me.update = function() {
@@ -214,15 +208,15 @@
     }
 
 
-    function compareDefinition(id, binfos) {
+    function compareDefinition(spec) {
 
-      var ids = id.split('*'),
-          xb = binfos[ids[0]],
-          yb = binfos[ids[1]],
+      var ids = spec.id.split('*'),
+          xb = spec.binfos[ids[0]],
+          yb = spec.binfos[ids[1]],
           me = {};
 
 
-      me.id = id;
+      me.id = spec.id;
       me.xb = xb;
       me.yb = yb;
       me.label = 'Comparing ' + xb.label + ' and ' + yb.label;
@@ -234,7 +228,18 @@
         if (binfoIds.indexOf(yb.id) < 0) {
           binfoIds.push(yb.id);
         }
-      }
+      };
+
+      me.setCross = function(cross, crossAll) {
+      };
+
+      me.update = function() {
+      };
+
+      me.setChart = function(_) {
+        chart = _;
+      };
+
 
       return me;
     }

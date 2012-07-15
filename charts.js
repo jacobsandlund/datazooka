@@ -7,20 +7,75 @@
 
     var charts = {};
 
+
+    function baseChart(defn, spec, my) {
+
+      var dim = spec.dimensions || {},
+          defaultDim = binfo.chartDimensions,
+          dimName;
+
+      for (dimName in defaultDim) {
+        if (defaultDim.hasOwnProperty(dimName)) {
+          if (!dim[dimName]) {
+            dim[dimName] = defaultDim[dimName];
+          }
+        }
+      }
+
+      my = my || {};
+      my.dim = dim;
+      my.updateDim = function() {
+        dim.fullWidth = dim.right + dim.width + dim.left;
+        dim.fullHeight = dim.top + dim.height + dim.bottom;
+      };
+      my.updateDim();
+
+      function chart(div) {
+        defn.update();
+        my.update();
+        div.each(updateEachChart);
+      }
+
+      function updateEachChart() {
+        var div = d3.select(this),
+            g = div.select('g');
+
+        if (g.empty()) {
+          div.select('.title')
+              .text(defn.label);
+          div.attr('width', dim.fullWidth);
+
+          g = div.append('svg')
+              .attr('width', dim.fullWidth)
+              .attr('height', dim.fullHeight)
+            .append('g')
+              .attr('transform', 'translate(' + dim.left + ',' + dim.top + ')');
+
+          my.setupChart(div, g);
+        }
+
+        my.updateChart(div, g);
+      }
+
+
+      defn.setChart(chart);
+
+      return chart;
+    }
+
+
     charts.barChart = function(defn, spec) {
 
-      var margin = spec.margin || {top: 20, right: 10, bottom: 20, left: 10},
+      var my = {},
+          chart = baseChart(defn, spec, my),
+          dim = my.dim,
           orientFlip = spec.orientFlip,
           binWidth = spec.binWidth || binfo.binWidth,
-          height = spec.chartHeight || binfo.chartHeight,
           x = spec.x,
-          y = spec.y || d3.scale.linear().range([height, 0]),
+          y = spec.y || d3.scale.linear().range([dim.height, 0]),
           axis = d3.svg.axis().orient('bottom'),
           brush = d3.svg.brush(),
           percentFmt = d3.format('.3p'),
-          width,
-          chartWidth,
-          chartHeight,
           brushDirty;
 
       if (defn.ordinal && typeof orientFlip === 'undefined') {
@@ -28,186 +83,172 @@
       }
 
       if (orientFlip) {
-        margin.right += 25;
-        margin.left += 10;
+        dim.right += 25;
+        dim.left += 10;
       }
       if (defn.ordinal) {
         var ordinalMargin = 120;
         if (orientFlip) {
-          margin.left += ordinalMargin;
+          dim.left += ordinalMargin;
         } else {
-          margin.bottom += ordinalMargin;
+          dim.bottom += ordinalMargin;
         }
       }
 
+      my.setupChart = function(div, g) {
 
-      function chart(div) {
-        defn.update();
+        var axisHolder;
 
+        if (orientFlip) {
+          g   .attr('transform', 'matrix(0,1,-1,0,' +
+                    (dim.fullWidth - dim.right) + ',' + dim.top + ')')
+              .classed('orient-flip', true);
+        }
+
+        g.append('clipPath')
+            .attr('id', 'clip-' + defn.id)
+          .append('rect')
+            .attr('width', dim.width)
+            .attr('height', dim.height);
+
+        g.selectAll('.bar')
+            .data(['background', 'foreground'])
+          .enter().append('path')
+            .attr('class', function(d) { return d + ' bar'; });
+
+        g.selectAll('.foreground.bar')
+            .attr('clip-path', 'url(#clip-' + defn.id + ')');
+
+
+        axisHolder = g.append('g')
+            .attr('class', 'axis');
+        if (defn.ordinal) {
+          axisHolder
+              .attr('transform', 'matrix(0,-1,1,0,0,' + dim.height + ')')
+              .classed('ordinal', true);
+          axisHolder.append('line')
+              .attr('x1', 0)
+              .attr('y1', 0)
+              .attr('x2', 0)
+              .attr('y2', dim.width);
+          axisHolder.selectAll('text')
+              .data(defn.ordinal())
+            .enter().append('text')
+              .attr('y', function(d, i) { return (i + 0.9) * binWidth; })
+              .attr('x', -6)
+              .text(function(d) { return d; });
+        } else {
+          axisHolder
+              .attr('transform', 'translate(0,' + dim.height + ')')
+              .call(axis);
+        }
+
+        // Initialize the brush component with pretty resize handles.
+        var gBrush = g.append('g').attr('class', 'brush').call(brush);
+        gBrush.selectAll('rect').attr('height', dim.height);
+        gBrush.selectAll('.resize').append('path').attr('d', resizePath);
+        if (orientFlip) {
+          gBrush.selectAll('.resize')
+              .style('cursor', 'ns-resize');
+        }
+
+        // The filter toggle and endpoints
+        var filterBar = div.append('div').attr('class', 'filter-bar');
+        filterBar.append('div')
+            .text('Filter')
+            .attr('class', 'filter button')
+            .classed('down', !brush.empty())
+            .on('click', function() {
+              var el = d3.select(this);
+              if (!defn.filterActive()) {
+                binfo.filter(defn.id, defn.filterRange());
+              } else {
+                binfo.filter(defn.id, null);
+              }
+            });
+        filterBar.selectAll('.range').data(['left', 'right'])
+          .enter().append('input')
+            .attr('type', 'text')
+            .attr('class', function(d) { return 'range ' + d; })
+            .property('value', function(d, i) { return defn.filterRange()[i]; })
+            .on('change', function(d, i) {
+              var range = defn.filterRange();
+              range[i] = this.value;
+              var left = x(range[0]),
+                  right = x(range[1]);
+              if (left <= right && left >= 0 && right < dim.width) {
+                binfo.filter(defn.id, range);
+              }
+            });
+      };
+
+      my.update = function() {
         y.domain([0, defn.maxY()]);
+      };
 
-        div.each(function() {
-          var div = d3.select(this),
-              g = div.select('g'),
-              axisHolder;
+      my.updateChart = function(div, g) {
 
-          // Create the skeletal chart.
-          if (g.empty()) {
-            div.select('.title')
-                .text(defn.label);
-            div.attr('width', chartWidth);
+        var percentText;
 
-            g = div.append('svg')
-                .attr('width', chartWidth)
-                .attr('height', chartHeight)
-              .append('g');
-            if (orientFlip) {
-              g   .attr('transform', 'matrix(0,1,-1,0,' +
-                        (chartWidth - margin.right) + ',' + margin.top + ')')
-                  .classed('orient-flip', true);
-            } else {
-              g.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-            }
-
-            g.append('clipPath')
-                .attr('id', 'clip-' + defn.id)
-              .append('rect')
-                .attr('width', width)
-                .attr('height', height);
-
-            g.selectAll('.bar')
-                .data(['background', 'foreground'])
-              .enter().append('path')
-                .attr('class', function(d) { return d + ' bar'; });
-
-            g.selectAll('.foreground.bar')
-                .attr('clip-path', 'url(#clip-' + defn.id + ')');
-
-
-            axisHolder = g.append('g')
-                .attr('class', 'axis');
-            if (defn.ordinal) {
-              axisHolder
-                  .attr('transform', 'matrix(0,-1,1,0,0,' + height + ')')
-                  .classed('ordinal', true);
-              axisHolder.append('line')
-                  .attr('x1', 0)
-                  .attr('y1', 0)
-                  .attr('x2', 0)
-                  .attr('y2', width);
-              axisHolder.selectAll('text')
-                  .data(defn.ordinal())
-                .enter().append('text')
-                  .attr('y', function(d, i) { return (i + 0.9) * binWidth; })
-                  .attr('x', -6)
-                  .text(function(d) { return d; });
-            } else {
-              axisHolder
-                  .attr('transform', 'translate(0,' + height + ')')
-                  .call(axis);
-            }
-
-            // Initialize the brush component with pretty resize handles.
-            var gBrush = g.append('g').attr('class', 'brush').call(brush);
-            gBrush.selectAll('rect').attr('height', height);
-            gBrush.selectAll('.resize').append('path').attr('d', resizePath);
-            if (orientFlip) {
-              gBrush.selectAll('.resize')
-                  .style('cursor', 'ns-resize');
-            }
-
-            // The filter toggle and endpoints
-            var filterBar = div.append('div').attr('class', 'filter-bar');
-            filterBar.append('div')
-                .text('Filter')
-                .attr('class', 'filter button')
-                .classed('down', !brush.empty())
-                .on('click', function() {
-                  var el = d3.select(this);
-                  if (!defn.filterActive()) {
-                    binfo.filter(defn.id, defn.filterRange());
-                  } else {
-                    binfo.filter(defn.id, null);
-                  }
-                });
-            filterBar.selectAll('.range').data(['left', 'right'])
-              .enter().append('input')
-                .attr('type', 'text')
-                .attr('class', function(d) { return 'range ' + d; })
-                .property('value', function(d, i) { return defn.filterRange()[i]; })
-                .on('change', function(d, i) {
-                  var range = defn.filterRange();
-                  range[i] = this.value;
-                  var left = x(range[0]),
-                      right = x(range[1]);
-                  if (left <= right && left >= 0 && right < width) {
-                    binfo.filter(defn.id, range);
-                  }
-                });
+        // Only redraw the brush if set externally.
+        if (brushDirty) {
+          brushDirty = false;
+          g.selectAll('.brush').call(brush);
+          div.select('.filter.button').classed('down', defn.filterActive());
+          div.selectAll('.range')
+              .property('value', function(d, i) { return defn.filterRange()[i]; });
+          if (defn.filterActive()) {
+            var extent = brush.extent();
+            g.selectAll('#clip-' + defn.id + ' rect')
+                .attr('x', x(extent[0]))
+                .attr('width', x(extent[1]) - x(extent[0]));
+            percentText = g.selectAll('.percent').data([1]);
+            percentText.enter().append('text')
+                .attr('class', 'percent')
+                .attr('y', -4);
+            percentText
+                .attr('x', (x(extent[1]) + x(extent[0])) / 2);
+          } else {
+            g.selectAll('#clip-' + defn.id + ' rect')
+                .attr('x', 0)
+                .attr('width', dim.width);
+            g.selectAll('.percent').data([]).exit().remove();
           }
-
-          var percentText;
-
-          // Only redraw the brush if set externally.
-          if (brushDirty) {
-            brushDirty = false;
-            g.selectAll('.brush').call(brush);
-            div.select('.filter.button').classed('down', defn.filterActive());
-            div.selectAll('.range')
-                .property('value', function(d, i) { return defn.filterRange()[i]; });
-            if (defn.filterActive()) {
-              var extent = brush.extent();
-              g.selectAll('#clip-' + defn.id + ' rect')
-                  .attr('x', x(extent[0]))
-                  .attr('width', x(extent[1]) - x(extent[0]));
-              percentText = g.selectAll('.percent').data([1]);
-              percentText.enter().append('text')
-                  .attr('class', 'percent')
-                  .attr('y', -4);
-              percentText
-                  .attr('x', (x(extent[1]) + x(extent[0])) / 2);
-            } else {
-              g.selectAll('#clip-' + defn.id + ' rect')
-                  .attr('x', 0)
-                  .attr('width', width);
-              g.selectAll('.percent').data([]).exit().remove();
-            }
-          }
-          var percent = defn.crossAll().value() / defn.groupAll().value();
-          percentText = g.selectAll('.percent').text(percentFmt(percent));
-
-          var path = barPath(defn.groups());
-          g.selectAll('.bar')
-              .attr('d', path);
-        });
-
-        function barPath(groups) {
-          var path = [],
-              i = -1,
-              n = groups.length,
-              d;
-          while (++i < n) {
-            d = groups[i];
-            path.push('M', x(d.key), ',', height, 'V', y(d.value),
-                      'h', binWidth - 1, 'V', height);
-          }
-          return path.join('');
         }
+        var percent = defn.crossAll().value() / defn.groupAll().value();
+        percentText = g.selectAll('.percent').text(percentFmt(percent));
 
-        function resizePath(d) {
-          var e = +(d === 'e'),
-              x = e ? 1 : -1,
-              y = height / 3;
-          return 'M' + (0.5 * x) + ',' + y +
-                'A6,6 0 0 ' + e + ' ' + (6.5 * x) + ',' + (y + 6) +
-                'V' + (2 * y - 6) +
-                'A6,6 0 0 ' + e + ' ' + (0.5 * x) + ',' + (2 * y) +
-                'Z' +
-                'M' + (2.5 * x) + ',' + (y + 8) +
-                'V' + (2 * y - 8) +
-                'M' + (4.5 * x) + ',' + (y + 8) +
-                'V' + (2 * y - 8);
+        var path = barPath(defn.groups());
+        g.selectAll('.bar')
+            .attr('d', path);
+      };
+
+      function barPath(groups) {
+        var path = [],
+            i = -1,
+            n = groups.length,
+            d;
+        while (++i < n) {
+          d = groups[i];
+          path.push('M', x(d.key), ',', dim.height, 'V', y(d.value),
+                    'h', binWidth - 1, 'V', dim.height);
         }
+        return path.join('');
+      }
+
+      function resizePath(d) {
+        var e = +(d === 'e'),
+            x = e ? 1 : -1,
+            y = dim.height / 3;
+        return 'M' + (0.5 * x) + ',' + y +
+              'A6,6 0 0 ' + e + ' ' + (6.5 * x) + ',' + (y + 6) +
+              'V' + (2 * y - 6) +
+              'A6,6 0 0 ' + e + ' ' + (0.5 * x) + ',' + (2 * y) +
+              'Z' +
+              'M' + (2.5 * x) + ',' + (y + 8) +
+              'V' + (2 * y - 8) +
+              'M' + (4.5 * x) + ',' + (y + 8) +
+              'V' + (2 * y - 8);
       }
 
       brush.on('brushstart.chart', function() {
@@ -249,19 +290,15 @@
           axis.scale(x);
         }
         brush.x(x);
-        width = x.range()[1];
+        dim.width = x.range()[1];
         if (defn.ticks || defn.tickSpacing) {
-          ticks = defn.ticks || Math.round(width / defn.tickSpacing);
+          ticks = defn.ticks || Math.round(dim.width / defn.tickSpacing);
           axis.ticks(ticks);
         }
-        chartWidth = margin.right + margin.left;
-        chartHeight = margin.top + margin.bottom;
+        my.updateDim();
         if (orientFlip) {
-          chartWidth += height;
-          chartHeight += width;
-        } else {
-          chartWidth += width;
-          chartHeight += height;
+          dim.fullWidth += dim.height - dim.width;
+          dim.fullHeight += dim.width - dim.height;
         }
       };
 
@@ -275,42 +312,25 @@
         return chart;
       };
 
-      defn.addChart(chart);
-
       return d3.rebind(chart, brush, 'on');
     };
 
 
-    charts.compareChart = function(defn) {
+    charts.compareChart = function(defn, spec) {
 
-      var chartWidth = 200,
-          chartHeight = 200;
+      var my = {},
+          chart = baseChart(defn, spec, my),
+          dim = my.dim;
 
 
-      function chart(div) {
+      my.setupChart = function(div, g) {
+      };
 
-        div.each(function() {
-          var div = d3.select(this),
-              g = div.select('g'),
-              axisHolder;
+      my.update = function() {
+      };
 
-          // Create the skeletal chart.
-          if (g.empty()) {
-            div.select('.title')
-                .text(defn.label);
-            div.attr('width', chartWidth);
-
-            g = div.append('svg')
-                .attr('width', chartWidth)
-                .attr('height', chartHeight)
-              .append('g');
-
-            g.append('text').text(defn.xb.id);
-            g.append('text').text(defn.yb.id);
-          }
-        });
-
-      }
+      my.updateChart = function(div, g) {
+      };
 
       return chart;
     };

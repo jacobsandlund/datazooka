@@ -4,7 +4,19 @@
   "use strict";
 
 
-  var binfo = {numGroups: 35, tickSpacing: 44, binWidth: 12, chartHeight: 100};
+  var binfo = {
+    numGroups: 35,
+    tickSpacing: 44,
+    binWidth: 12,
+    chartDimensions: {
+      top: 20,
+      right: 10,
+      bottom: 20,
+      left: 10,
+      height: 100,
+      width: 100,
+    }
+  };
   window.binfo = binfo;
 
   var components = {},
@@ -334,6 +346,7 @@
       compareIds = compareIds || [];
       var data = dataSet.data,
           compares = dataSet.compares,
+          addedCompares = [],
           holder = setupMe.holder();
 
       binfos = dataSet.binfos;
@@ -341,7 +354,8 @@
       var charts = binfoIds.map(function(id) { return binfos[id]; });
       compareIds.forEach(function(id) {
         if (!compares[id]) {
-          compares[id] = definitionsMe.binfoCompare(id, binfos);
+          compares[id] = definitionsMe.binfoCompare({id: id, binfos: binfos});
+          addedCompares.push(id);
         }
         compares[id].addBinfoIds(binfoIds);
         charts.push(compares[id]);
@@ -358,6 +372,7 @@
         cross = crossfilter(data);
         crossAll = cross.groupAll();
         added = binfoIds;
+        addedCompares = compareIds;
       }
       currentChartIds = binfoIds;
       currentDataName = dataName;
@@ -366,6 +381,7 @@
       updateHash();
 
       added.forEach(function(id) { binfos[id].setCross(cross, crossAll); });
+      addedCompares.forEach(function(id) { compares[id].setCross(cross, crossAll); });
 
       if (added.length || removed.length) {
 
