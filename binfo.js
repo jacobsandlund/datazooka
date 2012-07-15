@@ -133,9 +133,13 @@
         var dataUntyped = dataSet.dataUntyped;
         delete dataSet.dataUntyped;
         binfo.dataFromUntyped(dataName, dataUntyped);
+        return;
       }
       if (dataSet.data && dataSet.binfos) {
         dataSet.complete = true;
+        dataSet.binfoIds.forEach(function(b) {
+          dataSet.binfos[b].data(dataSet.data);
+        });
         if (renderLater && renderLater[0] === dataName) {
           binfo.render.apply(null, renderLater);
           renderLater = null;
@@ -411,10 +415,9 @@
           groupFunc,
           groupAll,
           ordinal = [],
-          ordinalCount = 1e9,
-          orderFromOrdinal = {},
-          indexFromOrder,
+          indexFromOrdinal = {},
           ordinalOrdered,
+          ordinalHash = {},
           minX = spec.minX,
           maxX = spec.maxX,
           maxY = spec.maxY,
@@ -441,33 +444,28 @@
       if (spec.ordinal) {
         separation = 1;
         me.round = Math.round;
-        if (typeof spec.ordinal === 'function') {
+        if (Array.isArray(spec.ordinal)) {
+          spec.ordinal.forEach(function(o, i) { ordinalHash[o] = i; });
+        } else {
+          ordinalHash = spec.ordinal;
+        }
+        if (typeof ordinalHash === 'object') {
+          ordinalOrdered = function(d) {
+            var order = ordinalHash[d];
+            if (!order && order !== 0) {
+              return -1;
+            }
+            return order;
+          };
+        } else if (typeof spec.ordinal === 'function') {
           ordinalOrdered = spec.ordinal;
         } else {
           ordinalOrdered = function() { return -1; };
         }
-        //if (Array.isArray(spec.ordinal)) {
-        //  ordinal = spec.ordinal;
-        //  ordinal.forEach(function(o, i) {
-        //    indexFromOrdinal[o] = i;
-        //  });
-        //}
         internalDimensionFunc = dimensionFunc;
         dimensionFunc = function(d) {
-          d = internalDimensionFunc(d);
-          var order = orderFromOrdinal[d];
-          if (typeof order !== 'undefined') {
-            return order;
-          }
-          var order = ordinalOrdered(d);
-          if (order >= 0) {
-            orderFromOrdinal[d] = order;
-            return order;
-          }
-          orderFromOrdinal[d] = ordinalCount;
-          return ordinalCount++;
+          return indexFromOrdinal[internalDimensionFunc(d)];
         };
-        groupFunc = function(d) { return indexFromOrder[d]; }
       }
 
       if (spec.group) {
@@ -475,7 +473,7 @@
       } else if (spec.groupBy) {
         separation = spec.separation || spec.groupBy;
         groupFunc = groupFuncBy(separation);
-      } else if (spec.groupIdentity) {
+      } else if (spec.groupIdentity || spec.ordinal) {
         groupFunc = function(d) { return d; };
       }
 
@@ -499,6 +497,40 @@
         return (maxX - minX) / separation;
       };
 
+      me.data = function(data) {
+        var ordinalCount = 1e9,
+            orderFromOrdinal = {},
+            ord,
+            ordArray = [];
+
+        if (me.ordinal) {
+          data.forEach(function(d) {
+            d = internalDimensionFunc(d);
+            var order = orderFromOrdinal[d];
+            if (typeof order !== 'undefined') {
+              return;
+            }
+            order = ordinalOrdered(d);
+            if (order >= 0) {
+              orderFromOrdinal[d] = order;
+              return;
+            }
+            orderFromOrdinal[d] = ordinalCount;
+            ordinalCount++;
+          });
+          for (ord in orderFromOrdinal) {
+            if (orderFromOrdinal.hasOwnProperty(ord)) {
+              ordArray.push({value: ord, order: orderFromOrdinal[ord]})
+            }
+          }
+          ordArray.sort(function(a, b) { return a.order - b.order; });
+          ordArray.forEach(function(d, i) {
+            indexFromOrdinal[d.value] = i;
+            ordinal[i] = d.value;
+          });
+        }
+      }
+
       me.filter = function(_) {
         if (_) {
           filterActive = true;
@@ -519,11 +551,6 @@
       me.setCross = function(cross, all) {
         crossAll = all;
         dimension = cross.dimension(dimensionFunc);
-        if (me.ordinal) {
-          var ordinalAndIndex = computeIndexFromOrder(orderFromOrdinal);
-          indexFromOrder = ordinalAndIndex[0];
-          ordinal = ordinalAndIndex[1];
-        }
         if (!groupFunc) {
           // Using d3.scale.linear to get a human-friendly way to
           // group the values into "numGroups"
@@ -548,24 +575,6 @@
         }
         charts.forEach(function(c) { c.setCross(); });
       };
-
-      function computeIndexFromOrder(sparse) {
-        var ord,
-            array = [],
-            indexFromOrder = {},
-            ordinal = [];
-        for (ord in sparse) {
-          if (sparse.hasOwnProperty(ord)) {
-            array.push({value: ord, order: sparse[ord]})
-          }
-        }
-        array.sort(function(a, b) { return a.order - b.order; });
-        array.forEach(function(d, i) {
-          indexFromOrder[d.order] = i;
-          ordinal[i] = d.value;
-        });
-        return [indexFromOrder, ordinal];
-      }
 
       me.addChart = function(chart) {
         if (charts.indexOf(chart) === -1) {
