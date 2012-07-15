@@ -62,7 +62,8 @@
       /*jshint evil:true */
       var id, defn,
           evil = [],
-          evalParts = ['dimension', 'group', 'x', 'y', 'round'];
+          evalParts = ['dimension', 'group', 'x', 'y', 'round'],
+          evalPartsIfFunc = ['type', 'ordinal'];
       function makeEvil(defn, id) {
         return function(part) {
           if (!defn[part]) {
@@ -72,14 +73,21 @@
                               ' = ', defn[part], ';']);
         };
       }
+      function maybeMakeEvil(defn, id) {
+        var evalPart = makeEvil(defn, id);
+        return function(part) {
+          if (typeof defn[part] === 'string' &&
+              defn[part].slice(0, 8) === 'function') {
+            evalPart(part);
+          }
+        };
+      }
+
       for (id in definitions) {
         if (definitions.hasOwnProperty(id)) {
           defn = definitions[id];
           evalParts.forEach(makeEvil(defn, id));
-          if (defn.type && defn.type.slice(0, 8) === 'function') {
-            evil = evil.concat(['definitions["', id, '"].type = ',
-                                defn.type, ';']);
-          }
+          evalPartsIfFunc.forEach(maybeMakeEvil(defn, id));
         }
       }
       eval(evil.join(''));
@@ -383,8 +391,11 @@
           groups,
           groupFunc,
           groupAll,
-          ordinal,
-          indexFromOrdinal,
+          ordinal = [],
+          ordinalCount = 1e9,
+          orderFromOrdinal = {},
+          indexFromOrder,
+          ordinalOrdered,
           minX = spec.minX,
           maxX = spec.maxX,
           maxY = spec.maxY,
@@ -411,26 +422,41 @@
       if (spec.ordinal) {
         separation = 1;
         me.round = Math.round;
+        if (typeof spec.ordinal === 'function') {
+          ordinalOrdered = spec.ordinal;
+        } else {
+          ordinalOrdered = function() { return -1; };
+        }
+        //if (Array.isArray(spec.ordinal)) {
+        //  ordinal = spec.ordinal;
+        //  ordinal.forEach(function(o, i) {
+        //    indexFromOrdinal[o] = i;
+        //  });
+        //}
         internalDimensionFunc = dimensionFunc;
         dimensionFunc = function(d) {
           d = internalDimensionFunc(d);
-          var index = indexFromOrdinal[d];
-          if (typeof index !== 'undefined') {
-            return index;
+          var order = orderFromOrdinal[d];
+          if (typeof order !== 'undefined') {
+            return order;
           }
-          indexFromOrdinal[d] = ordinal.length;
-          ordinal.push(d);
-          return ordinal.length - 1;
+          var order = ordinalOrdered(d);
+          if (order >= 0) {
+            orderFromOrdinal[d] = order;
+            return order;
+          }
+          orderFromOrdinal[d] = ordinalCount;
+          return ordinalCount++;
         };
+        groupFunc = function(d) { return indexFromOrder[d]; }
       }
-
 
       if (spec.group) {
         groupFunc = spec.group;
       } else if (spec.groupBy) {
         separation = spec.separation || spec.groupBy;
         groupFunc = groupFuncBy(separation);
-      } else if (spec.groupIdentity || spec.ordinal) {
+      } else if (spec.groupIdentity) {
         groupFunc = function(d) { return d; };
       }
 
@@ -473,11 +499,12 @@
 
       me.setCross = function(cross, all) {
         crossAll = all;
-        if (me.ordinal) {
-          indexFromOrdinal = {};
-          ordinal = [];
-        }
         dimension = cross.dimension(dimensionFunc);
+        if (me.ordinal) {
+          var ordinalAndIndex = computeIndexFromOrder(orderFromOrdinal);
+          indexFromOrder = ordinalAndIndex[0];
+          ordinal = ordinalAndIndex[1];
+        }
         if (!groupFunc) {
           // Using d3.scale.linear to get a human-friendly way to
           // group the values into "numGroups"
@@ -502,6 +529,24 @@
         }
         charts.forEach(function(c) { c.setCross(); });
       };
+
+      function computeIndexFromOrder(sparse) {
+        var ord,
+            array = [],
+            indexFromOrder = {},
+            ordinal = [];
+        for (ord in sparse) {
+          if (sparse.hasOwnProperty(ord)) {
+            array.push({value: ord, order: sparse[ord]})
+          }
+        }
+        array.sort(function(a, b) { return a.order - b.order; });
+        array.forEach(function(d, i) {
+          indexFromOrder[d.order] = i;
+          ordinal[i] = d.value;
+        });
+        return [indexFromOrder, ordinal];
+      }
 
       me.addChart = function(chart) {
         if (charts.indexOf(chart) === -1) {
