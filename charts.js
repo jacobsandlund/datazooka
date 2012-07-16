@@ -321,55 +321,74 @@
           chart = baseChart(defn, spec, my),
           xb = defn.xb,
           yb = defn.yb,
-          path,
+          paths = [],
+          levels = 8,
+          scaleLevel = spec.scaleLevel || levels,
           dim = my.dim;
 
-
       my.setupChart = function(div, g) {
-        g.append('path')
-            .attr('class', 'bar');
+        var levelNums = [],
+            i;
+        for (i = 0; i < levels; i++) {
+          levelNums.push(i);
+        }
+        g.selectAll('.compare.bar')
+            .data(levelNums)
+          .enter().append('path')
+            .attr('class', function(d) { return 'level-' + d + ' compare bar'; });
       };
 
       my.update = function() {
         var groups = defn.groups(),
             pathParts = [],
-            i = -1,
+            i,
             n = groups.length,
             ybScale = defn.ybScale,
             maxVal = defn.maxValue(),
             key,
             val,
+            area,
             val2,
+            level,
             bWidth = dim.binWidth,
             mid = bWidth / 2,
             x,
             y,
             d;
-        if (!maxVal) {
-          path = 'M0,0';
-          return;
+        for (i = 0; i < levels; i++) {
+          pathParts[i] = [];
         }
-        while (++i < n) {
-          d = groups[i];
-          key = d.key;
-          val = d.value;
-          x = key % ybScale * bWidth - mid;
-          y = Math.round(key / ybScale) * bWidth - mid;
-          val = val / maxVal * mid;
-          val2 = val * 2;
-          pathParts.push('M', x - mid - val, ',', y - mid - val,
-                         'v', val2, 'h', val2, 'v', -val2);
+        pathParts[-2] = pathParts[-1] = {push: function() {}};
+        if (maxVal) {
+          i = -1;
+          while (++i < n) {
+            d = groups[i];
+            key = d.key;
+            val = d.value;
+            x = key % ybScale * bWidth + mid;
+            y = Math.round(key / ybScale) * bWidth + mid;
+            area = val / maxVal * scaleLevel;
+            level = Math.min(Math.floor(area), levels - 1);
+            val = Math.sqrt(area - level) * mid;
+            val2 = val * 2;
+            pathParts[level].push('M', x - val, ',', y - val,
+                                  'v', val2, 'h', val2, 'v', -val2);
+            pathParts[level-1].push('M', x - mid, ',', y - mid,
+                                    'v', bWidth, 'h', bWidth, 'v', -bWidth);
+          }
         }
-        path = pathParts.join('');
+        for (i = 0; i < levels; i++) {
+          paths[i] = pathParts[i].join('') || 'M0,0';
+        }
       };
 
       my.updateChart = function(div, g) {
-        g.selectAll('.bar')
-            .attr('d', path);
+        g.selectAll('.compare.bar')
+            .attr('d', function(d) { return paths[d]; });
       };
 
       chart.setCross = function() {
-        dim.height = defn.ybScale * dim.binWidth;
+        dim.height = yb.numGroups() * dim.binWidth;
         dim.width = xb.numGroups() * dim.binWidth;
         my.updateDim();
       };
