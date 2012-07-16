@@ -70,7 +70,6 @@
           chart = baseChart(defn, spec, my),
           dim = my.dim,
           orientFlip = spec.orientFlip,
-          binWidth = spec.binWidth || binfo.binWidth,
           x = spec.x,
           y = spec.y || d3.scale.linear().range([dim.height, 0]),
           axis = d3.svg.axis().orient('bottom'),
@@ -135,7 +134,7 @@
           axisHolder.selectAll('text')
               .data(defn.ordinal())
             .enter().append('text')
-              .attr('y', function(d, i) { return (i + 0.9) * binWidth; })
+              .attr('y', function(d, i) { return (i + 0.9) * dim.binWidth; })
               .attr('x', -6)
               .text(function(d) { return d; });
         } else {
@@ -184,8 +183,20 @@
       };
 
       my.update = function() {
+        var groups = defn.groups(),
+            pathParts = [],
+            i = -1,
+            n = groups.length,
+            height = dim.height,
+            bWidth = dim.binWidth - 1,
+            d;
         y.domain([0, defn.maxY()]);
-        path = barPath(defn.groups());
+        while (++i < n) {
+          d = groups[i];
+          pathParts.push('M', x(d.key), ',', height, 'V', y(d.value),
+                         'h', bWidth, 'V', height);
+        }
+        path = pathParts.join('');
       };
 
       my.updateChart = function(div, g) {
@@ -223,19 +234,6 @@
         g.selectAll('.bar')
             .attr('d', path);
       };
-
-      function barPath(groups) {
-        var path = [],
-            i = -1,
-            n = groups.length,
-            d;
-        while (++i < n) {
-          d = groups[i];
-          path.push('M', x(d.key), ',', dim.height, 'V', y(d.value),
-                    'h', binWidth - 1, 'V', dim.height);
-        }
-        return path.join('');
-      }
 
       function resizePath(d) {
         var e = +(d === 'e'),
@@ -285,7 +283,7 @@
             x = d3.scale.linear();
           }
           x   .domain([minX, maxX])
-              .rangeRound([0, defn.numGroups() * binWidth]);
+              .rangeRound([0, defn.numGroups() * dim.binWidth]);
         }
         if (!defn.ordinal) {
           axis.scale(x);
@@ -321,18 +319,59 @@
 
       var my = {},
           chart = baseChart(defn, spec, my),
+          xb = defn.xb,
+          yb = defn.yb,
           path,
           dim = my.dim;
 
 
       my.setupChart = function(div, g) {
+        g.append('path')
+            .attr('class', 'bar');
       };
 
       my.update = function() {
-        console.log('updating');
+        var groups = defn.groups(),
+            pathParts = [],
+            i = -1,
+            n = groups.length,
+            ybScale = defn.ybScale,
+            maxVal = defn.maxValue(),
+            key,
+            val,
+            val2,
+            bWidth = dim.binWidth,
+            mid = bWidth / 2,
+            x,
+            y,
+            d;
+        if (!maxVal) {
+          path = 'M0,0';
+          return;
+        }
+        while (++i < n) {
+          d = groups[i];
+          key = d.key;
+          val = d.value;
+          x = key % ybScale * bWidth - mid;
+          y = Math.round(key / ybScale) * bWidth - mid;
+          val = val / maxVal * mid;
+          val2 = val * 2;
+          pathParts.push('M', x - mid - val, ',', y - mid - val,
+                         'v', val2, 'h', val2, 'v', -val2);
+        }
+        path = pathParts.join('');
       };
 
       my.updateChart = function(div, g) {
+        g.selectAll('.bar')
+            .attr('d', path);
+      };
+
+      chart.setCross = function() {
+        dim.height = defn.ybScale * dim.binWidth;
+        dim.width = xb.numGroups() * dim.binWidth;
+        my.updateDim();
       };
 
       return chart;

@@ -221,10 +221,11 @@
           ybDimensionFunc,
           xbGroupFunc,
           ybGroupFunc,
-          ybNumGroups,
+          ybScale = Math.pow(2, 20),  // About a million
           dimensionFunc,
           group,
           groups,
+          maxValue,
           me = {};
 
 
@@ -232,13 +233,15 @@
       me.xb = xb;
       me.yb = yb;
       me.label = 'Comparing ' + xb.label + ' and ' + yb.label;
+      me.ybScale = ybScale;
       me.group = function() { return group; };
       me.groups = function() { return groups; };
+      me.maxValue = function() { return maxValue; };
 
       dimensionFunc = function(d) {
         var x = xb.groupIndex(xbGroupFunc(xbDimensionFunc(d))),
             y = yb.groupIndex(ybGroupFunc(ybDimensionFunc(d)));
-        return x + y * ybNumGroups;
+        return x + y * ybScale;
       };
 
       me.addBinfoIds = function(binfoIds) {
@@ -255,14 +258,16 @@
         ybDimensionFunc = yb.dimensionFunc();
         xbGroupFunc = xb.groupFunc();
         ybGroupFunc = yb.groupFunc();
-        ybNumGroups = yb.numGroups();
         var dimension = cross.dimension(dimensionFunc);
         group = dimension.group();
         groups = group.all();
+        chart.setCross();
       };
 
       me.update = function() {
+        maxValue = group.top(1)[0].value;
       };
+
 
       me.setChart = function(_) {
         chart = _;

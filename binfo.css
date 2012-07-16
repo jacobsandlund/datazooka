@@ -66,12 +66,12 @@
   margin-left: 8px;
 }
 
-.background.bar {
-  fill: #ccc;
+.bar {
+  fill: steelblue;
 }
 
-.foreground.bar {
-  fill: steelblue;
+.background.bar {
+  fill: #ccc;
 }
 
 .axis path, .axis line {

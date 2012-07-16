@@ -7,7 +7,6 @@
   var binfo = {
     numGroups: 35,
     tickSpacing: 44,
-    binWidth: 12,
     chartDimensions: {
       top: 20,
       right: 10,
@@ -15,6 +14,7 @@
       left: 10,
       height: 100,
       width: 100,
+      binWidth: 12,
     }
   };
   window.binfo = binfo;
@@ -138,8 +138,7 @@
           if (!defn[part]) {
             return;
           }
-          evil = evil.concat(['definitions["', id, '"].', part,
-                              ' = ', defn[part], ';']);
+          evil.push('definitions["', id, '"].', part, ' = ', defn[part], ';');
         };
       }
       function maybeMakeEvil(defn, id) {
