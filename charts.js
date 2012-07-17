@@ -177,7 +177,7 @@
               range[i] = this.value;
               var left = x(range[0]),
                   right = x(range[1]);
-              if (left <= right && left >= 0 && right < dim.width) {
+              if (left <= right && left >= 0 && right <= dim.width) {
                 binfo.filter(defn.id, range);
               }
             });
@@ -340,35 +340,29 @@
       };
 
       my.update = function() {
-        var groups = defn.groups(),
+        var values = defn.values(),
+            xn = values.length,
+            yn = values[0].length,
             pathParts = [],
-            i,
-            n = groups.length,
-            ybScale = defn.ybScale,
-            maxVal = defn.maxValue(),
-            key,
-            val,
-            area,
-            val2,
+            xi,
+            yi,
             level,
+            area,
+            val,
+            val2,
             bWidth = dim.binWidth,
             mid = bWidth / 2,
             x,
-            y,
-            d;
-        for (i = 0; i < levels; i++) {
-          pathParts[i] = [];
+            y;
+        for (xi = 0; xi < levels; xi++) {
+          pathParts[xi] = [];
         }
         pathParts[-2] = pathParts[-1] = {push: function() {}};
-        if (maxVal) {
-          i = -1;
-          while (++i < n) {
-            d = groups[i];
-            key = d.key;
-            val = d.value;
-            x = key % ybScale * bWidth + mid;
-            y = Math.round(key / ybScale) * bWidth + mid;
-            area = val / maxVal * scaleLevel;
+        for (xi = 0; xi < xn; xi++) {
+          x = xi * bWidth + mid;
+          for (yi = 0; yi < yn; yi++) {
+            y = yi * bWidth + mid;
+            area = values[xi][yi] * scaleLevel;
             level = Math.min(Math.floor(area), levels - 1);
             val = Math.sqrt(area - level) * mid;
             val2 = val * 2;
@@ -378,8 +372,8 @@
                                     'v', bWidth, 'h', bWidth, 'v', -bWidth);
           }
         }
-        for (i = 0; i < levels; i++) {
-          paths[i] = pathParts[i].join('') || 'M0,0';
+        for (xi = 0; xi < levels; xi++) {
+          paths[xi] = pathParts[xi].join('') || 'M0,0';
         }
       };
 

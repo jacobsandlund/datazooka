@@ -221,22 +221,31 @@
       return me;
     }
 
+    definitions.compareIdFromRaw = function(rawId) {
+      var ids = rawId.split('*');
+      if (ids[0] < ids[1]) {
+        return ids[0] + '*' + ids[1];
+      }
+      return ids[1] + '*' + ids[0];
+    };
 
     function compareDefinition(spec) {
 
       var ids = spec.id.split('*'),
           xb = spec.binfos[ids[0]],
           yb = spec.binfos[ids[1]],
-          normalize = ids[1],
+          normalize = spec.raw.split('*')[2],
           xbDimensionFunc,
           ybDimensionFunc,
           xbGroupFunc,
           ybGroupFunc,
+          xbNumGroups,
+          ybNumGroups,
           ybScale = Math.pow(2, 20),  // About a million
           dimensionFunc,
           group,
           groups,
-          maxValue,
+          values,
           chart,
           me = {};
 
@@ -248,13 +257,22 @@
       me.ybScale = ybScale;
       me.group = function() { return group; };
       me.groups = function() { return groups; };
-      me.maxValue = function() { return maxValue; };
+      me.values = function() { return values; };
+      me.normalize = function(_) {
+        if (!arguments.length) return normalize;
+        normalize = _;
+      };
+      me.rawId = function() {
+        return spec.id + (normalize ? '*' + normalize : '');
+      };
 
       dimensionFunc = function(d) {
         var x = xb.groupIndex(xbGroupFunc(xbDimensionFunc(d))),
             y = yb.groupIndex(ybGroupFunc(ybDimensionFunc(d)));
         return x + y * ybScale;
       };
+
+
 
       me.addBinfoIds = function(binfoIds) {
         if (binfoIds.indexOf(xb.id) < 0) {
@@ -270,14 +288,66 @@
         ybDimensionFunc = yb.dimensionFunc();
         xbGroupFunc = xb.groupFunc();
         ybGroupFunc = yb.groupFunc();
+        xbNumGroups = xb.numGroups();
+        ybNumGroups = yb.numGroups();
         var dimension = cross.dimension(dimensionFunc);
         group = dimension.group();
         groups = group.all();
+        var i;
+        values = [];
+        for (i = 0; i < xbNumGroups; i++) {
+          values[i] = [];
+        }
         chart.setCross();
       };
 
       me.update = function() {
-        maxValue = group.top(1)[0].value;
+        var xi,
+            yi,
+            i,
+            n = groups.length,
+            d,
+            max;
+        for (xi = 0; xi < xbNumGroups; xi++) {
+          for (yi = 0; yi < ybNumGroups; yi++) {
+            values[xi][yi] = 0;
+          }
+        }
+        i = -1;
+        while (++i < n) {
+          d = groups[i];
+          xi = d.key % ybScale;
+          yi = Math.round(d.key / ybScale);
+          values[xi][yi] = d.value;
+        }
+        if (!normalize) {
+          max = group.top(1)[0].value + 1e-300;
+          for (xi = 0; xi < xbNumGroups; xi++) {
+            for (yi = 0; yi < ybNumGroups; yi++) {
+              values[xi][yi] = values[xi][yi] / max;
+            }
+          }
+        } else if (normalize === 'x') {
+          for (yi = 0; yi < ybNumGroups; yi++) {
+            max = 1e-300;
+            for (xi = 0; xi < xbNumGroups; xi++) {
+              max = Math.max(max, values[xi][yi]);
+            }
+            for (xi = 0; xi < xbNumGroups; xi++) {
+              values[xi][yi] = values[xi][yi] / max;
+            }
+          }
+        } else {
+          for (xi = 0; xi < xbNumGroups; xi++) {
+            max = 1e-300;
+            for (yi = 0; yi < ybNumGroups; yi++) {
+              max = Math.max(max, values[xi][yi]);
+            }
+            for (yi = 0; yi < ybNumGroups; yi++) {
+              values[xi][yi] = values[xi][yi] / max;
+            }
+          }
+        }
       };
 
 

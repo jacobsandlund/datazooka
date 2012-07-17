@@ -323,6 +323,7 @@
         cross,
         crossAll,
         binfos,
+        compares,
         currentDataName,
         currentHash,
         hashUpdatedRecently = false,
@@ -345,16 +346,21 @@
       filters = filters || {};
       compareIds = compareIds || [];
       var data = dataSet.data,
-          compares = dataSet.compares,
           addedCompares = [],
-          holder = setupMe.holder();
+          holder = setupMe.holder(),
+          rawCompareIds = compareIds;
 
       binfos = dataSet.binfos;
+      compares = dataSet.compares;
 
       var charts = binfoIds.map(function(id) { return binfos[id]; });
-      compareIds.forEach(function(id) {
+      compareIds = [];
+      rawCompareIds.forEach(function(raw) {
+        var id = definitionsMe.compareIdFromRaw(raw);
+        compareIds.push(id);
         if (!compares[id]) {
-          compares[id] = definitionsMe.binfoCompare({id: id, binfos: binfos});
+          compares[id] = definitionsMe.binfoCompare({
+                                          id: id, raw: raw, binfos: binfos});
           addedCompares.push(id);
         }
         compares[id].addBinfoIds(binfoIds);
@@ -421,9 +427,14 @@
     function updateHash() {
       var filter, filterData,
           chartString = 'charts=' + currentChartIds.join(','),
-          compareString = 'compares=' + currentCompareIds.join(','),
+          compareString = 'compares=',
           filterString = 'filters=',
           filterArray = [];
+
+      compareString += currentCompareIds.map(function(id) {
+        return compares[id].rawId();
+      }).join(',');
+
       function filterEncode(d) {
         if (typeof d === 'object') {
           d = d.valueOf();
