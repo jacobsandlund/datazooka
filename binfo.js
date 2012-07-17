@@ -14,7 +14,7 @@
       left: 10,
       height: 100,
       width: 100,
-      binWidth: 12,
+      binWidth: 12
     }
   };
   window.binfo = binfo;
@@ -62,7 +62,7 @@
       names.forEach(completeLoop);
     }
 
-  }
+  };
 
 
 

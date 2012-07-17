@@ -1,6 +1,7 @@
 
 (function(binfo) {
 
+  "use strict";
 
   function binfoDefinitions(chartsMe) {
 
@@ -30,6 +31,7 @@
           internalDimensionFunc,
           group,
           groups,
+          groupFromIndex,
           groupFunc,
           groupAll,
           ordinal = [],
@@ -119,6 +121,10 @@
         return Math.floor((val - minX) / separation);
       };
 
+      me.groupFromIndex = function(index) {
+        return groupFromIndex[index];
+      };
+
       me.data = function(data) {
         var ordinalCount = 1e9,
             orderFromOrdinal = {},
@@ -142,7 +148,7 @@
           });
           for (ord in orderFromOrdinal) {
             if (orderFromOrdinal.hasOwnProperty(ord)) {
-              ordArray.push({value: ord, order: orderFromOrdinal[ord]})
+              ordArray.push({value: ord, order: orderFromOrdinal[ord]});
             }
           }
           ordArray.sort(function(a, b) { return a.order - b.order; });
@@ -151,7 +157,7 @@
             ordinal[i] = d.value;
           });
         }
-      }
+      };
 
       me.filter = function(_) {
         if (_) {
@@ -188,6 +194,10 @@
         }
         group = dimension.group(groupFunc);
         groups = group.all();
+        groupFromIndex = [];
+        groups.forEach(function(g) {
+          groupFromIndex[me.groupIndex(g.value)] = g;
+        });
         groupAll = dimension.groupAll();
         if (!spec.minX) {
           minX = groups[0].key;
@@ -217,6 +227,7 @@
       var ids = spec.id.split('*'),
           xb = spec.binfos[ids[0]],
           yb = spec.binfos[ids[1]],
+          normalize = ids[1],
           xbDimensionFunc,
           ybDimensionFunc,
           xbGroupFunc,
@@ -226,6 +237,7 @@
           group,
           groups,
           maxValue,
+          chart,
           me = {};
 
 

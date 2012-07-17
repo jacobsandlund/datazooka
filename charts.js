@@ -37,6 +37,7 @@
       }
 
       function updateEachChart() {
+        /*jshint validthis:true */
         var div = d3.select(this),
             g = div.select('g');
 
