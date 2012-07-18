@@ -85,12 +85,12 @@
 
       if (orientFlip) {
         dim.right += 25;
-        dim.left += 10;
+        dim.left += 50;
       }
       if (defn.ordinal) {
         var ordinalMargin = 120;
         if (orientFlip) {
-          dim.left += ordinalMargin;
+          dim.left += ordinalMargin - 40;
         } else {
           dim.bottom += ordinalMargin;
         }
@@ -98,7 +98,8 @@
 
       my.setupChart = function(div, g) {
 
-        var axisHolder;
+        var axisHolder,
+            compare = false;  // TODO, get this from the div's data
 
         if (orientFlip) {
           g   .attr('transform', 'matrix(0,1,-1,0,' +
@@ -139,9 +140,16 @@
               .attr('x', -6)
               .text(function(d) { return d; });
         } else {
-          axisHolder
-              .attr('transform', 'translate(0,' + dim.height + ')')
-              .call(axis);
+          if (orientFlip) {
+            axis.orient('left');
+            axisHolder
+                .attr('transform', 'matrix(0,-1,1,0,0,' + dim.height + ')')
+                .call(axis);
+          } else {
+            axisHolder
+                .attr('transform', 'translate(0,' + dim.height + ')')
+                .call(axis);
+          }
         }
 
         // Initialize the brush component with pretty resize handles.
@@ -153,34 +161,36 @@
               .style('cursor', 'ns-resize');
         }
 
-        // The filter toggle and endpoints
-        var filterBar = div.append('div').attr('class', 'filter-bar');
-        filterBar.append('div')
-            .text('Filter')
-            .attr('class', 'filter button')
-            .classed('down', !brush.empty())
-            .on('click', function() {
-              var el = d3.select(this);
-              if (!defn.filterActive()) {
-                binfo.filter(defn.id, defn.filterRange());
-              } else {
-                binfo.filter(defn.id, null);
-              }
-            });
-        filterBar.selectAll('.range').data(['left', 'right'])
-          .enter().append('input')
-            .attr('type', 'text')
-            .attr('class', function(d) { return 'range ' + d; })
-            .property('value', function(d, i) { return defn.filterRange()[i]; })
-            .on('change', function(d, i) {
-              var range = defn.filterRange();
-              range[i] = this.value;
-              var left = x(range[0]),
-                  right = x(range[1]);
-              if (left <= right && left >= 0 && right <= dim.width) {
-                binfo.filter(defn.id, range);
-              }
-            });
+        if (!compare) {
+          // The filter toggle and endpoints
+          var filterBar = div.append('div').attr('class', 'filter-bar');
+          filterBar.append('div')
+              .text('Filter')
+              .attr('class', 'filter button')
+              .classed('down', !brush.empty())
+              .on('click', function() {
+                var el = d3.select(this);
+                if (!defn.filterActive()) {
+                  binfo.filter(defn.id, defn.filterRange());
+                } else {
+                  binfo.filter(defn.id, null);
+                }
+              });
+          filterBar.selectAll('.range').data(['left', 'right'])
+            .enter().append('input')
+              .attr('type', 'text')
+              .attr('class', function(d) { return 'range ' + d; })
+              .property('value', function(d, i) { return defn.filterRange()[i]; })
+              .on('change', function(d, i) {
+                var range = defn.filterRange();
+                range[i] = this.value;
+                var left = x(range[0]),
+                    right = x(range[1]);
+                if (left <= right && left >= 0 && right <= dim.width) {
+                  binfo.filter(defn.id, range);
+                }
+              });
+        }
       };
 
       my.update = function() {
@@ -202,7 +212,9 @@
 
       my.updateChart = function(div, g) {
 
-        var percentText;
+        var percentText,
+            percent,
+            compare = false;  // TODO, get this from the div's data
 
         // Only redraw the brush if set externally.
         if (brushDirty) {
@@ -216,12 +228,14 @@
             g.selectAll('#clip-' + defn.id + ' rect')
                 .attr('x', x(extent[0]))
                 .attr('width', x(extent[1]) - x(extent[0]));
-            percentText = g.selectAll('.percent').data([1]);
-            percentText.enter().append('text')
-                .attr('class', 'percent')
-                .attr('y', -4);
-            percentText
-                .attr('x', (x(extent[1]) + x(extent[0])) / 2);
+            if (!compare) {
+              percentText = g.selectAll('.percent').data([1]);
+              percentText.enter().append('text')
+                  .attr('class', 'percent')
+                  .attr('y', -4);
+              percentText
+                  .attr('x', (x(extent[1]) + x(extent[0])) / 2);
+            }
           } else {
             g.selectAll('#clip-' + defn.id + ' rect')
                 .attr('x', 0)
@@ -229,8 +243,10 @@
             g.selectAll('.percent').data([]).exit().remove();
           }
         }
-        var percent = defn.crossAll().value() / defn.groupAll().value();
-        percentText = g.selectAll('.percent').text(percentFmt(percent));
+        if (!compare) {
+          percent = defn.crossAll().value() / defn.groupAll().value();
+          percentText = g.selectAll('.percent').text(percentFmt(percent));
+        }
 
         g.selectAll('.bar')
             .attr('d', path);
