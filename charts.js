@@ -80,6 +80,7 @@
           chart = baseChart(defn, spec, my),
           dim = my.dim,
           defaultOrientFlip = false,
+          compareHeightScale = spec.compareHeightScale || binfo.compareHeightScale,
           x = spec.x,
           y = spec.y || d3.scale.linear().range([dim.height, 0]),
           axis = d3.svg.axis().orient('bottom'),
@@ -102,7 +103,7 @@
             compare = data.compare,
             orientFlip = data.orientFlip,
             setupDim = dim,
-            i;
+            gPaths;
 
         if (defaultOrientFlip) orientFlip = !orientFlip;
 
@@ -118,6 +119,11 @@
           };
         }
 
+        setupDim.actualHeight = setupDim.height;
+        if (compare) {
+          setupDim.actualHeight *= compareHeightScale;
+        }
+
         g = my.baseSetupChart(div, setupDim, orientFlip);
         if (orientFlip) {
           g   .attr('transform', 'matrix(0,1,-1,0,' + (setupDim.height +
@@ -125,18 +131,22 @@
               .classed('orient-flip', true);
         }
 
-        g.append('clipPath')
+        gPaths = g.append('g');
+        if (compare) {
+          gPaths.attr('transform', 'scale(1,' + compareHeightScale + ')');
+        }
+        gPaths.append('clipPath')
             .attr('id', 'clip-' + defn.id)
           .append('rect')
             .attr('width', setupDim.width)
             .attr('height', setupDim.height);
 
-        g.selectAll('.bar')
+        gPaths.selectAll('.bar')
             .data(['background', 'foreground'])
           .enter().append('path')
             .attr('class', function(d) { return d + ' bar'; });
 
-        g.selectAll('.foreground.bar')
+        gPaths.selectAll('.foreground.bar')
             .attr('clip-path', 'url(#clip-' + defn.id + ')');
 
 
@@ -144,7 +154,7 @@
             .attr('class', 'axis');
         if (defn.ordinal) {
           axisHolder
-              .attr('transform', 'matrix(0,-1,1,0,0,' + setupDim.height + ')')
+              .attr('transform', 'matrix(0,-1,1,0,0,' + setupDim.actualHeight + ')')
               .classed('ordinal', true);
           axisHolder.append('line')
               .attr('x1', 0)
@@ -161,19 +171,21 @@
           if (orientFlip) {
             axis.orient('left');
             axisHolder
-                .attr('transform', 'matrix(0,-1,1,0,0,' + setupDim.height + ')')
+                .attr('transform', 'matrix(0,-1,1,0,0,' + setupDim.actualHeight + ')')
                 .call(axis);
           } else {
             axisHolder
-                .attr('transform', 'translate(0,' + setupDim.height + ')')
+                .attr('transform', 'translate(0,' + setupDim.actualHeight + ')')
                 .call(axis);
           }
         }
 
         // Initialize the brush component with pretty resize handles.
         var gBrush = g.append('g').attr('class', 'brush').call(brush);
-        gBrush.selectAll('rect').attr('height', setupDim.height);
-        gBrush.selectAll('.resize').append('path').attr('d', resizePath);
+        gBrush.selectAll('rect').attr('height', setupDim.actualHeight);
+        gBrush.selectAll('.resize').append('path').attr('d', function(d) {
+          return resizePath(d, setupDim.actualHeight);
+        });
         if (orientFlip) {
           gBrush.selectAll('.resize')
               .style('cursor', 'ns-resize');
@@ -272,19 +284,20 @@
             .attr('d', path);
       };
 
-      function resizePath(d) {
+      function resizePath(d, height) {
         var e = +(d === 'e'),
             x = e ? 1 : -1,
-            y = dim.height / 3;
+            h = dim.height * compareHeightScale,
+            y = height / 2 - h / 2;
         return 'M' + (0.5 * x) + ',' + y +
                'A6,6 0 0 ' + e + ' ' + (6.5 * x) + ',' + (y + 6) +
-               'V' + (2 * y - 6) +
-               'A6,6 0 0 ' + e + ' ' + (0.5 * x) + ',' + (2 * y) +
+               'V' + (y + h - 6) +
+               'A6,6 0 0 ' + e + ' ' + (0.5 * x) + ',' + (y + h) +
                'Z' +
                'M' + (2.5 * x) + ',' + (y + 8) +
-               'V' + (2 * y - 8) +
+               'V' + (y + h - 8) +
                'M' + (4.5 * x) + ',' + (y + 8) +
-               'V' + (2 * y - 8);
+               'V' + (y + h - 8);
       }
 
       brush.on('brushstart.chart', function() {
