@@ -353,7 +353,9 @@
       binfos = dataSet.binfos;
       compares = dataSet.compares;
 
-      var charts = binfoIds.map(function(id) { return binfos[id]; });
+      var charts = binfoIds.map(function(id) {
+        return {unit: binfos[id], compare: false, orientFlip: false};
+      });
       compareIds = [];
       rawCompareIds.forEach(function(raw) {
         var id = definitionsMe.compareIdFromRaw(raw);
@@ -364,7 +366,7 @@
           addedCompares.push(id);
         }
         compares[id].addBinfoIds(binfoIds);
-        charts.push(compares[id]);
+        charts.push({unit: compares[id], compare: false, orientFlip: false});
       });
 
       var removed = currentChartIds.filter(function(id) {
@@ -393,7 +395,7 @@
       if (added.length || removed.length) {
 
         chartSelection = holder.select('.charts').selectAll('.chart')
-            .data(charts, function(d) { return d.id; });
+            .data(charts, function(d) { return d.unit.id; });
 
         chartSelection.enter()
           .append('div')
@@ -475,9 +477,9 @@
     };
 
     // Renders the specified chart.
-    function render(chart) {
+    function render(chartData) {
       /*jshint validthis:true */
-      d3.select(this).call(chart.chart);
+      d3.select(this).call(chartData.unit.chart);
     }
 
     // Whenever the brush moves, re-rendering everything.

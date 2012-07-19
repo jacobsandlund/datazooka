@@ -24,11 +24,6 @@
 
       my = my || {};
       my.dim = dim;
-      my.updateDim = function() {
-        dim.fullWidth = dim.right + dim.width + dim.left;
-        dim.fullHeight = dim.top + dim.height + dim.bottom;
-      };
-      my.updateDim();
 
       function chart(div) {
         defn.update();
@@ -39,24 +34,38 @@
       function updateEachChart() {
         /*jshint validthis:true */
         var div = d3.select(this),
-            g = div.select('g');
+            root = div.select(my.root),
+            data = div.datum();
 
-        if (g.empty()) {
-          div.select('.title')
-              .text(defn.label);
-          div.attr('width', dim.fullWidth);
-
-          g = div.append('svg')
-              .attr('width', dim.fullWidth)
-              .attr('height', dim.fullHeight)
-            .append('g')
-              .attr('transform', 'translate(' + dim.left + ',' + dim.top + ')');
-
-          my.setupChart(div, g);
+        if (root.empty()) {
+          root = my.setupChart(div, root, data);
         }
 
-        my.updateChart(div, g);
+        my.updateChart(div, root, data);
       }
+
+      my.baseSetupChart = function(div, setupDim, orientFlip) {
+        var fullWidth = setupDim.left + setupDim.right,
+            fullHeight = setupDim.top + setupDim.bottom;
+        if (orientFlip) {
+          fullWidth += setupDim.height;
+          fullHeight += setupDim.width;
+        } else {
+          fullWidth += setupDim.width;
+          fullHeight += setupDim.height;
+        }
+        div.select('.title')
+            .text(defn.label);
+        div.attr('width', fullWidth);
+
+        var root = div.append('svg')
+            .attr('width', fullWidth)
+            .attr('height', fullHeight)
+          .append('g')
+            .attr('transform', 'translate(' + setupDim.left + ',' +
+                                              setupDim.top + ')');
+        return root;
+      };
 
 
       defn.setChart(chart);
@@ -67,10 +76,10 @@
 
     charts.barChart = function(defn, spec) {
 
-      var my = {},
+      var my = {root: 'g'},
           chart = baseChart(defn, spec, my),
           dim = my.dim,
-          orientFlip = spec.orientFlip,
+          defaultOrientFlip = false,
           x = spec.x,
           y = spec.y || d3.scale.linear().range([dim.height, 0]),
           axis = d3.svg.axis().orient('bottom'),
@@ -79,39 +88,48 @@
           path,
           brushDirty;
 
-      if (defn.ordinal && typeof orientFlip === 'undefined') {
-        orientFlip = true;
-      }
-
-      if (orientFlip) {
-        dim.right += 25;
-        dim.left += 50;
-      }
       if (defn.ordinal) {
-        var ordinalMargin = 120;
-        if (orientFlip) {
-          dim.left += ordinalMargin - 40;
-        } else {
-          dim.bottom += ordinalMargin;
-        }
+        defaultOrientFlip = true;
       }
 
-      my.setupChart = function(div, g) {
+      if (defn.ordinal) {
+        dim.bottom += 120;
+      }
+
+      my.setupChart = function(div, g, data) {
 
         var axisHolder,
-            compare = false;  // TODO, get this from the div's data
+            compare = data.compare,
+            orientFlip = data.orientFlip,
+            setupDim = dim,
+            i;
+
+        if (defaultOrientFlip) orientFlip = !orientFlip;
 
         if (orientFlip) {
-          g   .attr('transform', 'matrix(0,1,-1,0,' +
-                    (dim.fullWidth - dim.right) + ',' + dim.top + ')')
+          setupDim = {
+            top: dim.left,
+            right: dim.top + 25,
+            bottom: dim.right,
+            left: dim.bottom + 50,
+            width: dim.width,
+            height: dim.height,
+            binWidth: dim.binWidth
+          };
+        }
+
+        g = my.baseSetupChart(div, setupDim, orientFlip);
+        if (orientFlip) {
+          g   .attr('transform', 'matrix(0,1,-1,0,' + (setupDim.height +
+                                 setupDim.left) + ',' + setupDim.top + ')')
               .classed('orient-flip', true);
         }
 
         g.append('clipPath')
             .attr('id', 'clip-' + defn.id)
           .append('rect')
-            .attr('width', dim.width)
-            .attr('height', dim.height);
+            .attr('width', setupDim.width)
+            .attr('height', setupDim.height);
 
         g.selectAll('.bar')
             .data(['background', 'foreground'])
@@ -126,35 +144,35 @@
             .attr('class', 'axis');
         if (defn.ordinal) {
           axisHolder
-              .attr('transform', 'matrix(0,-1,1,0,0,' + dim.height + ')')
+              .attr('transform', 'matrix(0,-1,1,0,0,' + setupDim.height + ')')
               .classed('ordinal', true);
           axisHolder.append('line')
               .attr('x1', 0)
               .attr('y1', 0)
               .attr('x2', 0)
-              .attr('y2', dim.width);
+              .attr('y2', setupDim.width);
           axisHolder.selectAll('text')
               .data(defn.ordinal())
             .enter().append('text')
-              .attr('y', function(d, i) { return (i + 0.9) * dim.binWidth; })
+              .attr('y', function(d, i) { return (i + 0.9) * setupDim.binWidth; })
               .attr('x', -6)
               .text(function(d) { return d; });
         } else {
           if (orientFlip) {
             axis.orient('left');
             axisHolder
-                .attr('transform', 'matrix(0,-1,1,0,0,' + dim.height + ')')
+                .attr('transform', 'matrix(0,-1,1,0,0,' + setupDim.height + ')')
                 .call(axis);
           } else {
             axisHolder
-                .attr('transform', 'translate(0,' + dim.height + ')')
+                .attr('transform', 'translate(0,' + setupDim.height + ')')
                 .call(axis);
           }
         }
 
         // Initialize the brush component with pretty resize handles.
         var gBrush = g.append('g').attr('class', 'brush').call(brush);
-        gBrush.selectAll('rect').attr('height', dim.height);
+        gBrush.selectAll('rect').attr('height', setupDim.height);
         gBrush.selectAll('.resize').append('path').attr('d', resizePath);
         if (orientFlip) {
           gBrush.selectAll('.resize')
@@ -186,11 +204,13 @@
                 range[i] = this.value;
                 var left = x(range[0]),
                     right = x(range[1]);
-                if (left <= right && left >= 0 && right <= dim.width) {
+                if (left <= right && right >= 0 && left <= setupDim.width) {
                   binfo.filter(defn.id, range);
                 }
               });
         }
+
+        return g;
       };
 
       my.update = function() {
@@ -210,11 +230,11 @@
         path = pathParts.join('');
       };
 
-      my.updateChart = function(div, g) {
+      my.updateChart = function(div, g, data) {
 
         var percentText,
             percent,
-            compare = false;  // TODO, get this from the div's data
+            compare = data.compare;
 
         // Only redraw the brush if set externally.
         if (brushDirty) {
@@ -311,11 +331,6 @@
           ticks = defn.ticks || Math.round(dim.width / defn.tickSpacing);
           axis.ticks(ticks);
         }
-        my.updateDim();
-        if (orientFlip) {
-          dim.fullWidth += dim.height - dim.width;
-          dim.fullHeight += dim.width - dim.height;
-        }
       };
 
       chart.filter = function(_) {
@@ -334,7 +349,7 @@
 
     charts.compareChart = function(defn, spec) {
 
-      var my = {},
+      var my = {root: 'g'},
           chart = baseChart(defn, spec, my),
           xb = defn.xb,
           yb = defn.yb,
@@ -349,10 +364,12 @@
         for (i = 0; i < levels; i++) {
           levelNums.push(i);
         }
+        g = my.baseSetupChart(div, dim);
         g.selectAll('.compare.bar')
             .data(levelNums)
           .enter().append('path')
             .attr('class', function(d) { return 'level-' + d + ' compare bar'; });
+        return g;
       };
 
       my.update = function() {
@@ -401,7 +418,6 @@
       chart.setCross = function() {
         dim.height = yb.numGroups() * dim.binWidth;
         dim.width = xb.numGroups() * dim.binWidth;
-        my.updateDim();
       };
 
       return chart;
