@@ -7,7 +7,7 @@
   var binfo = {
     numGroups: 35,
     tickSpacing: 44,
-    compareHeightScale: 0.28,
+    compareHeightScale: 0.22,
     chartDimensions: {
       top: 20,
       right: 10,
@@ -355,7 +355,7 @@
       compares = dataSet.compares;
 
       var charts = binfoIds.map(function(id) {
-        return {unit: binfos[id], compare: true, orientFlip: false};
+        return {unit: binfos[id], compare: false, orientFlip: false};
       });
       compareIds = [];
       rawCompareIds.forEach(function(raw) {
@@ -367,7 +367,7 @@
           addedCompares.push(id);
         }
         compares[id].addBinfoIds(binfoIds);
-        charts.push({unit: compares[id], compare: true, orientFlip: false});
+        charts.push({unit: compares[id], compare: false, orientFlip: false});
       });
 
       var removed = currentChartIds.filter(function(id) {

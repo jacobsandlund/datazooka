@@ -45,14 +45,15 @@
       }
 
       my.baseSetupChart = function(div, setupDim, orientFlip) {
-        var fullWidth = setupDim.left + setupDim.right,
+        var height = setupDim.actualHeight || setupDim.height,
+            fullWidth = setupDim.left + setupDim.right,
             fullHeight = setupDim.top + setupDim.bottom;
         if (orientFlip) {
-          fullWidth += setupDim.height;
+          fullWidth += height;
           fullHeight += setupDim.width;
         } else {
           fullWidth += setupDim.width;
-          fullHeight += setupDim.height;
+          fullHeight += height;
         }
         div.select('.title')
             .text(defn.label);
@@ -117,6 +118,13 @@
             height: dim.height,
             binWidth: dim.binWidth
           };
+          if (compare) {
+            setupDim.right = 0;
+          }
+        } else {
+          if (compare) {
+            setupDim.top = 0;
+          }
         }
 
         setupDim.actualHeight = setupDim.height;
@@ -126,7 +134,7 @@
 
         g = my.baseSetupChart(div, setupDim, orientFlip);
         if (orientFlip) {
-          g   .attr('transform', 'matrix(0,1,-1,0,' + (setupDim.height +
+          g   .attr('transform', 'matrix(0,1,-1,0,' + (setupDim.actualHeight +
                                  setupDim.left) + ',' + setupDim.top + ')')
               .classed('orient-flip', true);
         }
@@ -287,17 +295,17 @@
       function resizePath(d, height) {
         var e = +(d === 'e'),
             x = e ? 1 : -1,
-            h = dim.height * compareHeightScale,
+            h = Math.min(height, 30),
             y = height / 2 - h / 2;
         return 'M' + (0.5 * x) + ',' + y +
                'A6,6 0 0 ' + e + ' ' + (6.5 * x) + ',' + (y + 6) +
                'V' + (y + h - 6) +
                'A6,6 0 0 ' + e + ' ' + (0.5 * x) + ',' + (y + h) +
                'Z' +
-               'M' + (2.5 * x) + ',' + (y + 8) +
-               'V' + (y + h - 8) +
-               'M' + (4.5 * x) + ',' + (y + 8) +
-               'V' + (y + h - 8);
+               'M' + (2.5 * x) + ',' + (y + h / 4) +
+               'V' + (y + h - h / 4) +
+               'M' + (4.5 * x) + ',' + (y + h / 4) +
+               'V' + (y + h - h / 4);
       }
 
       brush.on('brushstart.chart', function() {
@@ -362,7 +370,7 @@
 
     charts.compareChart = function(defn, spec) {
 
-      var my = {root: 'g'},
+      var my = {root: 'g.compare'},
           chart = baseChart(defn, spec, my),
           xb = defn.xb,
           yb = defn.yb,
@@ -371,13 +379,27 @@
           scaleLevel = spec.scaleLevel || levels,
           dim = my.dim;
 
-      my.setupChart = function(div, g) {
+      my.setupChart = function(rootDiv, g) {
         var levelNums = [],
-            i;
+            i,
+            divX,
+            divY,
+            divRight,
+            divCompare;
         for (i = 0; i < levels; i++) {
           levelNums.push(i);
         }
-        g = my.baseSetupChart(div, dim);
+        rootDiv.classed('compare', true);
+        divY = rootDiv.append('div')
+            .datum({compare: true, orientFlip: true})
+            .call(yb.chart);
+        divRight = rootDiv.append('div');
+        divCompare = divRight.append('div');
+        divX = divRight.append('div')
+            .datum({compare: true, orientFlip: false})
+            .call(xb.chart);
+        g = my.baseSetupChart(divCompare, dim)
+            .attr('class', 'compare');
         g.selectAll('.compare.bar')
             .data(levelNums)
           .enter().append('path')
