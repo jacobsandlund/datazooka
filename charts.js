@@ -28,20 +28,7 @@
       function chart(div) {
         defn.update();
         my.update();
-        div.each(updateEachChart);
-      }
-
-      function updateEachChart() {
-        /*jshint validthis:true */
-        var div = d3.select(this),
-            root = div.select(my.root),
-            data = div.datum();
-
-        if (root.empty()) {
-          root = my.setupChart(div, root, data);
-        }
-
-        my.updateChart(div, root, data);
+        div.each(my.updateEachChart);
       }
 
       my.baseSetupChart = function(div, setupDim, orientFlip) {
@@ -59,13 +46,18 @@
             .text(defn.label);
         div.attr('width', fullWidth);
 
-        var root = div.append('svg')
+        var g = div.append('svg')
             .attr('width', fullWidth)
             .attr('height', fullHeight)
           .append('g')
             .attr('transform', 'translate(' + setupDim.left + ',' +
                                               setupDim.top + ')');
-        return root;
+        if (orientFlip) {
+          g   .attr('transform', 'matrix(0,1,-1,0,' + (setupDim.actualHeight +
+                                 setupDim.left) + ',' + setupDim.top + ')');
+        }
+
+        return g;
       };
 
 
@@ -77,7 +69,7 @@
 
     charts.barChart = function(defn, spec) {
 
-      var my = {root: 'g'},
+      var my = {},
           chart = baseChart(defn, spec, my),
           dim = my.dim,
           defaultOrientFlip = false,
@@ -98,46 +90,76 @@
         dim.bottom += 120;
       }
 
-      my.setupChart = function(div, g, data) {
+      my.update = function() {
+        var groups = defn.groups(),
+            pathParts = [],
+            i = -1,
+            n = groups.length,
+            height = dim.height,
+            bWidth = dim.binWidth - 1,
+            d;
+        y.domain([0, defn.maxY()]);
+        while (++i < n) {
+          d = groups[i];
+          pathParts.push('M', x(d.key), ',', height, 'V', y(d.value),
+                         'h', bWidth, 'V', height);
+        }
+        path = pathParts.join('');
+      };
 
-        var axisHolder,
-            compare = data.compare,
-            orientFlip = data.orientFlip,
+      my.updateEachChart = function(root) {
+        /*jshint validthis:true */
+        var g,
+            div,
             setupDim = dim,
+            data = root.datum(),
+            orientFlip = data.orientFlip,
+            compare = data.compare;
+
+        if (compare) {
+          g = root;
+        } else {
+          g = div.select('g');
+          div = root;
+        }
+
+        if (g.empty()) {
+          if (orientFlip) {
+            setupDim = {
+              top: dim.left,
+              right: dim.top + 25,
+              bottom: dim.right,
+              left: dim.bottom + 50,
+              width: dim.width,
+              height: dim.height,
+              binWidth: dim.binWidth
+            };
+          }
+          setupDim.actualHeight = setupDim.height;
+          if (compare) {
+            setupDim.actualHeight *= compareHeightScale;
+          }
+
+          if (!compare) {
+            g = my.baseSetupChart(div, setupDim, orientFlip);
+          }
+          setupChart(g, setupDim, data);
+          if (!compare) {
+            setupChartPeripherals(div, setupDim);
+          }
+        }
+
+        updateChart(div, g, data);
+      };
+
+
+      function setupChart(g, setupDim, data) {
+
+        var orientFlip = data.orientFlip,
+            compare = data.compare,
+            axisHolder,
             gPaths;
 
-        if (defaultOrientFlip) orientFlip = !orientFlip;
-
-        if (orientFlip) {
-          setupDim = {
-            top: dim.left,
-            right: dim.top + 25,
-            bottom: dim.right,
-            left: dim.bottom + 50,
-            width: dim.width,
-            height: dim.height,
-            binWidth: dim.binWidth
-          };
-          if (compare) {
-            setupDim.right = 0;
-          }
-        } else {
-          if (compare) {
-            setupDim.top = 0;
-          }
-        }
-
-        setupDim.actualHeight = setupDim.height;
-        if (compare) {
-          setupDim.actualHeight *= compareHeightScale;
-        }
-
-        g = my.baseSetupChart(div, setupDim, orientFlip);
-        if (orientFlip) {
-          g   .attr('transform', 'matrix(0,1,-1,0,' + (setupDim.actualHeight +
-                                 setupDim.left) + ',' + setupDim.top + ')')
-              .classed('orient-flip', true);
-        }
 
         gPaths = g.append('g');
         if (compare) {
@@ -198,59 +220,40 @@
           gBrush.selectAll('.resize')
               .style('cursor', 'ns-resize');
         }
+      }
 
-        if (!compare) {
-          // The filter toggle and endpoints
-          var filterBar = div.append('div').attr('class', 'filter-bar');
-          filterBar.append('div')
-              .text('Filter')
-              .attr('class', 'filter button')
-              .classed('down', !brush.empty())
-              .on('click', function() {
-                var el = d3.select(this);
-                if (!defn.filterActive()) {
-                  binfo.filter(defn.id, defn.filterRange());
-                } else {
-                  binfo.filter(defn.id, null);
-                }
-              });
-          filterBar.selectAll('.range').data(['left', 'right'])
-            .enter().append('input')
-              .attr('type', 'text')
-              .attr('class', function(d) { return 'range ' + d; })
-              .property('value', function(d, i) { return defn.filterRange()[i]; })
-              .on('change', function(d, i) {
-                var range = defn.filterRange();
-                range[i] = this.value;
-                var left = x(range[0]),
-                    right = x(range[1]);
-                if (left <= right && right >= 0 && left <= setupDim.width) {
-                  binfo.filter(defn.id, range);
-                }
-              });
-        }
+      function setupChartPeripherals(div, setupDim) {
+        // The filter toggle and endpoints
+        var filterBar = div.append('div').attr('class', 'filter-bar');
+        filterBar.append('div')
+            .text('Filter')
+            .attr('class', 'filter button')
+            .classed('down', !brush.empty())
+            .on('click', function() {
+              var el = d3.select(this);
+              if (!defn.filterActive()) {
+                binfo.filter(defn.id, defn.filterRange());
+              } else {
+                binfo.filter(defn.id, null);
+              }
+            });
+        filterBar.selectAll('.range').data(['left', 'right'])
+          .enter().append('input')
+            .attr('type', 'text')
+            .attr('class', function(d) { return 'range ' + d; })
+            .property('value', function(d, i) { return defn.filterRange()[i]; })
+            .on('change', function(d, i) {
+              var range = defn.filterRange();
+              range[i] = this.value;
+              var left = x(range[0]),
+                  right = x(range[1]);
+              if (left <= right && right >= 0 && left <= setupDim.width) {
+                binfo.filter(defn.id, range);
+              }
+            });
+      }
 
-        return g;
-      };
-
-      my.update = function() {
-        var groups = defn.groups(),
-            pathParts = [],
-            i = -1,
-            n = groups.length,
-            height = dim.height,
-            bWidth = dim.binWidth - 1,
-            d;
-        y.domain([0, defn.maxY()]);
-        while (++i < n) {
-          d = groups[i];
-          pathParts.push('M', x(d.key), ',', height, 'V', y(d.value),
-                         'h', bWidth, 'V', height);
-        }
-        path = pathParts.join('');
-      };
-
-      my.updateChart = function(div, g, data) {
+      function updateChart(div, g, data) {
 
         var percentText,
             percent,
@@ -290,7 +293,7 @@
 
         g.selectAll('.bar')
             .attr('d', path);
-      };
+      }
 
       function resizePath(d, height) {
         var e = +(d === 'e'),
@@ -328,6 +331,8 @@
           binfo.filter(defn.id, null);
         }
       });
+
+      chart.defaultOrientFlip = defaultOrientFlip;
 
       chart.setCross = function() {
         var minX = defn.minX(),
@@ -370,7 +375,7 @@
 
     charts.compareChart = function(defn, spec) {
 
-      var my = {root: 'g.compare'},
+      var my = {},
           chart = baseChart(defn, spec, my),
           xb = defn.xb,
           yb = defn.yb,
@@ -378,34 +383,6 @@
           levels = 8,
           scaleLevel = spec.scaleLevel || levels,
           dim = my.dim;
-
-      my.setupChart = function(rootDiv, g) {
-        var levelNums = [],
-            i,
-            divX,
-            divY,
-            divRight,
-            divCompare;
-        for (i = 0; i < levels; i++) {
-          levelNums.push(i);
-        }
-        rootDiv.classed('compare', true);
-        divY = rootDiv.append('div')
-            .datum({compare: true, orientFlip: true})
-            .call(yb.chart);
-        divRight = rootDiv.append('div');
-        divCompare = divRight.append('div');
-        divX = divRight.append('div')
-            .datum({compare: true, orientFlip: false})
-            .call(xb.chart);
-        g = my.baseSetupChart(divCompare, dim)
-            .attr('class', 'compare');
-        g.selectAll('.compare.bar')
-            .data(levelNums)
-          .enter().append('path')
-            .attr('class', function(d) { return 'level-' + d + ' compare bar'; });
-        return g;
-      };
 
       my.update = function() {
         var values = defn.values(),
@@ -445,14 +422,57 @@
         }
       };
 
-      my.updateChart = function(div, g) {
+      my.updateEachChart = function(div) {
+        /*jshint validthis:true */
+        var g = div.select('g');
+
+        if (g.empty()) {
+          g = my.baseSetupChart(div, dim, false);
+          setupChart(g);
+          setupChartPeripherals(div);
+        }
+
+        updateChart(div, g, data);
+      }
+
+      function setupChart(g) {
+        var levelNums = [],
+            i,
+            divX,
+            divY,
+            divRight,
+            divCompare;
+        for (i = 0; i < levels; i++) {
+          levelNums.push(i);
+        }
+        rootDiv.classed('compare', true);
+        divY = rootDiv.append('div')
+            .datum({compare: true, orientFlip: true})
+            .call(yb.chart);
+        divRight = rootDiv.append('div');
+        divCompare = divRight.append('div');
+        divX = divRight.append('div')
+            .datum({compare: true, orientFlip: false})
+            .call(xb.chart);
+        g.selectAll('.compare.bar')
+            .data(levelNums)
+          .enter().append('path')
+            .attr('class', function(d) { return 'level-' + d + ' compare bar'; });
+        return g;
+      }
+
+      function setupChartPeripherals(div) {
+      }
+
+      function updateChart(div, g) {
         g.selectAll('.compare.bar')
             .attr('d', function(d) { return paths[d]; });
-      };
+      }
 
       chart.setCross = function() {
         dim.height = yb.numGroups() * dim.binWidth;
         dim.width = xb.numGroups() * dim.binWidth;
+        dim.actualHeight = dim.height;
       };
 
       return chart;

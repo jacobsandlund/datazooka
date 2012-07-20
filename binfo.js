@@ -355,7 +355,10 @@
       compares = dataSet.compares;
 
       var charts = binfoIds.map(function(id) {
-        return {unit: binfos[id], compare: false, orientFlip: false};
+        return {
+          unit: binfos[id], compare: false,
+          orientFlip: binfos[id].chart.defaultOrientFlip
+        };
       });
       compareIds = [];
       rawCompareIds.forEach(function(raw) {

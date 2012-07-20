@@ -11,10 +11,6 @@
   margin-bottom: 20px;
 }
 
-.compare.chart > div {
-  float: left;
-}
-
 .button {
   font-size: 14px;
   display: inline-block;
