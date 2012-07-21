@@ -7,7 +7,7 @@
   var binfo = {
     numGroups: 35,
     tickSpacing: 44,
-    compareHeightScale: 0.22,
+    compareHeightScale: 0.20,
     chartDimensions: {
       top: 20,
       right: 10,

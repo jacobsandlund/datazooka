@@ -103,6 +103,10 @@
 }
 
 .compare.bar.level-7 {
+  fill: hsl(207, 44%, 10%);
+}
+
+.compare.bar.level-8 {
   fill: black;
 }
 

@@ -82,6 +82,8 @@
           path,
           brushDirty;
 
+
+      dim.compareHeight = dim.height * compareHeightScale;
       if (defn.ordinal) {
         defaultOrientFlip = true;
       }
@@ -107,38 +109,42 @@
         path = pathParts.join('');
       };
 
-      my.updateEachChart = function(root) {
+      my.updateEachChart = function() {
         /*jshint validthis:true */
-        var g,
+        var root = d3.select(this),
+            g,
             div,
             setupDim = dim,
             data = root.datum(),
             orientFlip = data.orientFlip,
-            compare = data.compare;
+            compare = data.compare,
+            checkSelection,
+            i;
 
         if (compare) {
           g = root;
+          checkSelection = g.select('path');
         } else {
-          g = div.select('g');
           div = root;
+          g = div.select('g');
+          checkSelection = g;
         }
 
-        if (g.empty()) {
+        if (checkSelection.empty()) {
           if (orientFlip) {
             setupDim = {
               top: dim.left,
               right: dim.top + 25,
               bottom: dim.right,
               left: dim.bottom + 50,
-              width: dim.width,
-              height: dim.height,
-              binWidth: dim.binWidth
             };
+            for (i in dim) {
+              if (dim.hasOwnProperty(i) && typeof setupDim[i] === 'undefined') {
+                setupDim[i] = dim[i];
+              }
+            }
           }
-          setupDim.actualHeight = setupDim.height;
-          if (compare) {
-            setupDim.actualHeight *= compareHeightScale;
-          }
+          setupDim.actualHeight = compare ? setupDim.compareHeight : setupDim.height;
 
           if (!compare) {
             g = my.baseSetupChart(div, setupDim, orientFlip);
@@ -334,6 +340,8 @@
 
       chart.defaultOrientFlip = defaultOrientFlip;
 
+      chart.dim = dim;
+
       chart.setCross = function() {
         var minX = defn.minX(),
             maxX = defn.maxX(),
@@ -380,9 +388,12 @@
           xb = defn.xb,
           yb = defn.yb,
           paths = [],
-          levels = 8,
+          levels = 9,
           scaleLevel = spec.scaleLevel || levels,
           dim = my.dim;
+
+      dim.left = yb.chart.dim.bottom + 50;
+      dim.bottom = xb.chart.dim.bottom;
 
       my.update = function() {
         var values = defn.values(),
@@ -424,7 +435,8 @@
 
       my.updateEachChart = function(div) {
         /*jshint validthis:true */
-        var g = div.select('g');
+        var div = d3.select(this),
+            g = div.select('g');
 
         if (g.empty()) {
           g = my.baseSetupChart(div, dim, false);
@@ -432,32 +444,38 @@
           setupChartPeripherals(div);
         }
 
-        updateChart(div, g, data);
+        updateChart(div, g);
       }
 
       function setupChart(g) {
         var levelNums = [],
-            i,
-            divX,
-            divY,
-            divRight,
-            divCompare;
+            gCompare,
+            i;
         for (i = 0; i < levels; i++) {
           levelNums.push(i);
         }
-        rootDiv.classed('compare', true);
-        divY = rootDiv.append('div')
+        g.classed('compare', true);
+        g.append('g')
+            .attr('class', 'yb')
             .datum({compare: true, orientFlip: true})
-            .call(yb.chart);
-        divRight = rootDiv.append('div');
-        divCompare = divRight.append('div');
-        divX = divRight.append('div')
-            .datum({compare: true, orientFlip: false})
-            .call(xb.chart);
-        g.selectAll('.compare.bar')
+            .attr('transform', 'matrix(0,1,-1,0,' + dim.yHeight +
+                               ',' + dim.yTop + ')');
+        g.append('g')
+            .attr('class', 'xb')
+            .attr('transform', 'translate(' + dim.xLeft + ',' + dim.xTop + ')')
+            .datum({compare: true, orientFlip: false});
+        gCompare = g.append('g')
+            .attr('transform', 'translate(' + dim.xLeft + ',' + dim.yTop + ')');
+        gCompare.selectAll('.compare.bar')
             .data(levelNums)
           .enter().append('path')
             .attr('class', function(d) { return 'level-' + d + ' compare bar'; });
+        g.append('path')
+            .attr('stroke', 'black')
+            .attr('fill', 'none')
+            .attr('shape-rendering', 'crispEdges')
+            .attr('d', 'M' + (dim.yHeight + 1) + ',1V' + (dim.xTop - 2) +
+                       'H' + (dim.width - 2) + 'V1' + 'H' + (dim.yHeight + 1));
         return g;
       }
 
@@ -465,13 +483,22 @@
       }
 
       function updateChart(div, g) {
+        g.selectAll('.yb').call(yb.chart);
+        g.selectAll('.xb').call(xb.chart);
         g.selectAll('.compare.bar')
             .attr('d', function(d) { return paths[d]; });
       }
 
       chart.setCross = function() {
-        dim.height = yb.numGroups() * dim.binWidth;
-        dim.width = xb.numGroups() * dim.binWidth;
+        dim.xHeight = xb.chart.dim.compareHeight;
+        dim.yHeight = yb.chart.dim.compareHeight;
+        dim.xWidth = xb.chart.dim.width;
+        dim.yWidth = yb.chart.dim.width;
+        dim.xTop = dim.yWidth + 6;
+        dim.xLeft = dim.yHeight + 3;
+        dim.yTop = 3;
+        dim.width = dim.yHeight + dim.xWidth + 6;
+        dim.height = dim.yWidth + dim.xHeight + 6;
         dim.actualHeight = dim.height;
       };
 
