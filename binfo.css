@@ -91,22 +91,18 @@
 }
 
 .compare.bar.level-4 {
-  fill: hsl(207, 44%, 40%);
+  fill: hsl(207, 44%, 37%);
 }
 
 .compare.bar.level-5 {
-  fill: hsl(207, 44%, 30%);
+  fill: hsl(207, 44%, 25%);
 }
 
 .compare.bar.level-6 {
-  fill: hsl(207, 44%, 20%);
+  fill: hsl(207, 44%, 13%);
 }
 
 .compare.bar.level-7 {
-  fill: hsl(207, 44%, 10%);
-}
-
-.compare.bar.level-8 {
   fill: black;
 }
 

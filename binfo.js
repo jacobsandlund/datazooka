@@ -481,14 +481,17 @@
     };
 
     // Renders the specified chart.
-    function render(chartData) {
-      /*jshint validthis:true */
-      d3.select(this).call(chartData.unit.chart);
-    }
 
     // Whenever the brush moves, re-rendering everything.
     function renderAll() {
-      chartSelection.each(render);
+      chartSelection.each(function(chartData) {
+        /*jshint validthis:true */
+        d3.select(this).call(chartData.unit.chart);
+      });
+      chartSelection.each(function(chartData) {
+        /*jshint validthis:true */
+        d3.select(this).call(chartData.unit.chart.cleanUp);
+      });
       d3.select('.active').text(formatNumber(crossAll.value()));
     }
 

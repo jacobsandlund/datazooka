@@ -67,6 +67,8 @@
     }
 
 
+    var clipId = 0;
+
     charts.barChart = function(defn, spec) {
 
       var my = {},
@@ -171,8 +173,12 @@
         if (compare) {
           gPaths.attr('transform', 'scale(1,' + compareHeightScale + ')');
         }
+
+        // A different clipId for each chart
+        clipId += 1;
         gPaths.append('clipPath')
-            .attr('id', 'clip-' + defn.id)
+            .attr('id', 'clip-' + clipId)
+            .attr('class', 'clip-' + defn.id)
           .append('rect')
             .attr('width', setupDim.width)
             .attr('height', setupDim.height);
@@ -183,7 +189,7 @@
             .attr('class', function(d) { return d + ' bar'; });
 
         gPaths.selectAll('.foreground.bar')
-            .attr('clip-path', 'url(#clip-' + defn.id + ')');
+            .attr('clip-path', 'url(#clip-' + clipId + ')');
 
 
         axisHolder = g.append('g')
@@ -263,18 +269,20 @@
 
         var percentText,
             percent,
+            extent,
             compare = data.compare;
 
         // Only redraw the brush if set externally.
         if (brushDirty) {
-          brushDirty = false;
           g.selectAll('.brush').call(brush);
-          div.select('.filter.button').classed('down', defn.filterActive());
-          div.selectAll('.range')
-              .property('value', function(d, i) { return defn.filterRange()[i]; });
+          if (!compare) {
+            div.select('.filter.button').classed('down', defn.filterActive());
+            div.selectAll('.range')
+                .property('value', function(d, i) { return defn.filterRange()[i]; });
+          }
           if (defn.filterActive()) {
-            var extent = brush.extent();
-            g.selectAll('#clip-' + defn.id + ' rect')
+            extent = brush.extent();
+            g.selectAll('.clip-' + defn.id + ' rect')
                 .attr('x', x(extent[0]))
                 .attr('width', x(extent[1]) - x(extent[0]));
             if (!compare) {
@@ -286,7 +294,7 @@
                   .attr('x', (x(extent[1]) + x(extent[0])) / 2);
             }
           } else {
-            g.selectAll('#clip-' + defn.id + ' rect')
+            g.selectAll('.clip-' + defn.id + ' rect')
                 .attr('x', 0)
                 .attr('width', dim.width);
             g.selectAll('.percent').data([]).exit().remove();
@@ -329,7 +337,9 @@
           g.select('.brush')
               .call(brush.extent(extent = extent.map(defn.round)));
         }
-        binfo.filter(defn.id, extent);
+        if (!brush.empty()) {
+          binfo.filter(defn.id, extent);
+        }
       });
 
       brush.on('brushend.chart', function() {
@@ -377,6 +387,10 @@
         return chart;
       };
 
+      chart.cleanUp = function() {
+        brushDirty = false;
+      };
+
       return d3.rebind(chart, brush, 'on');
     };
 
@@ -388,7 +402,7 @@
           xb = defn.xb,
           yb = defn.yb,
           paths = [],
-          levels = 9,
+          levels = 8,
           scaleLevel = spec.scaleLevel || levels,
           dim = my.dim;
 
@@ -500,6 +514,9 @@
         dim.width = dim.yHeight + dim.xWidth + 6;
         dim.height = dim.yWidth + dim.xHeight + 6;
         dim.actualHeight = dim.height;
+      };
+
+      chart.cleanUp = function() {
       };
 
       return chart;
