@@ -1,9 +1,4 @@
 
-(function() {
-
-  "use strict";
-
-
   var binfo = {
     numGroups: 35,
     tickSpacing: 44,
@@ -18,68 +13,74 @@
       binWidth: 12
     }
   };
-  window.binfo = binfo;
-
-  var components = {},
-      componentNames = ['charts', 'definitions', 'setup',
-                        'rendering', 'hashRetrieval'];
-
-  binfo._register = function(name, component, deps) {
-    var names = componentNames;
-    if (components[name] || names.indexOf(name) < 0) {
-      return;
-    }
-    components[name] = {component: component, dependencies: deps};
-    if (names.some(function(c) { return !components[c]; })) {
-      return;
-    }
-    binfo._register = null;
-    var dependencies = {},
-        compFuncs = {},
-        completed = {};
-
-    names.forEach(function(c) {
-      dependencies[c] = components[c].dependencies;
-      compFuncs[c] = components[c].component;
-    });
-
-    function notCompleted(c) {
-      return !completed[c];
-    }
-
-    function completeLoop(name) {
-      var func = compFuncs[name],
-          deps = dependencies[name],
-          compDeps,
-          me;
-      if (completed[name]) return;
-      if (deps.some(notCompleted)) return;
-      compDeps = deps.map(function(d) { return completed[d]; });
-      me = compFuncs[name].apply(null, compDeps);
-      completed[name] = me ? me : true;
-    }
-
-    while (names.some(notCompleted)) {
-      names.forEach(completeLoop);
-    }
-
-  };
 
 
+  binfo._register = (function() {
 
-  function binfoSetup(definitionsMe) {
+    "use strict";
+
+    var components = {},
+        componentNames = ['logic', 'charts', 'setup',
+                          'rendering', 'hashRetrieval'];
+
+    return function(name, deps, component) {
+      var names = componentNames;
+      if (components[name] || names.indexOf(name) < 0) {
+        return;
+      }
+      components[name] = {component: component, dependencies: deps};
+      if (names.some(function(c) { return !components[c]; })) {
+        return;
+      }
+      binfo._register = null;
+      var dependencies = {},
+          compFuncs = {},
+          completed = {};
+
+      names.forEach(function(c) {
+        dependencies[c] = components[c].dependencies;
+        compFuncs[c] = components[c].component;
+      });
+
+      function notCompleted(c) {
+        return !completed[c];
+      }
+
+      function completeLoop(name) {
+        var func = compFuncs[name],
+            deps = dependencies[name],
+            compDeps,
+            me;
+        if (completed[name]) return;
+        if (deps.some(notCompleted)) return;
+        compDeps = deps.map(function(d) { return completed[d]; });
+        me = compFuncs[name].apply(null, compDeps);
+        completed[name] = me ? me : true;
+      }
+
+      while (names.some(notCompleted)) {
+        names.forEach(completeLoop);
+      }
+    };
+
+  }());
+
+
+  binfo._register('setup', ['charts'], function(chartsApi) {
+
+    "use strict";
 
     var holder,
         renderLater,
         dataSets = {},
-        me = {};
+        setupApi = {};
 
-    me.holder = function() { return holder; };
-    me.renderLater = function(_) {
+    setupApi.holder = function() { return holder; };
+    setupApi.renderLater = function(_) {
       if (!arguments.length) return renderLater;
       renderLater = _;
     };
-    me.dataSet = function(dataName) {
+    setupApi.dataSet = function(dataName) {
       var set = dataSets[dataName];
       if (!set || !set.complete) {
         return null;
@@ -98,7 +99,7 @@
           .on('change', changeDataName);
 
       config.append('select')
-          .attr('class', 'chartIds')
+          .attr('class', 'definitionIds')
           .attr('multiple', 'multiple');
 
       config.append('div')
@@ -106,7 +107,7 @@
           .attr('class', 'button')
           .on('click', function() {
             var charts = [];
-            holder.selectAll('.chartIds option').each(function() {
+            holder.selectAll('.definitionIds option').each(function() {
               if (this.selected) {
                 charts.push(this.value);
               }
@@ -164,17 +165,16 @@
     };
 
     binfo.definitions = function(dataName, definitions) {
-      var binfos = {},
-          binfoIds = [],
+      var definitionIds = [],
           id;
       for (id in definitions) {
         if (definitions.hasOwnProperty(id)) {
           definitions[id].id = id;
-          binfoIds.push(id);
-          binfos[id] = definitionsMe.binfoUnit(definitions[id]);
+          definitions[id].type = definitions[id].type || 'number';
+          definitionIds.push(id);
         }
       }
-      setDataSet(dataName, {binfos: binfos, binfoIds: binfoIds});
+      setDataSet(dataName, {definitions: definitions, definitionIds: definitionIds});
       holder.select('.dataName').append('option')
           .attr('value', dataName)
           .text(dataName);
@@ -185,6 +185,7 @@
 
     function setDataSet(dataName, set) {
       var i,
+          dataUntyped,
           dataSet = dataSets[dataName] = dataSets[dataName] || {};
 
       for (i in set) {
@@ -193,16 +194,19 @@
         }
       }
       if (dataSet.dataUntyped) {
-        var dataUntyped = dataSet.dataUntyped;
+        dataUntyped = dataSet.dataUntyped;
         delete dataSet.dataUntyped;
         binfo.dataFromUntyped(dataName, dataUntyped);
         return;
       }
-      if (dataSet.data && dataSet.binfos) {
+      if (dataSet.data && dataSet.definitions) {
         dataSet.complete = true;
+        dataSet.charts = {};
+        dataSet.chartIds = dataSet.definitionIds.slice();
         dataSet.compares = {};
-        dataSet.binfoIds.forEach(function(b) {
-          dataSet.binfos[b].data(dataSet.data);
+        dataSet.definitionIds.forEach(function(id) {
+          dataSet.charts[id] = chartsApi.barChart(dataSet.definitions[id],
+                                                  dataSet.data);
         });
         if (renderLater && renderLater[0] === dataName) {
           binfo.render.apply(null, renderLater);
@@ -213,8 +217,8 @@
 
     function changeDataName() {
       var dataName = holder.select('.dataName').property('value');
-      var options = holder.select('.chartIds').selectAll('option')
-          .data(dataSets[dataName].binfoIds);
+      var options = holder.select('.definitionIds').selectAll('option')
+          .data(dataSets[dataName].definitionIds);
       options.enter().append('option');
       options
           .attr('value', function(d) { return d; })
@@ -223,24 +227,23 @@
     }
 
     binfo.dataFromUntyped = function(dataName, data) {
-      if (!(dataSets[dataName] && dataSets[dataName].binfos)) {
+      if (!(dataSets[dataName] && dataSets[dataName].definitions)) {
         dataSets[dataName] = {dataUntyped: data};
         return;
       }
-      var binfos = dataSets[dataName].binfos,
-          ids = dataSets[dataName].binfoIds,
-          unit;
+      var definitions = dataSets[dataName].definitions,
+          ids = dataSets[dataName].definitionIds;
       data.forEach(function(d) {
         ids.forEach(function(id) {
-          unit = binfos[id];
-          if (unit.derived) {
+          var defn = definitions[id];
+          if (defn.derived) {
             return;
           }
-          if (typeof unit.type === 'function') {
-            d[id] = unit.type(d[id]);
+          if (typeof defn.type === 'function') {
+            d[id] = defn.type(d[id]);
             return;
           }
-          switch (unit.type) {
+          switch (defn.type) {
           case 'number':
             d[id] = +d[id];
             break;
@@ -259,15 +262,13 @@
       setDataSet(dataName, {data: data});
     };
 
-    return me;
-
-  }
-
-  binfo._register('setup', binfoSetup, ['definitions']);
+    return setupApi;
+  });
 
 
+  binfo._register('hashRetrieval', [], function() {
 
-  function hashRetrieval() {
+    "use strict";
 
     // Yarin's answer on this SO post:
     // http://stackoverflow.com/questions/4197591/
@@ -313,17 +314,19 @@
 
     binfo.renderFromHash = renderFromHash;
 
-  }
-
-  binfo._register('hashRetrieval', hashRetrieval, []);
+  });
 
 
-  function rendering(setupMe, definitionsMe) {
+
+  binfo._register('rendering', ['setup', 'charts', 'logic'],
+                  function(setupApi, chartsApi, logicApi) {
+
+    "use strict";
 
     var chartSelection,
         cross,
         crossAll,
-        binfos,
+        charts,
         compares,
         currentDataName,
         currentHash,
@@ -335,12 +338,12 @@
         formatNumber = d3.format(',d');
 
 
-    binfo.render = function(dataName, binfoIds, filters, compareIds) {
+    binfo.render = function(dataName, chartIds, filters, compareIds) {
 
-      var dataSet = setupMe.dataSet(dataName);
+      var dataSet = setupApi.dataSet(dataName);
 
       if (!dataSet) {
-        setupMe.renderLater([dataName, binfoIds, filters, compareIds]);
+        setupApi.renderLater([dataName, chartIds, filters, compareIds]);
         return;
       }
 
@@ -348,58 +351,58 @@
       compareIds = compareIds || [];
       var data = dataSet.data,
           addedCompares = [],
-          holder = setupMe.holder(),
+          holder = setupApi.holder(),
           rawCompareIds = compareIds;
 
-      binfos = dataSet.binfos;
+      charts = dataSet.charts;
       compares = dataSet.compares;
 
-      var charts = binfoIds.map(function(id) {
+      var chartData = chartIds.map(function(id) {
         return {
-          unit: binfos[id], compare: false,
-          orientFlip: binfos[id].chart.defaultOrientFlip
+          chart: charts[id],
+          compare: false,
+          orientFlip: charts[id].defaultOrientFlip
         };
       });
       compareIds = [];
       rawCompareIds.forEach(function(raw) {
-        var id = definitionsMe.compareIdFromRaw(raw);
+        var id = logicApi.compareIdFromRaw(raw);
         compareIds.push(id);
         if (!compares[id]) {
-          compares[id] = definitionsMe.binfoCompare({
-                                          id: id, raw: raw, binfos: binfos});
+          compares[id] = chartsApi.compareChart({id: id, raw: raw, charts: charts});
           addedCompares.push(id);
         }
-        compares[id].addBinfoIds(binfoIds);
-        charts.push({unit: compares[id], compare: false, orientFlip: false});
+        compares[id].addChartIds(chartIds);
+        chartData.push({chart: compares[id], compare: false, orientFlip: false});
       });
 
       var removed = currentChartIds.filter(function(id) {
-        return binfoIds.indexOf(id) < 0;
+        return chartIds.indexOf(id) < 0;
       });
-      var added = binfoIds.filter(function(id) {
+      var added = chartIds.filter(function(id) {
         return currentChartIds.indexOf(id) < 0;
       });
 
       if (!cross || currentDataName !== dataName || removed.length) {
         cross = crossfilter(data);
         crossAll = cross.groupAll();
-        added = binfoIds;
+        added = chartIds;
         addedCompares = compareIds;
       }
-      currentChartIds = binfoIds;
+      currentChartIds = chartIds;
       currentCompareIds = compareIds;
       currentDataName = dataName;
       currentFilters = filters;
 
       updateHash();
 
-      added.forEach(function(id) { binfos[id].setCross(cross, crossAll); });
+      added.forEach(function(id) { charts[id].setCross(cross, crossAll); });
       addedCompares.forEach(function(id) { compares[id].setCross(cross, crossAll); });
 
       if (added.length || removed.length) {
 
         chartSelection = holder.select('.charts').selectAll('.chart')
-            .data(charts, function(d) { return d.unit.id; });
+            .data(chartData, function(d) { return d.chart.id; });
 
         chartSelection.enter()
           .append('div')
@@ -418,11 +421,11 @@
       }
 
 
-      binfoIds.forEach(function(id) {
+      chartIds.forEach(function(id) {
         if (filters[id]) {
-          binfos[id].filter(filters[id]);
+          charts[id].filter(filters[id]);
         } else {
-          binfos[id].filter(null);
+          charts[id].filter(null);
         }
       });
 
@@ -475,29 +478,32 @@
 
     binfo.filter = function(id, range) {
       currentFilters[id] = range;
-      binfos[id].filter(range);
+      charts[id].filter(range);
       renderAll();
       updateHash();
     };
 
-    // Renders the specified chart.
 
-    // Whenever the brush moves, re-rendering everything.
+    function callCharts(name) {
+      return function(chartData) {
+        /*jshint validthis:true */
+        var method = chartData.chart[name];
+        if (method) {
+          d3.select(this).each(method);
+        }
+      };
+    }
+
+    var updateCharts = callCharts('update'),
+        renderCharts = callCharts('render'),
+        cleanUpCharts = callCharts('cleanUp');
+
     function renderAll() {
-      chartSelection.each(function(chartData) {
-        /*jshint validthis:true */
-        d3.select(this).call(chartData.unit.chart);
-      });
-      chartSelection.each(function(chartData) {
-        /*jshint validthis:true */
-        d3.select(this).call(chartData.unit.chart.cleanUp);
-      });
+      chartSelection.each(updateCharts);
+      chartSelection.each(renderCharts);
+      chartSelection.each(cleanUpCharts);
       d3.select('.active').text(formatNumber(crossAll.value()));
     }
 
-  }
-
-  binfo._register('rendering', rendering, ['setup', 'definitions']);
-
-}());
+  });
 

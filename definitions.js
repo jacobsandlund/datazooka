@@ -1,29 +1,13 @@
 
-(function(binfo) {
+  binfo._register('logic', [], function() {
 
-  "use strict";
+    "use strict";
 
-  function binfoDefinitions(chartsMe) {
+    var logicApi = {};
 
-    var definitions = {};
+    logicApi.barLogic = function(bar, spec, data) {
 
-    definitions.binfoUnit = function(spec) {
-      var defn = unitDefinition(spec);
-      defn.chart = chartsMe.barChart(defn, spec);
-      return defn;
-    };
-
-    definitions.binfoCompare = function(spec) {
-      var defn = compareDefinition(spec);
-      defn.chart = chartsMe.compareChart(defn, spec);
-      return defn;
-    };
-
-
-    function unitDefinition(spec) {
-
-      var chart,
-          filterRange = [0, 0],
+      var filterRange = [0, 0],
           filterActive,
           crossAll,
           dimension,
@@ -31,7 +15,6 @@
           internalDimensionFunc,
           group,
           groups,
-          groupFromIndex,
           groupFunc,
           groupAll,
           ordinal = [],
@@ -41,29 +24,20 @@
           minX = spec.minX,
           maxX = spec.maxX,
           maxY = spec.maxY,
-          separation = spec.separation,
-          me = {};
+          separation = spec.separation;
 
 
-      me.id = spec.id;
-      me.label = spec.label;
-      me.round = spec.round;
-      me.type = spec.type || 'number';
-      me.derived = spec.derived;
-      me.tickSpacing = spec.tickSpacing || binfo.tickSpacing;
-      if (spec.tickSpacing === false) {
-        me.tickSpacing = false;
-      }
-      me.ticks = spec.ticks;
+      bar.api.id = spec.id;
+      bar.round = spec.round;
 
       function groupFuncBy(groupBy) {
         return function(d) { return Math.floor(d / groupBy) * groupBy; };
       }
 
-      dimensionFunc = spec.dimension || function(d) { return d[spec.id]; };
+      dimensionFunc = spec.dimension || function(d) { return d[bar.api.id]; };
       if (spec.ordinal) {
         separation = 1;
-        me.round = Math.round;
+        bar.round = Math.round;
         if (Array.isArray(spec.ordinal)) {
           spec.ordinal.forEach(function(o, i) { ordinalHash[o] = i; });
         } else {
@@ -98,40 +72,38 @@
       }
 
       if (spec.ordinal) {
-        me.ordinal = function() { return ordinal; };
+        bar.ordinal = function() { return ordinal; };
       }
-      me.dimensionFunc = function() { return dimensionFunc; };
-      me.groupFunc = function() { return groupFunc; };
-      me.separation = function() { return separation; };
-      me.crossAll = function() { return crossAll; };
-      me.group = function() { return group; };
-      me.groups = function() { return groups; };
-      me.groupAll = function() { return groupAll; };
-      me.minX = function() { return minX; };
-      me.maxX = function() { return maxX; };
-      me.maxY = function() { return maxY; };
-      me.filterActive = function() { return filterActive; };
-      me.filterRange = function() { return filterRange; };
 
-      me.numGroups = function() {
+      bar.api.dimensionFunc = function() { return dimensionFunc; };
+      bar.api.groupFunc = function() { return groupFunc; };
+
+      bar.groups = function() { return groups; };
+      bar.minX = function() { return minX; };
+      bar.maxX = function() { return maxX; };
+      bar.maxY = function() { return maxY; };
+      bar.filterActive = function() { return filterActive; };
+      bar.filterRange = function() { return filterRange; };
+
+      bar.percent = function() {
+        return crossAll.value() / groupAll.value();
+      };
+
+      bar.api.numGroups = function() {
         return Math.round((maxX - minX) / separation);
       };
 
-      me.groupIndex = function(val) {
+      bar.api.groupIndex = function(val) {
         return Math.floor((val - minX) / separation);
       };
 
-      me.groupFromIndex = function(index) {
-        return groupFromIndex[index];
-      };
-
-      me.data = function(data) {
+      function setData(data) {
         var ordinalCount = 1e9,
             orderFromOrdinal = {},
             ord,
             ordArray = [];
 
-        if (me.ordinal) {
+        if (bar.ordinal) {
           data.forEach(function(d) {
             d = internalDimensionFunc(d);
             var order = orderFromOrdinal[d];
@@ -159,7 +131,9 @@
         }
       };
 
-      me.filter = function(_) {
+      setData(data);
+
+      bar.api.filter = function(_) {
         if (_) {
           filterActive = true;
           filterRange = _;
@@ -172,11 +146,11 @@
           filterActive = false;
           dimension.filterAll();
         }
-        chart.filter(_);
-        return me;
+        bar.chartFilter(_);
+        return bar;
       };
 
-      me.setCross = function(cross, all) {
+      bar.api.setCross = function(cross, all) {
         crossAll = all;
         dimension = cross.dimension(dimensionFunc);
         if (!groupFunc) {
@@ -194,10 +168,6 @@
         }
         group = dimension.group(groupFunc);
         groups = group.all();
-        groupFromIndex = [];
-        groups.forEach(function(g) {
-          groupFromIndex[me.groupIndex(g.value)] = g;
-        });
         groupAll = dimension.groupAll();
         if (!spec.minX) {
           minX = groups[0].key;
@@ -205,23 +175,20 @@
         if (!spec.maxX) {
           maxX = groups[groups.length - 1].key + separation;
         }
-        chart.setCross();
+        bar.setCrossChart();
       };
 
-      me.setChart = function(_) {
-        chart = _;
-      };
-
-      me.update = function() {
+      bar.api.update = function() {
         if (!spec.maxY) {
           maxY = group.top(1)[0].value;
         }
+        bar.updateChart();
       };
 
-      return me;
-    }
+    };
 
-    definitions.compareIdFromRaw = function(rawId) {
+
+    logicApi.compareIdFromRaw = function(rawId) {
       var ids = rawId.split('*');
       if (ids[0] < ids[1]) {
         return ids[0] + '*' + ids[1];
@@ -229,11 +196,12 @@
       return ids[1] + '*' + ids[0];
     };
 
-    function compareDefinition(spec) {
+
+    logicApi.compareLogic = function(compare, spec) {
 
       var ids = spec.id.split('*'),
-          xb = spec.binfos[ids[0]],
-          yb = spec.binfos[ids[1]],
+          xb = spec.charts[ids[0]],
+          yb = spec.charts[ids[1]],
           normalize = spec.raw.split('*')[2],
           xbDimensionFunc,
           ybDimensionFunc,
@@ -245,24 +213,19 @@
           dimensionFunc,
           group,
           groups,
-          values,
-          chart,
-          me = {};
+          values;
 
+      compare.api.id = spec.id;
 
-      me.id = spec.id;
-      me.xb = xb;
-      me.yb = yb;
-      me.label = 'Comparing ' + xb.label + ' and ' + yb.label;
-      me.ybScale = ybScale;
-      me.group = function() { return group; };
-      me.groups = function() { return groups; };
-      me.values = function() { return values; };
-      me.normalize = function(_) {
+      compare.xb = xb;
+      compare.yb = yb;
+      compare.values = function() { return values; };
+
+      compare.api.normalize = function(_) {
         if (!arguments.length) return normalize;
         normalize = _;
       };
-      me.rawId = function() {
+      compare.api.rawId = function() {
         return spec.id + (normalize ? '*' + normalize : '');
       };
 
@@ -272,18 +235,16 @@
         return x + y * ybScale;
       };
 
-
-
-      me.addBinfoIds = function(binfoIds) {
-        if (binfoIds.indexOf(xb.id) < 0) {
-          binfoIds.push(xb.id);
+      compare.api.addChartIds = function(chartIds) {
+        if (chartIds.indexOf(xb.id) < 0) {
+          chartIds.push(xb.id);
         }
-        if (binfoIds.indexOf(yb.id) < 0) {
-          binfoIds.push(yb.id);
+        if (chartIds.indexOf(yb.id) < 0) {
+          chartIds.push(yb.id);
         }
       };
 
-      me.setCross = function(cross, crossAll) {
+      compare.api.setCross = function(cross, crossAll) {
         xbDimensionFunc = xb.dimensionFunc();
         ybDimensionFunc = yb.dimensionFunc();
         xbGroupFunc = xb.groupFunc();
@@ -298,10 +259,10 @@
         for (i = 0; i < xbNumGroups; i++) {
           values[i] = [];
         }
-        chart.setCross();
+        compare.setCrossChart();
       };
 
-      me.update = function() {
+      compare.api.update = function() {
         var xi,
             yi,
             i,
@@ -348,24 +309,12 @@
             }
           }
         }
+
+        compare.updateChart();
       };
 
+    };
 
-      me.setChart = function(_) {
-        chart = _;
-      };
-
-
-      return me;
-    }
-
-
-    return definitions;
-
-  }
-
-
-  binfo._register('definitions', binfoDefinitions, ['charts']);
-
-}(window.binfo));
+    return logicApi;
+  });
 
