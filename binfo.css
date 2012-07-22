@@ -8,8 +8,8 @@
 .chart {
   float: left;
   display: inline-block;
-  margin: 15px;
-  padding: 10px;
+  margin: 5px;
+  padding: 5px;
   border-style: solid;
   border-width: 5px;
   border-radius: 15px;
@@ -19,10 +19,14 @@
 
 .title {
   font-weight: bold;
+  text-align: center;
 }
 
 .configuration {
   overflow: auto;
+  margin: 20px auto;
+  max-width: 720px;
+  min-width: 240px;
 }
 
 .configuration .button {
@@ -255,7 +259,7 @@ ul.selected.charts-list {
 }
 
 .axis text {
-  font: 12px sans-serif;
+  font: 11px sans-serif;
 }
 
 .axis.ordinal {
