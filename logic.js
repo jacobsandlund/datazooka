@@ -200,16 +200,16 @@ binfo._register('logic', [], function() {
   logicApi.compareLogic = function(compare, spec) {
 
     var ids = spec.id.split('*'),
-        xb = spec.charts[ids[0]],
-        yb = spec.charts[ids[1]],
+        xc = spec.charts[ids[0]],
+        yc = spec.charts[ids[1]],
         normalize = spec.raw.split('*')[2],
-        xbDimensionFunc,
-        ybDimensionFunc,
-        xbGroupFunc,
-        ybGroupFunc,
-        xbNumGroups,
-        ybNumGroups,
-        ybScale = Math.pow(2, 20),  // About a million
+        xcDimensionFunc,
+        ycDimensionFunc,
+        xcGroupFunc,
+        ycGroupFunc,
+        xcNumGroups,
+        ycNumGroups,
+        ycScale = Math.pow(2, 20),  // About a million
         dimensionFunc,
         group,
         groups,
@@ -217,8 +217,8 @@ binfo._register('logic', [], function() {
 
     compare.api.id = spec.id;
 
-    compare.xb = xb;
-    compare.yb = yb;
+    compare.xc = xc;
+    compare.yc = yc;
     compare.values = function() { return values; };
 
     compare.api.normalize = function(_) {
@@ -230,33 +230,33 @@ binfo._register('logic', [], function() {
     };
 
     dimensionFunc = function(d) {
-      var x = xb.groupIndex(xbGroupFunc(xbDimensionFunc(d))),
-          y = yb.groupIndex(ybGroupFunc(ybDimensionFunc(d)));
-      return x + y * ybScale;
+      var x = xc.groupIndex(xcGroupFunc(xcDimensionFunc(d))),
+          y = yc.groupIndex(ycGroupFunc(ycDimensionFunc(d)));
+      return x + y * ycScale;
     };
 
     compare.api.addChartIds = function(chartIds) {
-      if (chartIds.indexOf(xb.id) < 0) {
-        chartIds.push(xb.id);
+      if (chartIds.indexOf(xc.id) < 0) {
+        chartIds.push(xc.id);
       }
-      if (chartIds.indexOf(yb.id) < 0) {
-        chartIds.push(yb.id);
+      if (chartIds.indexOf(yc.id) < 0) {
+        chartIds.push(yc.id);
       }
     };
 
     compare.api.setCross = function(cross, crossAll) {
-      xbDimensionFunc = xb.dimensionFunc();
-      ybDimensionFunc = yb.dimensionFunc();
-      xbGroupFunc = xb.groupFunc();
-      ybGroupFunc = yb.groupFunc();
-      xbNumGroups = xb.numGroups();
-      ybNumGroups = yb.numGroups();
+      xcDimensionFunc = xc.dimensionFunc();
+      ycDimensionFunc = yc.dimensionFunc();
+      xcGroupFunc = xc.groupFunc();
+      ycGroupFunc = yc.groupFunc();
+      xcNumGroups = xc.numGroups();
+      ycNumGroups = yc.numGroups();
       var dimension = cross.dimension(dimensionFunc);
       group = dimension.group();
       groups = group.all();
       var i;
       values = [];
-      for (i = 0; i < xbNumGroups; i++) {
+      for (i = 0; i < xcNumGroups; i++) {
         values[i] = [];
       }
       compare.setCrossChart();
@@ -269,42 +269,42 @@ binfo._register('logic', [], function() {
           n = groups.length,
           d,
           max;
-      for (xi = 0; xi < xbNumGroups; xi++) {
-        for (yi = 0; yi < ybNumGroups; yi++) {
+      for (xi = 0; xi < xcNumGroups; xi++) {
+        for (yi = 0; yi < ycNumGroups; yi++) {
           values[xi][yi] = 0;
         }
       }
       i = -1;
       while (++i < n) {
         d = groups[i];
-        xi = d.key % ybScale;
-        yi = Math.round(d.key / ybScale);
+        xi = d.key % ycScale;
+        yi = Math.round(d.key / ycScale);
         values[xi][yi] = d.value;
       }
       if (!normalize) {
         max = group.top(1)[0].value + 1e-300;
-        for (xi = 0; xi < xbNumGroups; xi++) {
-          for (yi = 0; yi < ybNumGroups; yi++) {
+        for (xi = 0; xi < xcNumGroups; xi++) {
+          for (yi = 0; yi < ycNumGroups; yi++) {
             values[xi][yi] = values[xi][yi] / max;
           }
         }
       } else if (normalize === 'x') {
-        for (yi = 0; yi < ybNumGroups; yi++) {
+        for (yi = 0; yi < ycNumGroups; yi++) {
           max = 1e-300;
-          for (xi = 0; xi < xbNumGroups; xi++) {
+          for (xi = 0; xi < xcNumGroups; xi++) {
             max = Math.max(max, values[xi][yi]);
           }
-          for (xi = 0; xi < xbNumGroups; xi++) {
+          for (xi = 0; xi < xcNumGroups; xi++) {
             values[xi][yi] = values[xi][yi] / max;
           }
         }
       } else {
-        for (xi = 0; xi < xbNumGroups; xi++) {
+        for (xi = 0; xi < xcNumGroups; xi++) {
           max = 1e-300;
-          for (yi = 0; yi < ybNumGroups; yi++) {
+          for (yi = 0; yi < ycNumGroups; yi++) {
             max = Math.max(max, values[xi][yi]);
           }
-          for (yi = 0; yi < ybNumGroups; yi++) {
+          for (yi = 0; yi < ycNumGroups; yi++) {
             values[xi][yi] = values[xi][yi] / max;
           }
         }

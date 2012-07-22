@@ -265,7 +265,7 @@ binfo._register('charts', ['logic'], function(logicApi) {
 
     function setupChartPeripherals(div, setupDim) {
       // The filter toggle and endpoints
-      var filterBar = div.append('div').attr('class', 'filter-bar');
+      var filterBar = div.append('div').attr('class', 'peripherals');
       filterBar.append('div')
           .text('Filter')
           .attr('class', 'filter button')
@@ -404,15 +404,15 @@ binfo._register('charts', ['logic'], function(logicApi) {
   function compareChart(compare, spec) {
 
     var dim = findDim(spec),
-        xb = compare.xb,
-        yb = compare.yb,
+        xc = compare.xc,
+        yc = compare.yc,
         paths = [],
         levels = 8,
         scaleLevel = spec.scaleLevel || levels;
 
-    dim.left = yb.dim.bottom + 50;
-    dim.bottom = xb.dim.bottom;
-    compare.api.label = 'Comparing ' + xb.label + ' and ' + yb.label,
+    dim.left = yc.dim.bottom + 50;
+    dim.bottom = xc.dim.bottom;
+    compare.api.label = 'Comparing ' + xc.label + ' and ' + yc.label,
 
     compare.updateChart = function() {
       var values = compare.values(),
@@ -475,12 +475,12 @@ binfo._register('charts', ['logic'], function(logicApi) {
       }
       g.classed('compare', true);
       g.append('g')
-          .attr('class', 'yb')
+          .attr('class', 'yc')
           .datum({compare: true, orientFlip: true})
           .attr('transform', 'matrix(0,1,-1,0,' + dim.yHeight +
                               ',' + dim.yTop + ')');
       g.append('g')
-          .attr('class', 'xb')
+          .attr('class', 'xc')
           .attr('transform', 'translate(' + dim.xLeft + ',' + dim.xTop + ')')
           .datum({compare: true, orientFlip: false});
       gCompare = g.append('g')
@@ -502,17 +502,17 @@ binfo._register('charts', ['logic'], function(logicApi) {
     }
 
     function renderUpdate(div, g) {
-      g.selectAll('.yb').each(yb.render);
-      g.selectAll('.xb').each(xb.render);
+      g.selectAll('.yc').each(yc.render);
+      g.selectAll('.xc').each(xc.render);
       g.selectAll('.compare.bar')
           .attr('d', function(d) { return paths[d]; });
     }
 
     compare.setCrossChart = function() {
-      dim.xHeight = xb.dim.compareHeight;
-      dim.yHeight = yb.dim.compareHeight;
-      dim.xWidth = xb.dim.width;
-      dim.yWidth = yb.dim.width;
+      dim.xHeight = xc.dim.compareHeight;
+      dim.yHeight = yc.dim.compareHeight;
+      dim.xWidth = xc.dim.width;
+      dim.yWidth = yc.dim.width;
       dim.xTop = dim.yWidth + 6;
       dim.xLeft = dim.yHeight + 3;
       dim.yTop = 3;

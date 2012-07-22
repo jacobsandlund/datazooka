@@ -465,6 +465,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       updateWindowHash();
     }
   }
+  binfo.updateHash = updateHash;
 
   function updateWindowHash() {
     hashUpdatedRecently = false;
