@@ -202,7 +202,7 @@ binfo._register('logic', [], function() {
     var ids = spec.id.split('*'),
         xc = spec.charts[ids[0]],
         yc = spec.charts[ids[1]],
-        normalize = spec.raw.split('*')[2],
+        given = spec.raw.split('*')[2],
         xcDimensionFunc,
         ycDimensionFunc,
         xcGroupFunc,
@@ -221,12 +221,12 @@ binfo._register('logic', [], function() {
     compare.yc = yc;
     compare.values = function() { return values; };
 
-    compare.api.normalize = function(_) {
-      if (!arguments.length) return normalize;
-      normalize = _;
+    compare.api.given = function(_) {
+      if (!arguments.length) return given;
+      given = _;
     };
     compare.api.rawId = function() {
-      return spec.id + (normalize ? '*' + normalize : '');
+      return spec.id + (given ? '*' + given : '');
     };
 
     dimensionFunc = function(d) {
@@ -281,14 +281,14 @@ binfo._register('logic', [], function() {
         yi = Math.round(d.key / ycScale);
         values[xi][yi] = d.value;
       }
-      if (!normalize) {
+      if (!given) {
         max = group.top(1)[0].value + 1e-300;
         for (xi = 0; xi < xcNumGroups; xi++) {
           for (yi = 0; yi < ycNumGroups; yi++) {
             values[xi][yi] = values[xi][yi] / max;
           }
         }
-      } else if (normalize === 'x') {
+      } else if (given === 'yc') {
         for (yi = 0; yi < ycNumGroups; yi++) {
           max = 1e-300;
           for (xi = 0; xi < xcNumGroups; xi++) {

@@ -113,13 +113,13 @@ binfo._register('charts', ['logic'], function(logicApi) {
             .call(brush.extent(extent = extent.map(bar.round)));
       }
       if (!brush.empty()) {
-        binfo.filter(bar.api.id, extent);
+        chartsApi.filter(bar.api.id, extent);
       }
     });
 
     brush.on('brushend.chart', function() {
       if (brush.empty()) {
-        binfo.filter(bar.api.id, null);
+        chartsApi.filter(bar.api.id, null);
       }
     });
 
@@ -265,17 +265,17 @@ binfo._register('charts', ['logic'], function(logicApi) {
 
     function setupChartPeripherals(div, setupDim) {
       // The filter toggle and endpoints
-      var filterBar = div.append('div').attr('class', 'peripherals');
+      var filterBar = div.append('div').attr('class', 'peripherals filter-bar');
       filterBar.append('div')
           .text('Filter')
           .attr('class', 'filter button')
-          .classed('down', !brush.empty())
+          .classed('down', bar.filterActive())
           .on('click', function() {
             var el = d3.select(this);
             if (!bar.filterActive()) {
-              binfo.filter(bar.api.id, bar.filterRange());
+              chartsApi.filter(bar.api.id, bar.filterRange());
             } else {
-              binfo.filter(bar.api.id, null);
+              chartsApi.filter(bar.api.id, null);
             }
           });
       filterBar.selectAll('.range').data(['left', 'right'])
@@ -289,7 +289,7 @@ binfo._register('charts', ['logic'], function(logicApi) {
             var left = x(range[0]),
                 right = x(range[1]);
             if (left <= right && right >= 0 && left <= setupDim.width) {
-              binfo.filter(bar.api.id, range);
+              chartsApi.filter(bar.api.id, range);
             }
           });
     }
@@ -475,12 +475,12 @@ binfo._register('charts', ['logic'], function(logicApi) {
       }
       g.classed('compare', true);
       g.append('g')
-          .attr('class', 'yc')
+          .attr('class', 'yc inner-chart')
           .datum({compare: true, orientFlip: true})
           .attr('transform', 'matrix(0,1,-1,0,' + dim.yHeight +
                               ',' + dim.yTop + ')');
       g.append('g')
-          .attr('class', 'xc')
+          .attr('class', 'xc inner-chart')
           .attr('transform', 'translate(' + dim.xLeft + ',' + dim.xTop + ')')
           .datum({compare: true, orientFlip: false});
       gCompare = g.append('g')
@@ -499,13 +499,32 @@ binfo._register('charts', ['logic'], function(logicApi) {
     }
 
     function setupChartPeripherals(div) {
+      var givenBar = div.append('div')
+          .attr('class', 'peripherals given-bar')
+          .style('margin-left', (dim.left + dim.xLeft) + 'px');
+      givenBar.selectAll('.given.button')
+          .data(['xc', 'yc'])
+        .enter().append('div')
+          .text(function(d) { return 'Given ' + compare[d].label; })
+          .attr('class', function(d) { return d + ' given button'; })
+          .classed('down', function(d) { return compare.api.given() === d; })
+          .on('click', function(d) {
+            var el = d3.select(this);
+            if (compare.api.given() === d) {
+              chartsApi.given(compare.api.id, null);
+            } else {
+              chartsApi.given(compare.api.id, d);
+            }
+          });
     }
 
     function renderUpdate(div, g) {
-      g.selectAll('.yc').each(yc.render);
-      g.selectAll('.xc').each(xc.render);
+      g.selectAll('.yc.inner-chart').each(yc.render);
+      g.selectAll('.xc.inner-chart').each(xc.render);
       g.selectAll('.compare.bar')
           .attr('d', function(d) { return paths[d]; });
+      div.selectAll('.given.button')
+          .classed('down', function(d) { return compare.api.given() === d; });
     }
 
     compare.setCrossChart = function() {

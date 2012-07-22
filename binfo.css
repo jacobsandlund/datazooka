@@ -52,12 +52,18 @@
 
 .peripherals {
   font-size: 12px;
-  width: 145px;
-  margin: 0px auto;
 }
 
 .peripherals .button {
   padding: 2px 5px;
+}
+
+.filter-bar {
+  width: 145px;
+  margin: 0px auto;
+}
+
+.filter-bar .button {
   margin-right: 0px;
 }
 

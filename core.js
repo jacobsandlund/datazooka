@@ -465,7 +465,6 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       updateWindowHash();
     }
   }
-  binfo.updateHash = updateHash;
 
   function updateWindowHash() {
     hashUpdatedRecently = false;
@@ -477,9 +476,15 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     }
   }
 
-  binfo.filter = function(id, range) {
+  chartsApi.filter = function(id, range) {
     currentFilters[id] = range;
     charts[id].filter(range);
+    renderAll();
+    updateHash();
+  };
+
+  chartsApi.given = function(id, given) {
+    compares[id].given(given);
     renderAll();
     updateHash();
   };
