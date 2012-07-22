@@ -436,9 +436,10 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
 
     charts = dataSet.charts;
 
-    shownChartIds = chartIds = rawChartIds.map(function(raw) {
+    chartIds = rawChartIds.map(function(raw) {
       return logicApi.idFromRaw(raw);
     });
+    shownChartIds = chartIds.slice();
     chartData = shownChartIds.map(function(id, i) {
       var raw = rawChartIds[i];
       if (!charts[id]) {

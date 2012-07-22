@@ -361,7 +361,7 @@ binfo._register('charts', ['logic'], function(logicApi) {
           tix;
 
       if (!spec.x) {
-        if (bar.type === 'date') {
+        if (spec.type === 'date') {
           x = d3.time.scale();
         } else {
           x = d3.scale.linear();
