@@ -117,8 +117,7 @@ ul.bar.charts-list {
   width: 16px;
   height: 18px;
   float: right;
-  color: #f8f8f8;
-  background-color: #ccc;
+  color: #bbb;
   cursor: pointer;
   padding: 1px 2px;
   text-align: center;
@@ -126,7 +125,7 @@ ul.bar.charts-list {
 }
 
 .close:hover {
-  color: black;
+  color: #777;
 }
 
 .pane {
