@@ -95,26 +95,32 @@ binfo._register('setup', ['charts'], function(chartsApi) {
 
     // Create skeleton.
     var config = holder.append('div'),
-        sel;
+        mainPane,
+        barPane,
+        selectedPane;
 
     config.attr('class', 'configuration');
-    config.append('select')
+    mainPane = config.append('div').attr('class', 'main pane');
+    mainPane.append('h3').text('Dataset');
+    mainPane.append('select')
         .attr('class', 'data-name')
         .on('change', changeDataNameToSelected);
 
-    config.append('ul')
+    barPane = config.append('div').attr('class', 'bar pane');
+    barPane.append('h3').text('Bar Charts');
+    barPane.append('ul')
         .attr('class', 'bar charts-list');
 
-    sel = config.append('div')
-        .attr('class', 'selected');
-    sel.append('ul')
+    selectedPane = config.append('div').attr('class', 'selected pane');
+    selectedPane.append('h3').text('Selected Charts');
+    selectedPane.append('ul')
         .attr('class', 'selected charts-list');
-    sel.append('div')
+    selectedPane.append('div')
         .text('Clear')
         .attr('class', 'clear button')
         .on('click', clearSelectedCharts);
 
-    config.append('div')
+    selectedPane.append('div')
         .text('Update')
         .attr('class', 'update button')
         .on('click', function() { binfo.render(dataName, selected); });

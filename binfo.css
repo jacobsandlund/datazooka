@@ -8,11 +8,27 @@
 .chart {
   float: left;
   display: inline-block;
-  margin-bottom: 20px;
+  margin: 15px;
+  padding: 10px;
+  border-style: solid;
+  border-width: 5px;
+  border-radius: 15px;
+  border-color: #f8f8f8;
+  background-color: white;
+}
+
+.title {
+  font-weight: bold;
 }
 
 .configuration {
   overflow: auto;
+}
+
+.configuration h3 {
+  margin: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
 }
 
 .data-name {
@@ -20,18 +36,33 @@
   width: 150px;
 }
 
-.button {
-  float: left;
+.update.button {
+  padding: 6px 11px;
+  float: right;
+  color: #eee;
+  background-color: #991735;
+  background-image: -ms-linear-gradient(top, #991735, #6F1127);
+  background-image: -webkit-linear-gradient(top, #991735, #6F1127);
+  background-image: -o-linear-gradient(top, #991735, #6F1127);
+  background-image: -moz-linear-gradient(top, #991735, #6F1127);
+  background-image: linear-gradient(top, #991735, #6F1127);
 }
 
-.charts-list {
+.update.button:hover {
+  background: #6F1127;
+}
+
+.clear.button {
+  float: left;
+  margin-left: 0;
+}
+
+ul.charts-list {
   overflow: auto;
-  height: 350px;
   width: 200px;
   padding: 5px;
   border: solid 1px black;
-  float: left;
-  margin: 0 10px;
+  margin: 0;
 }
 
 .charts-list li {
@@ -50,6 +81,10 @@
   user-select: none;
 }
 
+ul.bar.charts-list {
+  height: 300px;
+}
+
 .bar.charts-list li:hover {
   background-color: #ddd;
 }
@@ -63,7 +98,7 @@
   width: 16px;
   height: 18px;
   float: right;
-  color: white;
+  color: #f8f8f8;
   background-color: #ccc;
   cursor: pointer;
   padding: 1px 2px;
@@ -71,13 +106,23 @@
   font-size: 15px;
 }
 
-div.selected {
-  float: left;
-  height: 350px;
-  width: 230px;
+.close:hover {
+  color: black;
 }
 
-.selected.charts-list {
+.pane {
+  padding: 0 10px;
+  float: left;
+  height: 390px;
+  width: 216px;
+  overflow: auto;
+}
+
+.main.pane {
+  width: 170px;
+}
+
+ul.selected.charts-list {
   height: 300px;
   margin-bottom: 10px;
 }
@@ -85,10 +130,6 @@ div.selected {
 .selected.charts-list li {
   cursor: ns-resize;
   margin: 7px 3px;
-}
-
-.clear.button {
-  margin-left: 10px;
 }
 
 .button {
@@ -105,7 +146,7 @@ div.selected {
   border-width: 1px;
   border-radius: 6px;
   border-color: #BABABA #888 #888 #BABABA;
-  padding: 6px 11px;
+  padding: 2px 5px;
   margin-left: 3px;
   margin-right: 3px;
   -webkit-touch-callout: none;
@@ -121,21 +162,18 @@ div.selected {
 }
 
 .button.down {
-  background-color: #5EFF29;
-  background-image: -ms-linear-gradient(top, #5EFF29, #37DB00);
-  background-image: -webkit-linear-gradient(top, #5EFF29, #37DB00);
-  background-image: -o-linear-gradient(top, #5EFF29, #37DB00);
-  background-image: -moz-linear-gradient(top, #5EFF29, #37DB00);
-  background-image: linear-gradient(top, #5EFF29, #37DB00);
+  background-color: #2C9CAF;
+  background-image: -ms-linear-gradient(top, #2C9CAF, #237B8B);
+  background-image: -webkit-linear-gradient(top, #2C9CAF, #237B8B);
+  background-image: -o-linear-gradient(top, #2C9CAF, #237B8B);
+  background-image: -moz-linear-gradient(top, #2C9CAF, #237B8B);
+  background-image: linear-gradient(top, #2C9CAF, #237B8B);
   border-color: #888 #BABABA #BABABA #888;
+  color: white;
 }
 
 .peripherals {
   font-size: 12px;
-}
-
-.peripherals .button {
-  padding: 2px 5px;
 }
 
 .filter-bar {
@@ -153,7 +191,7 @@ div.selected {
 }
 
 .foreground.bar {
-  fill: steelblue;
+  fill: hsl(189, 60%, 40%);
 }
 
 .background.bar {
@@ -161,31 +199,31 @@ div.selected {
 }
 
 .compare.bar.level-0 {
-  fill: hsl(207, 44%, 94%);
+  fill: hsl(189, 60%, 94%);
 }
 
 .compare.bar.level-1 {
-  fill: hsl(207, 44%, 80%);
+  fill: hsl(189, 60%, 80%);
 }
 
 .compare.bar.level-2 {
-  fill: hsl(207, 44%, 68%);
+  fill: hsl(189, 60%, 68%);
 }
 
 .compare.bar.level-3 {
-  fill: hsl(207, 44%, 53%);
+  fill: hsl(189, 60%, 53%);
 }
 
 .compare.bar.level-4 {
-  fill: hsl(207, 44%, 37%);
+  fill: hsl(189, 60%, 37%);
 }
 
 .compare.bar.level-5 {
-  fill: hsl(207, 44%, 25%);
+  fill: hsl(189, 60%, 25%);
 }
 
 .compare.bar.level-6 {
-  fill: hsl(207, 44%, 13%);
+  fill: hsl(189, 60%, 13%);
 }
 
 .compare.bar.level-7 {
@@ -212,7 +250,7 @@ div.selected {
 }
 
 .brush rect.extent {
-  fill: steelblue;
+  fill: hsl(189, 60%, 40%);
   fill-opacity: .125;
 }
 
