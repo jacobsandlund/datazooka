@@ -167,7 +167,7 @@ binfo._register('charts', ['logic'], function(logicApi) {
             top: dim.left,
             right: dim.top + 25,
             bottom: dim.right,
-            left: dim.bottom + 50,
+            left: dim.bottom + 40,
           };
           for (i in dim) {
             if (dim.hasOwnProperty(i) && typeof setupDim[i] === 'undefined') {
@@ -411,8 +411,8 @@ binfo._register('charts', ['logic'], function(logicApi) {
         levels = 8,
         scaleLevel = spec.scaleLevel || levels;
 
-    dim.left = yc.dim.bottom + 50;
-    dim.bottom = xc.dim.bottom;
+    dim.left = yc.dim.bottom + 60;
+    dim.bottom = xc.dim.bottom + 30;
     compare.api.label = 'Comparing ' + xc.label + ' and ' + yc.label,
 
     compare.updateChart = function() {
@@ -484,18 +484,30 @@ binfo._register('charts', ['logic'], function(logicApi) {
           .attr('class', 'xc inner-chart')
           .attr('transform', 'translate(' + dim.xLeft + ',' + dim.xTop + ')')
           .datum({compare: true, orientFlip: false});
+      g.append('path')
+          .attr('stroke', 'black')
+          .attr('fill', 'white')
+          .attr('shape-rendering', 'crispEdges')
+          .attr('d', 'M' + (dim.yHeight + 1) + ',1V' + (dim.xTop - 2) +
+                      'H' + (dim.width - 2) + 'V1' + 'H' + (dim.yHeight + 1));
       gCompare = g.append('g')
           .attr('transform', 'translate(' + dim.xLeft + ',' + dim.yTop + ')');
       gCompare.selectAll('.compare.bar')
           .data(levelNums)
         .enter().append('path')
           .attr('class', function(d) { return 'level-' + d + ' compare bar'; });
-      g.append('path')
-          .attr('stroke', 'black')
-          .attr('fill', 'none')
-          .attr('shape-rendering', 'crispEdges')
-          .attr('d', 'M' + (dim.yHeight + 1) + ',1V' + (dim.xTop - 2) +
-                      'H' + (dim.width - 2) + 'V1' + 'H' + (dim.yHeight + 1));
+
+      g.append('text')
+          .attr('x', -dim.left + 10)
+          .attr('y', dim.yWidth / 2)
+          .style('writing-mode', 'tb')
+          .style('text-anchor', 'middle')
+          .text(yc.label);
+      g.append('text')
+          .attr('x', dim.xLeft + dim.xWidth / 2)
+          .attr('y', dim.height + dim.bottom - 5)
+          .style('text-anchor', 'middle')
+          .text(xc.label);
       return g;
     }
 
