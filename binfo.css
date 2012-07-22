@@ -25,15 +25,34 @@
   overflow: auto;
 }
 
+.configuration .button {
+  margin-top: 5px;
+}
+
 .configuration h3 {
   margin: 0;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
   font-size: 16px;
 }
 
-.data-name {
-  float: left;
-  width: 150px;
+.configuration select {
+  width: 190px;
+  margin: 11px 0;
+}
+
+select.compare.yc {
+  margin-bottom: 16px;
+}
+
+.configuration label {
+  display: block;
+  margin: 4px 0;
+  font-size: 12px;
+  font-style: italic;
+}
+
+select.data-name {
+  margin-bottom: 30px;
 }
 
 .update.button {
@@ -119,7 +138,7 @@ ul.bar.charts-list {
 }
 
 .main.pane {
-  width: 170px;
+  width: 190px;
 }
 
 ul.selected.charts-list {

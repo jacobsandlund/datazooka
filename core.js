@@ -105,6 +105,16 @@ binfo._register('setup', ['charts'], function(chartsApi) {
     mainPane.append('select')
         .attr('class', 'data-name')
         .on('change', changeDataNameToSelected);
+    mainPane.append('h3').text('Comparisons');
+    mainPane.append('select')
+        .attr('class', 'compare xc');
+    mainPane.append('label').text('compared to');
+    mainPane.append('select')
+        .attr('class', 'compare yc');
+    mainPane.append('div')
+        .text('Add')
+        .attr('class', 'button')
+        .on('click', addCompareChart);
 
     barPane = config.append('div').attr('class', 'bar pane');
     barPane.append('h3').text('Bar Charts');
@@ -190,7 +200,7 @@ binfo._register('setup', ['charts'], function(chartsApi) {
         .attr('value', dataName)
         .text(dataName);
     if (firstDefinition) {
-      changeDataNameToSelected();
+      changeDataName(dataName);
     }
   };
 
@@ -268,6 +278,8 @@ binfo._register('setup', ['charts'], function(chartsApi) {
 
   function changeDataName(newDataName, clearSelected) {
     var ids = dataSets[newDataName].definitionIds,
+        optionXc,
+        optionYc,
         li;
     if (newDataName === dataName) {
       return;
@@ -276,7 +288,8 @@ binfo._register('setup', ['charts'], function(chartsApi) {
       clearSelectedCharts();
     }
     dataName = newDataName;
-    holder.select('.data-name').property('value', dataName);
+    ensureChangeDataName(dataName);
+
     li = holder.select('.bar.charts-list').selectAll('li')
         .data(ids, function(d) { return d; });
     li.enter().append('li')
@@ -285,11 +298,48 @@ binfo._register('setup', ['charts'], function(chartsApi) {
         .attr('class', 'label')
         .text(labelFromId);
     li.exit().remove();
+
+    optionXc = holder.select('select.compare.xc').selectAll('option')
+        .data(ids, function(d) { return d; });
+    optionXc.enter().append('option')
+        .attr('value', function(d) { return d; })
+        .text(labelFromId);
+    optionXc.exit().remove();
+
+    optionYc = holder.select('select.compare.yc').selectAll('option')
+        .data(['--nothing--'].concat(ids), function(d) { return d; });
+    optionYc.enter().append('option')
+        .attr('value', function(d) { return d; })
+        .text(labelFromId);
+    optionYc.exit().remove();
   }
   setupApi.changeDataName = changeDataName;
 
+  // I'm encountering an odd bug where the select value won't update,
+  // so this will force it to.
+  function ensureChangeDataName(dataName) {
+    var select = holder.select('.data-name');
+    select.property('value', dataName);
+    if (select.property('value') !== dataName) {
+      setTimeout(function() { ensureChangeDataName(dataName); }, 300);
+    }
+  }
+
   function labelFromId(id) {
+    if (id === '--nothing--') {
+      return '-- Nothing -- (add bar chart)';
+    }
     return dataSets[dataName].definitions[id].label;
+  }
+
+  function addCompareChart() {
+    var xc = holder.select('select.compare.xc').property('value'),
+        yc = holder.select('select.compare.yc').property('value');
+    if (yc === '--nothing--') {
+      addChart(xc);
+    } else {
+      addChart(xc + '*' + yc);
+    }
   }
 
   function addChart(id) {
