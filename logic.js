@@ -5,6 +5,19 @@ binfo._register('logic', [], function() {
 
   var logicApi = {};
 
+
+  logicApi.idFromRaw = function(rawId) {
+    var ids = rawId.split('*');
+    if (ids.length === 1) {
+      return ids[0];
+    }
+    if (ids[0] < ids[1]) {
+      return ids[0] + '*' + ids[1];
+    }
+    return ids[1] + '*' + ids[0];
+  };
+
+
   logicApi.barLogic = function(bar, spec, data) {
 
     var filterRange = [0, 0],
@@ -28,6 +41,8 @@ binfo._register('logic', [], function() {
 
 
     bar.api.id = spec.id;
+    bar.api.rawId = function() { return bar.api.id; };
+    bar.api.compare = false;
     bar.round = spec.round;
 
     function groupFuncBy(groupBy) {
@@ -188,15 +203,6 @@ binfo._register('logic', [], function() {
   };
 
 
-  logicApi.compareIdFromRaw = function(rawId) {
-    var ids = rawId.split('*');
-    if (ids[0] < ids[1]) {
-      return ids[0] + '*' + ids[1];
-    }
-    return ids[1] + '*' + ids[0];
-  };
-
-
   logicApi.compareLogic = function(compare, spec) {
 
     var ids = spec.id.split('*'),
@@ -216,6 +222,7 @@ binfo._register('logic', [], function() {
         values;
 
     compare.api.id = spec.id;
+    compare.api.compare = true;
 
     compare.xc = xc;
     compare.yc = yc;
@@ -226,7 +233,7 @@ binfo._register('logic', [], function() {
       given = _;
     };
     compare.api.rawId = function() {
-      return spec.id + (given ? '*' + given : '');
+      return compare.api.id + (given ? '*' + given : '');
     };
 
     dimensionFunc = function(d) {

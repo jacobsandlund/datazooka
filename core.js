@@ -203,7 +203,6 @@ binfo._register('setup', ['charts'], function(chartsApi) {
       dataSet.complete = true;
       dataSet.charts = {};
       dataSet.chartIds = dataSet.definitionIds.slice();
-      dataSet.compares = {};
       dataSet.definitionIds.forEach(function(id) {
         dataSet.charts[id] = chartsApi.barChart(dataSet.definitions[id],
                                                 dataSet.data);
@@ -293,8 +292,7 @@ binfo._register('hashRetrieval', [], function() {
     var params = getHashParams();
     var dataName = params.data,
         charts = params.charts && params.charts.split(','),
-        filters = params.filters && params.filters.split(','),
-        compares = params.compares && params.compares.split(',');
+        filters = params.filters && params.filters.split(',');
 
     var myFilters = {};
     if (filters) {
@@ -306,7 +304,7 @@ binfo._register('hashRetrieval', [], function() {
     if (!dataName) {
       return false;
     }
-    binfo.render(dataName, charts, myFilters, compares);
+    binfo.render(dataName, charts, myFilters);
     return true;
   }
 
@@ -327,13 +325,11 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       cross,
       crossAll,
       charts,
-      compares,
       currentDataName,
       currentHash,
       hashUpdatedRecently = false,
       hashNeedsUpdated = false,
       currentChartIds = [],
-      currentCompareIds = [],
       currentFilters = {},
       formatNumber = d3.format(',d');
 
@@ -343,73 +339,65 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     });
   }
 
-  binfo.render = function(dataName, chartIds, filters, compareIds) {
+  binfo.render = function(dataName, chartIds, filters) {
 
     var dataSet = setupApi.dataSet(dataName);
 
     if (!dataSet) {
-      setupApi.renderLater([dataName, chartIds, filters, compareIds]);
+      setupApi.renderLater([dataName, chartIds, filters]);
       return;
     }
 
     filters = filters || {};
-    compareIds = compareIds || [];
     var data = dataSet.data,
-        addedCompares = [],
         holder = setupApi.holder(),
-        rawCompareIds = compareIds,
+        rawIds = chartIds,
         chartData,
         added,
-        removed,
-        addedCompares,
-        removedCompares;
+        removed;
 
     charts = dataSet.charts;
-    compares = dataSet.compares;
 
-    chartData = chartIds.map(function(id) {
+    chartIds = rawIds.map(function(raw) { return logicApi.idFromRaw(raw); });
+    chartData = chartIds.map(function(id, i) {
+      var raw = rawIds[i];
+      if (!charts[id]) {
+        // Must be a compare chart
+        charts[id] = chartsApi.compareChart({id: id, raw: raw, charts: charts});
+      }
+      if (charts[id].compare) {
+        charts[id].given(raw.split('*')[2]);
+        charts[id].addChartIds(chartIds);
+      }
       return {
         chart: charts[id],
-        compare: false,
+        compare: charts[id].compare,
         orientFlip: charts[id].defaultOrientFlip
       };
-    });
-    compareIds = [];
-    rawCompareIds.forEach(function(raw) {
-      var id = logicApi.compareIdFromRaw(raw);
-      compareIds.push(id);
-      if (!compares[id]) {
-        compares[id] = chartsApi.compareChart({id: id, raw: raw, charts: charts});
-      }
-      compares[id].given(raw.split('*')[2]);
-      compares[id].addChartIds(chartIds);
-      chartData.push({chart: compares[id], compare: false, orientFlip: false});
     });
 
     removed = arrayDiff(currentChartIds, chartIds);
     added = arrayDiff(chartIds, currentChartIds);
-    removedCompares = arrayDiff(currentCompareIds, compareIds);
-    addedCompares = arrayDiff(compareIds, currentCompareIds);
 
-    if (!cross || currentDataName !== dataName ||
-        removed.length || removedCompares.length) {
+    if (!cross || currentDataName !== dataName || removed.length) {
       cross = crossfilter(data);
       crossAll = cross.groupAll();
       added = chartIds;
-      addedCompares = compareIds;
     }
     currentChartIds = chartIds;
-    currentCompareIds = compareIds;
     currentDataName = dataName;
     currentFilters = filters;
 
     updateHash();
 
-    added.forEach(function(id) { charts[id].setCross(cross, crossAll); });
-    addedCompares.forEach(function(id) { compares[id].setCross(cross, crossAll); });
+    added.forEach(function(id) {
+      if (!charts[id].compare) charts[id].setCross(cross, crossAll);
+    });
+    added.forEach(function(id) {
+      if (charts[id].compare) charts[id].setCross(cross, crossAll);
+    });
 
-    if (added.length || removed.length ||
-        addedCompares.length || removedCompares.length) {
+    if (added.length || removed.length) {
 
       chartSelection = holder.select('.charts').selectAll('.chart')
           .data(chartData, function(d) { return d.chart.id; });
@@ -435,7 +423,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       if (filters[id]) {
         charts[id].filter(filters[id]);
       } else {
-        charts[id].filter(null);
+        if (charts[id].filter) charts[id].filter(null);
       }
     });
 
@@ -445,13 +433,12 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
 
   function updateHash() {
     var filter, filterData,
-        chartString = 'charts=' + currentChartIds.join(','),
-        compareString = 'compares=',
+        chartString = 'charts=',
         filterString = 'filters=',
         filterArray = [];
 
-    compareString += currentCompareIds.map(function(id) {
-      return compares[id].rawId();
+    chartString += currentChartIds.map(function(id) {
+      return charts[id].rawId();
     }).join(',');
 
     function filterEncode(d) {
@@ -467,8 +454,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       }
     }
     filterString += filterArray.join(',');
-    var params = ['data=' + currentDataName, chartString,
-                  compareString, filterString].join('&');
+    var params = ['data=' + currentDataName, chartString, filterString].join('&');
     currentHash = '#' + params;
     hashNeedsUpdated = true;
     if (!hashUpdatedRecently) {
@@ -494,7 +480,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
   };
 
   chartsApi.given = function(id, given) {
-    compares[id].given(given);
+    charts[id].given(given);
     renderAll();
     updateHash();
   };

@@ -81,7 +81,7 @@ binfo._register('charts', ['logic'], function(logicApi) {
         y = spec.y || d3.scale.linear().range([dim.height, 0]),
         tickSpacing = spec.tickSpacing || binfo.tickSpacing,
         ticks = spec.ticks,
-        axis = d3.svg.axis().orient('bottom'),
+        axis = d3.svg.axis(),
         brush = d3.svg.brush(),
         percentFmt = d3.format('.3p'),
         path,
@@ -245,6 +245,7 @@ binfo._register('charts', ['logic'], function(logicApi) {
               .attr('transform', 'matrix(0,-1,1,0,0,' + setupDim.actualHeight + ')')
               .call(axis);
         } else {
+          axis.orient('bottom');
           axisHolder
               .attr('transform', 'translate(0,' + setupDim.actualHeight + ')')
               .call(axis);
