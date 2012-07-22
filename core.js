@@ -337,6 +337,11 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       currentFilters = {},
       formatNumber = d3.format(',d');
 
+  function arrayDiff(one, two) {
+    return one.filter(function(id) {
+      return two.indexOf(id) < 0;
+    });
+  }
 
   binfo.render = function(dataName, chartIds, filters, compareIds) {
 
@@ -352,12 +357,17 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     var data = dataSet.data,
         addedCompares = [],
         holder = setupApi.holder(),
-        rawCompareIds = compareIds;
+        rawCompareIds = compareIds,
+        chartData,
+        added,
+        removed,
+        addedCompares,
+        removedCompares;
 
     charts = dataSet.charts;
     compares = dataSet.compares;
 
-    var chartData = chartIds.map(function(id) {
+    chartData = chartIds.map(function(id) {
       return {
         chart: charts[id],
         compare: false,
@@ -370,20 +380,19 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       compareIds.push(id);
       if (!compares[id]) {
         compares[id] = chartsApi.compareChart({id: id, raw: raw, charts: charts});
-        addedCompares.push(id);
       }
+      compares[id].given(raw.split('*')[2]);
       compares[id].addChartIds(chartIds);
       chartData.push({chart: compares[id], compare: false, orientFlip: false});
     });
 
-    var removed = currentChartIds.filter(function(id) {
-      return chartIds.indexOf(id) < 0;
-    });
-    var added = chartIds.filter(function(id) {
-      return currentChartIds.indexOf(id) < 0;
-    });
+    removed = arrayDiff(currentChartIds, chartIds);
+    added = arrayDiff(chartIds, currentChartIds);
+    removedCompares = arrayDiff(currentCompareIds, compareIds);
+    addedCompares = arrayDiff(compareIds, currentCompareIds);
 
-    if (!cross || currentDataName !== dataName || removed.length) {
+    if (!cross || currentDataName !== dataName ||
+        removed.length || removedCompares.length) {
       cross = crossfilter(data);
       crossAll = cross.groupAll();
       added = chartIds;
@@ -399,7 +408,8 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     added.forEach(function(id) { charts[id].setCross(cross, crossAll); });
     addedCompares.forEach(function(id) { compares[id].setCross(cross, crossAll); });
 
-    if (added.length || removed.length) {
+    if (added.length || removed.length ||
+        addedCompares.length || removedCompares.length) {
 
       chartSelection = holder.select('.charts').selectAll('.chart')
           .data(chartData, function(d) { return d.chart.id; });

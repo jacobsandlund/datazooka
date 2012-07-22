@@ -202,7 +202,7 @@ binfo._register('logic', [], function() {
     var ids = spec.id.split('*'),
         xc = spec.charts[ids[0]],
         yc = spec.charts[ids[1]],
-        given = spec.raw.split('*')[2],
+        given = null,
         xcDimensionFunc,
         ycDimensionFunc,
         xcGroupFunc,
