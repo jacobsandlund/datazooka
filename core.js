@@ -322,6 +322,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
   "use strict";
 
   var chartSelection,
+      chartIds,
       cross,
       crossAll,
       charts,
@@ -330,6 +331,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       hashUpdatedRecently = false,
       hashNeedsUpdated = false,
       currentChartIds = [],
+      currentShownChartIds = [],
       currentFilters = {},
       formatNumber = d3.format(',d');
 
@@ -339,35 +341,37 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     });
   }
 
-  binfo.render = function(dataName, chartIds, filters) {
+  binfo.render = function(dataName, rawChartIds, filters) {
 
     var dataSet = setupApi.dataSet(dataName);
 
     if (!dataSet) {
-      setupApi.renderLater([dataName, chartIds, filters]);
+      setupApi.renderLater([dataName, rawChartIds, filters]);
       return;
     }
 
     filters = filters || {};
     var data = dataSet.data,
         holder = setupApi.holder(),
-        rawIds = chartIds,
+        shownChartIds,
         chartData,
         added,
         removed;
 
     charts = dataSet.charts;
 
-    chartIds = rawIds.map(function(raw) { return logicApi.idFromRaw(raw); });
-    chartData = chartIds.map(function(id, i) {
-      var raw = rawIds[i];
+    shownChartIds = chartIds = rawChartIds.map(function(raw) {
+      return logicApi.idFromRaw(raw);
+    });
+    chartData = shownChartIds.map(function(id, i) {
+      var raw = rawChartIds[i];
       if (!charts[id]) {
         // Must be a compare chart
         charts[id] = chartsApi.compareChart({id: id, raw: raw, charts: charts});
       }
       if (charts[id].compare) {
         charts[id].given(raw.split('*')[2]);
-        charts[id].addChartIds(chartIds);
+        chartIds = charts[id].addChartIds(chartIds);
       }
       return {
         chart: charts[id],
@@ -385,6 +389,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       added = chartIds;
     }
     currentChartIds = chartIds;
+    currentShownChartIds = shownChartIds;
     currentDataName = dataName;
     currentFilters = filters;
 
@@ -397,27 +402,24 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       if (charts[id].compare) charts[id].setCross(cross, crossAll);
     });
 
-    if (added.length || removed.length) {
+    chartSelection = holder.select('.charts').selectAll('.chart')
+        .data(chartData, function(d) { return d.chart.id; });
 
-      chartSelection = holder.select('.charts').selectAll('.chart')
-          .data(chartData, function(d) { return d.chart.id; });
+    chartSelection.enter()
+      .append('div')
+        .attr('class', 'chart')
+      .append('div')
+        .attr('class', 'title');
 
-      chartSelection.enter()
-        .append('div')
-          .attr('class', 'chart')
-        .append('div')
-          .attr('class', 'title');
+    chartSelection.exit().remove();
 
-      chartSelection.exit().remove();
+    chartSelection.order();
 
-      chartSelection.order();
+    holder.select('.total')
+        .text(formatNumber(cross.size()) + ' ' + dataName + ' selected.');
 
-      holder.select('.total')
-          .text(formatNumber(cross.size()) + ' ' + dataName + ' selected.');
-
-      renderAll();
-    }
-
+    // TODO needed anymore?
+    renderAll();
 
     chartIds.forEach(function(id) {
       if (filters[id]) {
@@ -437,7 +439,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
         filterString = 'filters=',
         filterArray = [];
 
-    chartString += currentChartIds.map(function(id) {
+    chartString += currentShownChartIds.map(function(id) {
       return charts[id].rawId();
     }).join(',');
 
@@ -496,12 +498,11 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     };
   }
 
-  var updateCharts = callCharts('update'),
-      renderCharts = callCharts('render'),
+  var renderCharts = callCharts('render'),
       cleanUpCharts = callCharts('cleanUp');
 
   function renderAll() {
-    chartSelection.each(updateCharts);
+    chartIds.forEach(function(id) { charts[id].update(); });
     chartSelection.each(renderCharts);
     chartSelection.each(cleanUpCharts);
     d3.select('.active').text(formatNumber(crossAll.value()));

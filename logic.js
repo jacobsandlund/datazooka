@@ -243,12 +243,14 @@ binfo._register('logic', [], function() {
     };
 
     compare.api.addChartIds = function(chartIds) {
+      var added = [];
       if (chartIds.indexOf(xc.id) < 0) {
-        chartIds.push(xc.id);
+        added.push(xc.id);
       }
       if (chartIds.indexOf(yc.id) < 0) {
-        chartIds.push(yc.id);
+        added.push(yc.id);
       }
+      return chartIds.concat(added);
     };
 
     compare.api.setCross = function(cross, crossAll) {
