@@ -500,13 +500,13 @@ binfo._register('charts', ['logic'], function(logicApi) {
       g.append('text')
           .attr('x', -dim.left + 10)
           .attr('y', dim.yWidth / 2)
+          .attr('class', 'axis-label')
           .style('writing-mode', 'tb')
-          .style('text-anchor', 'middle')
           .text(yc.label);
       g.append('text')
           .attr('x', dim.xLeft + dim.xWidth / 2)
           .attr('y', dim.height + dim.bottom - 5)
-          .style('text-anchor', 'middle')
+          .attr('class', 'axis-label')
           .text(xc.label);
       return g;
     }

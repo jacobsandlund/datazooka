@@ -72,7 +72,9 @@ binfo._register('setup', ['charts'], function(chartsApi) {
 
   var holder,
       renderLater,
+      selected = [],
       dataSets = {},
+      dataName,
       setupApi = {};
 
   setupApi.holder = function() { return holder; };
@@ -92,29 +94,30 @@ binfo._register('setup', ['charts'], function(chartsApi) {
     holder = d3.select(_);
 
     // Create skeleton.
-    var config = holder.append('div')
-        .attr('class', 'configuration');
+    var config = holder.append('div'),
+        sel;
+
+    config.attr('class', 'configuration');
     config.append('select')
-        .attr('class', 'dataName')
+        .attr('class', 'data-name')
         .on('change', changeDataName);
 
-    config.append('select')
-        .attr('class', 'definitionIds')
-        .attr('multiple', 'multiple');
+    config.append('ul')
+        .attr('class', 'bar charts-list');
+
+    sel = config.append('div')
+        .attr('class', 'selected');
+    sel.append('ul')
+        .attr('class', 'selected charts-list');
+    sel.append('div')
+        .text('Clear')
+        .attr('class', 'clear button')
+        .on('click', clearSelectedCharts);
 
     config.append('div')
         .text('Update')
-        .attr('class', 'button')
-        .on('click', function() {
-          var charts = [];
-          holder.selectAll('.definitionIds option').each(function() {
-            if (this.selected) {
-              charts.push(this.value);
-            }
-          });
-          var dataName = holder.select('.dataName').property('value');
-          binfo.render(dataName, charts);
-        });
+        .attr('class', 'update button')
+        .on('click', function() { binfo.render(dataName, selected); });
 
     holder.append('div')
         .attr('class', 'charts');
@@ -175,10 +178,10 @@ binfo._register('setup', ['charts'], function(chartsApi) {
       }
     }
     setDataSet(dataName, {definitions: definitions, definitionIds: definitionIds});
-    holder.select('.dataName').append('option')
+    holder.select('.data-name').append('option')
         .attr('value', dataName)
         .text(dataName);
-    if (holder.selectAll('.dataName option').length <= 1) {
+    if (holder.selectAll('.data-name option').length <= 1) {
       changeDataName();
     }
   };
@@ -215,14 +218,57 @@ binfo._register('setup', ['charts'], function(chartsApi) {
   }
 
   function changeDataName() {
-    var dataName = holder.select('.dataName').property('value');
-    var options = holder.select('.definitionIds').selectAll('option')
-        .data(dataSets[dataName].definitionIds);
-    options.enter().append('option');
-    options
-        .attr('value', function(d) { return d; })
-        .text(function(d) { return d; });
-    options.exit().remove();
+    var newDataName = holder.select('.data-name').property('value'),
+        ids = dataSets[newDataName].definitionIds,
+        lis;
+    if (newDataName !== dataName) {
+      clearSelectedCharts();
+      dataName = newDataName;
+    }
+    lis = holder.select('.bar.charts-list').selectAll('li')
+        .data(ids, function(d) { return d; });
+    lis.enter().append('li')
+        .on('click', function(d) { addChart(d); })
+        .text(labelFromId);
+    lis.exit().remove();
+  }
+
+  function labelFromId(id) {
+    return dataSets[dataName].definitions[id].label;
+  }
+
+  function addChart(id) {
+    if (selected.indexOf(id) < 0) {
+      selected.push(id);
+      setSelectedCharts();
+    }
+  }
+
+  function removeChart(id) {
+    var index = selected.indexOf(id);
+    selected.splice(index, 1);
+    setSelectedCharts();
+  }
+
+  function clearSelectedCharts() {
+    selected = [];
+    setSelectedCharts();
+  }
+
+  function setSelectedCharts() {
+    var lis = holder.select('.selected.charts-list').selectAll('li')
+        .data(selected, function(d) { return d; });
+
+    lis.enter().append('li')
+        .text(labelFromId)
+      .append('div')
+        .attr('class', 'close')
+        .html('&#10006;')
+        .on('click', removeChart);
+
+    lis.order();
+
+    lis.exit().remove();
   }
 
   binfo.dataFromUntyped = function(dataName, data) {
