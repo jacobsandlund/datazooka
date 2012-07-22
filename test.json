@@ -21,6 +21,8 @@
     "dimension": "function(d) { return d3.time.day(d.date); }",
     "round": "d3.time.day.round",
     "groupIdentity": true,
-    "x": "d3.time.scale().domain([new Date(2001, 0, 1), new Date(2001, 3, 1)]).range([0, 900])"
+    "separation": 86400000,
+    "tickSpacing": 150,
+    "x": "d3.time.scale().domain([new Date(2001, 0, 1), new Date(2001, 3, 1)]).range([0, 1080])"
   }
 }

@@ -2,7 +2,7 @@
 .charts {
   font-family: Arial, sans-serif;
   padding: 10px 0;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .chart {
@@ -52,7 +52,7 @@ select.compare.yc {
 }
 
 select.data-name {
-  margin-bottom: 30px;
+  margin-bottom: 80px;
 }
 
 .update.button {

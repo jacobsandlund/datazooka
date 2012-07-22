@@ -182,10 +182,10 @@ binfo._register('logic', [], function() {
       groups = group.all();
       groupAll = dimension.groupAll();
       if (!spec.minX) {
-        minX = groups[0].key;
+        minX = +groups[0].key;
       }
       if (!spec.maxX) {
-        maxX = groups[groups.length - 1].key + separation;
+        maxX = +groups[groups.length - 1].key + separation;
       }
       bar.setCrossChart();
     };
