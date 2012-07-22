@@ -11,10 +11,7 @@ binfo._register('logic', [], function() {
     if (ids.length === 1) {
       return ids[0];
     }
-    if (ids[0] < ids[1]) {
-      return ids[0] + '*' + ids[1];
-    }
-    return ids[1] + '*' + ids[0];
+    return ids[0] + '*' + ids[1];
   };
 
 

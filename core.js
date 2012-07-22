@@ -367,7 +367,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       var raw = rawChartIds[i];
       if (!charts[id]) {
         // Must be a compare chart
-        charts[id] = chartsApi.compareChart({id: id, raw: raw, charts: charts});
+        charts[id] = chartsApi.compareChart({id: id, charts: charts});
       }
       if (charts[id].compare) {
         charts[id].given(raw.split('*')[2]);
