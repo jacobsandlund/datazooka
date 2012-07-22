@@ -100,7 +100,7 @@ binfo._register('setup', ['charts'], function(chartsApi) {
     config.attr('class', 'configuration');
     config.append('select')
         .attr('class', 'data-name')
-        .on('change', changeDataName);
+        .on('change', changeDataNameToSelected);
 
     config.append('ul')
         .attr('class', 'bar charts-list');
@@ -169,7 +169,8 @@ binfo._register('setup', ['charts'], function(chartsApi) {
 
   binfo.definitions = function(dataName, definitions) {
     var definitionIds = [],
-        id;
+        id,
+        firstDefinition;
     for (id in definitions) {
       if (definitions.hasOwnProperty(id)) {
         definitions[id].id = id;
@@ -178,98 +179,14 @@ binfo._register('setup', ['charts'], function(chartsApi) {
       }
     }
     setDataSet(dataName, {definitions: definitions, definitionIds: definitionIds});
+    firstDefinition = holder.selectAll('.data-name option').empty();
     holder.select('.data-name').append('option')
         .attr('value', dataName)
         .text(dataName);
-    if (holder.selectAll('.data-name option').length <= 1) {
-      changeDataName();
+    if (firstDefinition) {
+      changeDataNameToSelected();
     }
   };
-
-  function setDataSet(dataName, set) {
-    var i,
-        dataUntyped,
-        dataSet = dataSets[dataName] = dataSets[dataName] || {};
-
-    for (i in set) {
-      if (set.hasOwnProperty(i)) {
-        dataSet[i] = set[i];
-      }
-    }
-    if (dataSet.dataUntyped) {
-      dataUntyped = dataSet.dataUntyped;
-      delete dataSet.dataUntyped;
-      binfo.dataFromUntyped(dataName, dataUntyped);
-      return;
-    }
-    if (dataSet.data && dataSet.definitions) {
-      dataSet.complete = true;
-      dataSet.charts = {};
-      dataSet.chartIds = dataSet.definitionIds.slice();
-      dataSet.definitionIds.forEach(function(id) {
-        dataSet.charts[id] = chartsApi.barChart(dataSet.definitions[id],
-                                                dataSet.data);
-      });
-      if (renderLater && renderLater[0] === dataName) {
-        binfo.render.apply(null, renderLater);
-        renderLater = null;
-      }
-    }
-  }
-
-  function changeDataName() {
-    var newDataName = holder.select('.data-name').property('value'),
-        ids = dataSets[newDataName].definitionIds,
-        lis;
-    if (newDataName !== dataName) {
-      clearSelectedCharts();
-      dataName = newDataName;
-    }
-    lis = holder.select('.bar.charts-list').selectAll('li')
-        .data(ids, function(d) { return d; });
-    lis.enter().append('li')
-        .on('click', function(d) { addChart(d); })
-        .text(labelFromId);
-    lis.exit().remove();
-  }
-
-  function labelFromId(id) {
-    return dataSets[dataName].definitions[id].label;
-  }
-
-  function addChart(id) {
-    if (selected.indexOf(id) < 0) {
-      selected.push(id);
-      setSelectedCharts();
-    }
-  }
-
-  function removeChart(id) {
-    var index = selected.indexOf(id);
-    selected.splice(index, 1);
-    setSelectedCharts();
-  }
-
-  function clearSelectedCharts() {
-    selected = [];
-    setSelectedCharts();
-  }
-
-  function setSelectedCharts() {
-    var lis = holder.select('.selected.charts-list').selectAll('li')
-        .data(selected, function(d) { return d; });
-
-    lis.enter().append('li')
-        .text(labelFromId)
-      .append('div')
-        .attr('class', 'close')
-        .html('&#10006;')
-        .on('click', removeChart);
-
-    lis.order();
-
-    lis.exit().remove();
-  }
 
   binfo.dataFromUntyped = function(dataName, data) {
     if (!(dataSets[dataName] && dataSets[dataName].definitions)) {
@@ -306,6 +223,113 @@ binfo._register('setup', ['charts'], function(chartsApi) {
   binfo.data = function(dataName, data) {
     setDataSet(dataName, {data: data});
   };
+
+  function setDataSet(dataName, set) {
+    var i,
+        dataUntyped,
+        dataSet = dataSets[dataName] = dataSets[dataName] || {};
+
+    for (i in set) {
+      if (set.hasOwnProperty(i)) {
+        dataSet[i] = set[i];
+      }
+    }
+    if (dataSet.dataUntyped) {
+      dataUntyped = dataSet.dataUntyped;
+      delete dataSet.dataUntyped;
+      binfo.dataFromUntyped(dataName, dataUntyped);
+      return;
+    }
+    if (dataSet.data && dataSet.definitions) {
+      dataSet.complete = true;
+      dataSet.charts = {};
+      dataSet.chartIds = dataSet.definitionIds.slice();
+      dataSet.definitionIds.forEach(function(id) {
+        dataSet.charts[id] = chartsApi.barChart(dataSet.definitions[id],
+                                                dataSet.data);
+      });
+      if (renderLater && renderLater[0] === dataName) {
+        binfo.render.apply(null, renderLater);
+        renderLater = null;
+      }
+    }
+  }
+
+  function changeDataNameToSelected() {
+    var val = holder.select('.data-name').property('value');
+    changeDataName(val, true);
+  }
+
+  function changeDataName(newDataName, clearSelected) {
+    var ids = dataSets[newDataName].definitionIds,
+        li;
+    if (newDataName === dataName) {
+      return;
+    }
+    if (clearSelected) {
+      clearSelectedCharts();
+    }
+    dataName = newDataName;
+    holder.select('.data-name').property('value', dataName);
+    li = holder.select('.bar.charts-list').selectAll('li')
+        .data(ids, function(d) { return d; });
+    li.enter().append('li')
+        .on('click', function(d) { addChart(d); })
+      .append('div')
+        .attr('class', 'label')
+        .text(labelFromId);
+    li.exit().remove();
+  }
+  setupApi.changeDataName = changeDataName;
+
+  function labelFromId(id) {
+    return dataSets[dataName].definitions[id].label;
+  }
+
+  function addChart(id) {
+    if (selected.indexOf(id) < 0) {
+      selected.push(id);
+      setSelectedCharts(selected);
+    }
+  }
+
+  function removeChart(id) {
+    var index = selected.indexOf(id);
+    selected.splice(index, 1);
+    setSelectedCharts(selected);
+  }
+
+  function clearSelectedCharts() {
+    setSelectedCharts([]);
+  }
+
+  function setSelectedCharts(_) {
+    selected = _;
+    var liEnter,
+        li = holder.select('.selected.charts-list').selectAll('li')
+        .data(selected, function(d) { return d; });
+
+    liEnter = li.enter().append('li');
+    liEnter.append('div')
+        .attr('class', 'label')
+        .html(function(id) {
+          if (id.match(/\*/)) {
+            var ids = id.split('*');
+            return labelFromId(ids[0]) + ' <em>compared to</em> ' +
+                   labelFromId(ids[1]);
+          }
+          return labelFromId(id);
+        });
+    liEnter.append('div')
+        .attr('class', 'close')
+        .html('&#10006;')
+        .on('click', removeChart);
+
+    li.order();
+
+    li.exit().remove();
+  }
+  setupApi.setSelectedCharts = setSelectedCharts;
 
   return setupApi;
 });
@@ -438,6 +462,9 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     currentShownChartIds = shownChartIds;
     currentDataName = dataName;
     currentFilters = filters;
+
+    setupApi.changeDataName(dataName, false);
+    setupApi.setSelectedCharts(shownChartIds);
 
     updateHash();
 
