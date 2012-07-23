@@ -81,21 +81,22 @@ select.data-name {
 }
 
 ul.charts-list {
-  overflow: auto;
+  overflow-y: scroll;
   width: 200px;
   padding: 5px;
   border: solid 1px black;
   margin: 0;
 }
 
-.charts-list li {
+.charts-list .item {
   list-style: none;
   margin: 3px;
+  width: 176px;
   border: solid 1px #ccc;
   background-color: #f8f8f8;
   font-size: 12px;
-  overflow: auto;
   cursor: pointer;
+  overflow: auto;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -khtml-user-select: none;
@@ -108,12 +109,13 @@ ul.bar.charts-list {
   height: 300px;
 }
 
-.bar.charts-list li:hover {
+.bar.charts-list .item:hover {
   background-color: #ddd;
 }
+
 .charts-list .label {
   float: left;
-  width: 160px;
+  width: 148px;
   padding: 3px;
 }
 
@@ -147,11 +149,28 @@ ul.bar.charts-list {
 ul.selected.charts-list {
   height: 260px;
   margin-bottom: 10px;
+  position: relative;
 }
 
 .selected.charts-list li {
+  display: block;
+  padding: 5px 3px;
+  margin: 0;
+}
+
+.selected.charts-list .item {
   cursor: ns-resize;
-  margin: 7px 3px;
+  margin: 0;
+}
+
+.drag {
+  z-index: 2;
+  position: absolute;
+  opacity: 0.7;
+}
+
+.selected.charts-list li.ghost {
+  padding: 0;
 }
 
 .button {

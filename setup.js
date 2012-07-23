@@ -63,6 +63,8 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
         .attr('class', 'clear button')
         .on('click', clearSelectedCharts);
 
+    dragApi.setList(holder, holder.select('.selected.charts-list'));
+
     selectedPane.append('div')
         .text('Update')
         .attr('class', 'update button')
@@ -226,6 +228,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     li = holder.select('.bar.charts-list').selectAll('li')
         .data(ids, function(d) { return d; });
     li.enter().append('li')
+        .attr('class', 'item')
         .on('click', function(d) { addChart(d); })
       .append('div')
         .attr('class', 'label')
@@ -294,12 +297,14 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
 
   function setSelectedCharts(_) {
     selected = _;
-    var liEnter,
+    var item,
         li = holder.select('.selected.charts-list').selectAll('li')
         .data(selected, function(d) { return d; });
 
-    liEnter = li.enter().append('li');
-    liEnter.append('div')
+    item = li.enter().append('li')
+      .append('div')
+        .attr('class', 'item');
+    item.append('div')
         .attr('class', 'label')
         .html(function(id) {
           if (id.match(/\*/)) {
@@ -309,7 +314,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
           }
           return labelFromId(id);
         });
-    liEnter.append('div')
+    item.append('div')
         .attr('class', 'close')
         .html('&#10006;')
         .on('click', removeChart);
