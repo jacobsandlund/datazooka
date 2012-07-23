@@ -82,7 +82,7 @@ select.data-name {
 
 ul.charts-list {
   overflow-y: scroll;
-  width: 200px;
+  width: 220px;
   padding: 5px;
   border: solid 1px black;
   margin: 0;
@@ -91,7 +91,7 @@ ul.charts-list {
 .charts-list .item {
   list-style: none;
   margin: 3px;
-  width: 176px;
+  width: 196px;
   border: solid 1px #ccc;
   background-color: #f8f8f8;
   font-size: 12px;
@@ -115,7 +115,7 @@ ul.bar.charts-list {
 
 .charts-list .label {
   float: left;
-  width: 148px;
+  width: 168px;
   padding: 3px;
 }
 
@@ -137,17 +137,21 @@ ul.bar.charts-list {
 .pane {
   padding: 0 10px;
   float: left;
-  height: 350px;
-  width: 216px;
-  overflow: auto;
+  width: 236px;
 }
 
 .main.pane {
   width: 190px;
 }
 
+.selected.pane {
+  width: 220px;
+}
+
 ul.selected.charts-list {
-  height: 260px;
+  width: 205px;
+  overflow-y: visible;
+  min-height: 260px;
   margin-bottom: 10px;
   position: relative;
 }
@@ -284,7 +288,7 @@ ul.selected.charts-list {
 }
 
 .axis text {
-  font: 11px sans-serif;
+  font: 12px sans-serif;
 }
 
 .axis.ordinal {
