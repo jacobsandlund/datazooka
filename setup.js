@@ -63,7 +63,12 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
         .attr('class', 'clear button')
         .on('click', clearSelectedCharts);
 
-    dragApi.setList(holder, holder.select('.selected.charts-list'));
+    dragApi.setList(holder, holder.select('.selected.charts-list'), function() {
+      var select = [],
+          li = holder.select('.selected.charts-list').selectAll('li');
+      li.each(function(d) { select.push(d); });
+      setSelectedCharts(select);
+    });
 
     selectedPane.append('div')
         .text('Update')

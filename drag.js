@@ -12,7 +12,7 @@ binfo._register('drag', [], function() {
       list,
       listNode;
 
-  dragApi.setList = function(setHolder, setList) {
+  dragApi.setList = function(setHolder, setList, onDragEnd) {
     holder = setHolder;
     list = setList;
     listNode = list.node();
@@ -21,6 +21,7 @@ binfo._register('drag', [], function() {
     holder.on('mouseup', function() {
       if (drag) {
         endDrag();
+        onDragEnd();
       }
     });
     holder.on('mousemove', function() {
@@ -50,7 +51,7 @@ binfo._register('drag', [], function() {
       ghost.style('height', dragNode.offsetHeight + 'px');
       listNode.insertBefore(ghostNode, dragNode);
       drag = d3.select(dragNode)
-          .classed('drag', true);
+          .attr('class', 'drag');
       updateDrag();
     });
   };
@@ -58,13 +59,36 @@ binfo._register('drag', [], function() {
   function updateDrag() {
     var mouse = d3.mouse(listNode),
         x = mouse[0],
-        y = mouse[1];
+        y = mouse[1],
+        insertBefore;
     drag.style('left', (x - leftOffset) + 'px');
     drag.style('top', (y - topOffset) + 'px');
+    y -= parseInt(list.style('padding-top'));
+    Array.prototype.slice.call(listNode.childNodes).forEach(function(li) {
+      var h = li.offsetHeight;
+      if (li.className === 'drag') {
+        return;
+      }
+      if (y < h / 2) {
+        insertBefore = li;
+        y = 1e10;
+      }
+      y -= h;
+    });
+    if (!insertBefore) {
+      listNode.appendChild(ghostNode);
+      return;
+    }
+    if (insertBefore !== ghostNode) {
+      ghost.remove();
+      listNode.insertBefore(ghostNode, insertBefore);
+    }
   }
 
   function endDrag() {
     drag.classed('drag', false);
+    drag.remove();
+    listNode.insertBefore(dragNode, ghostNode);
     ghost.remove();
     drag = null;
   }
