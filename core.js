@@ -307,7 +307,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     chartIds.forEach(function(id) { charts[id].update(); });
     chartSelection.each(renderCharts);
     chartSelection.each(cleanUpCharts);
-    d3.select('.active').text(formatNumber(crossAll.value()));
+    d3.select('.active-data').text(formatNumber(crossAll.value()));
   }
 
 });

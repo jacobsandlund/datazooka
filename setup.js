@@ -6,6 +6,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
   var holder,
       renderLater,
       selected = [],
+      previousSel,
       dataSets = {},
       dataName,
       setupApi = {};
@@ -33,6 +34,11 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
         selectedPane;
 
     config.attr('class', 'configuration');
+
+    function activateAdd() {
+      mainPane.select('.add.action.button').classed('active', true);
+    }
+
     mainPane = config.append('div').attr('class', 'main pane');
     mainPane.append('h3').text('Dataset');
     mainPane.append('select')
@@ -40,13 +46,15 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
         .on('change', changeDataNameToSelected);
     mainPane.append('h3').text('Comparisons');
     mainPane.append('select')
-        .attr('class', 'compare xc');
+        .attr('class', 'compare xc')
+        .on('change', activateAdd);
     mainPane.append('label').text('vs.');
     mainPane.append('select')
-        .attr('class', 'compare yc');
+        .attr('class', 'compare yc')
+        .on('change', activateAdd);
     mainPane.append('div')
         .text('Add')
-        .attr('class', 'button')
+        .attr('class', 'add action button')
         .on('click', addCompareChart);
 
     barPane = config.append('div').attr('class', 'bar pane');
@@ -72,7 +80,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
 
     selectedPane.append('div')
         .text('Update')
-        .attr('class', 'update button')
+        .attr('class', 'update action button')
         .on('click', function() { binfo.render(dataName, selected); });
 
     holder.append('div')
@@ -81,7 +89,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     var totals = holder.append('aside')
         .attr('class', 'totals');
     totals.append('span')
-        .attr('class', 'active')
+        .attr('class', 'active-data')
         .text('-');
     totals.append('span').text(' of ');
     totals.append('span')
@@ -276,6 +284,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
   function addCompareChart() {
     var xc = holder.select('select.compare.xc').property('value'),
         yc = holder.select('select.compare.yc').property('value');
+    holder.select('.add.action.button').classed('active', false);
     if (yc === '--nothing--') {
       addChart(xc);
     } else {
@@ -303,6 +312,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
   function setSelectedCharts(_) {
     selected = _;
     var item,
+        active,
         li = holder.select('.selected.charts-list').selectAll('li')
         .data(selected, function(d) { return d; });
 
@@ -327,6 +337,10 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     li.order();
 
     li.exit().remove();
+
+    active = previousSel && selected.join(',') !== previousSel.join(',');
+    holder.select('.update.action.button').classed('active', active);
+    previousSel = selected.slice();
   }
   setupApi.setSelectedCharts = setSelectedCharts;
 

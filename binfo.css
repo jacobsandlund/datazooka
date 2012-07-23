@@ -60,8 +60,15 @@ select.data-name {
 }
 
 .update.button {
+  float: left;
+  margin-left: 0;
+}
+
+.action.button {
   padding: 6px 11px;
-  float: right;
+}
+
+.active.action.button {
   color: #eee;
   background-color: #991735;
   background-image: -ms-linear-gradient(top, #991735, #6F1127);
@@ -71,13 +78,13 @@ select.data-name {
   background-image: linear-gradient(top, #991735, #6F1127);
 }
 
-.update.button:hover {
+.active.action.button:hover {
   background: #6F1127;
 }
 
 .clear.button {
-  float: left;
-  margin-left: 0;
+  float: right;
+  margin-right: 0;
 }
 
 ul.charts-list {
@@ -145,7 +152,7 @@ ul.bar.charts-list {
 }
 
 .selected.pane {
-  width: 220px;
+  width: 217px;
 }
 
 ul.selected.charts-list {
@@ -311,10 +318,8 @@ ul.selected.charts-list {
 }
 
 .totals {
-  position: absolute;
-  left: 740px;
   font-size: smaller;
-  width: 220px;
+  float: right;
 }
 
 .percent {
