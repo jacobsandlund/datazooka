@@ -40,11 +40,11 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     }
 
     mainPane = config.append('div').attr('class', 'main pane');
-    mainPane.append('h3').text('Dataset');
+    mainPane.append('h3').text('Change Dataset');
     mainPane.append('select')
         .attr('class', 'data-name')
         .on('change', changeDataNameToSelected);
-    mainPane.append('h3').text('Comparisons');
+    mainPane.append('h3').text('Add Comparisons');
     mainPane.append('select')
         .attr('class', 'compare xc')
         .on('change', activateAdd);
@@ -58,12 +58,12 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
         .on('click', addCompareChart);
 
     barPane = config.append('div').attr('class', 'bar pane');
-    barPane.append('h3').text('Bar Charts');
+    barPane.append('h3').text('Add Bar Charts');
     barPane.append('ul')
         .attr('class', 'bar charts-list');
 
     selectedPane = config.append('div').attr('class', 'selected pane');
-    selectedPane.append('h3').text('Selected Charts');
+    selectedPane.append('h3').text('Change Selected Charts');
     selectedList = selectedPane.append('ul')
         .attr('class', 'selected charts-list');
     selectedPane.append('div')

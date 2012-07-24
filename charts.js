@@ -497,11 +497,11 @@ binfo._register('charts', ['logic'], function(logicApi) {
         .enter().append('path')
           .attr('class', function(d) { return 'level-' + d + ' compare bar'; });
 
-      g.append('text')
-          .attr('x', -dim.left + 10)
-          .attr('y', dim.yWidth / 2)
+      g.append('g')
+          .attr('transform', 'translate(' + (-dim.left + 10) + ',' +
+                              (dim.yWidth / 2) + ') rotate(90)')
+        .append('text')
           .attr('class', 'axis-label')
-          .style('writing-mode', 'tb')
           .text(yc.label);
       g.append('text')
           .attr('x', dim.xLeft + dim.xWidth / 2)

@@ -10,6 +10,9 @@
   display: inline-block;
   margin: 5px;
   padding: 5px;
+}
+
+.chart, .configuration {
   border-style: solid;
   border-width: 5px;
   border-radius: 15px;
@@ -25,6 +28,7 @@
 .configuration {
   overflow: auto;
   margin: 20px auto;
+  padding: 15px;
   max-width: 720px;
   min-width: 240px;
 }
@@ -91,7 +95,7 @@ ul.charts-list {
   overflow-y: scroll;
   width: 220px;
   padding: 5px;
-  border: solid 1px black;
+  border: solid 1px #aaa;
   margin: 0;
 }
 
