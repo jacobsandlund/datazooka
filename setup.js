@@ -7,8 +7,11 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
       renderLater,
       selected = [],
       selectedList,
+      rendered = [],
       dataSets = {},
       dataName,
+      autoUpdate = false,
+      autoTimer,
       setupApi = {};
 
   setupApi.holder = function() { return holder; };
@@ -30,6 +33,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     // Create skeleton.
     var config = holder.append('div'),
         mainPane,
+        updateAndCancel,
         barPane,
         selectedPane;
 
@@ -44,6 +48,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     mainPane.append('select')
         .attr('class', 'data-name')
         .on('change', changeDataNameToSelected);
+
     mainPane.append('h3').text('Add Comparisons');
     mainPane.append('select')
         .attr('class', 'compare xc')
@@ -57,31 +62,43 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
         .attr('class', 'add action button')
         .on('click', addCompareChart);
 
+    mainPane.append('h3').text('Update Shown');
+    updateAndCancel = mainPane.append('div')
+        .attr('class', 'update-and-cancel');
+    updateAndCancel.append('div')
+        .text('Update')
+        .attr('class', 'update action button')
+        .on('click', function() { binfo.render(dataName, selected); });
+    updateAndCancel.append('div')
+        .text('Cancel')
+        .attr('class', 'cancel button')
+        .on('click', function() { userSelectCharts(rendered); });
+    mainPane.append('input')
+        .attr('type', 'checkbox')
+        .attr('id', 'auto-update')
+        .on('click', function() {
+          autoUpdate = this.checked;
+          if (autoUpdate) {
+            binfo.render(dataName, selected);
+          }
+        });
+    mainPane.append('label')
+        .attr('for', 'auto-update')
+        .text('Auto Update (on mouse still)');
+
     barPane = config.append('div').attr('class', 'bar pane');
-    barPane.append('h3').text('Add Bar Charts');
+    barPane.append('h3').html('Add Bar Charts<small>(click)<small>');
     barPane.append('ul')
         .attr('class', 'bar charts-list');
 
     selectedPane = config.append('div').attr('class', 'selected pane');
-    selectedPane.append('h3').text('Change Selected Charts');
+    selectedPane.append('h3').text('Move/Remove Selected');
     selectedList = selectedPane.append('ul')
         .attr('class', 'selected charts-list');
     selectedPane.append('div')
-        .text('Clear')
+        .text('Remove All')
         .attr('class', 'clear button')
         .on('click', clearSelectedCharts);
-
-    dragApi.setList(holder, selectedList, function() {
-      var select = [],
-          li = selectedList.selectAll('li');
-      li.each(function(d) { select.push(d); });
-      userSelectCharts(select);
-    });
-
-    selectedPane.append('div')
-        .text('Update')
-        .attr('class', 'update action button')
-        .on('click', function() { binfo.render(dataName, selected); });
 
     holder.append('div')
         .attr('class', 'charts');
@@ -94,6 +111,21 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     totals.append('span').text(' of ');
     totals.append('span')
         .attr('class', 'total');
+
+
+    dragApi.setList(holder, selectedList, function() {
+      var select = [],
+          li = selectedList.selectAll('li');
+      li.each(function(d) { select.push(d); });
+      userSelectCharts(select);
+    });
+
+    holder.on('mousemove', function() {
+      if (autoTimer) {
+        clearAutoTimer();
+        startAutoTimer();
+      }
+    });
   };
 
   binfo.definitionsFromJSON = function(dataName, definitions) {
@@ -309,9 +341,26 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
   }
 
   function userSelectCharts(selected) {
+    clearAutoTimer();
     setSelectedCharts(selected);
     var updated = binfo.render(dataName, selected, null, true);
     holder.select('.update.action.button').classed('active', !updated);
+    if (autoUpdate && !updated) {
+      startAutoTimer();
+    }
+  }
+
+  function clearAutoTimer() {
+    if (autoTimer) {
+      clearTimeout(autoTimer);
+      autoTimer = null;
+    }
+  }
+
+  function startAutoTimer() {
+    autoTimer = setTimeout(function() {
+      binfo.render(dataName, selected);
+    }, 1200);
   }
 
   function setSelectedCharts(_) {
@@ -345,6 +394,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
   }
 
   setupApi.updateUponRender = function(renderDataName, renderSelected) {
+    rendered = renderSelected.slice();
     changeDataName(renderDataName, false);
     setSelectedCharts(renderSelected);
     holder.select('.update.action.button').classed('active', false);

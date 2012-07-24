@@ -43,9 +43,15 @@
   font-size: 16px;
 }
 
+.configuration h3 small {
+  margin-left: 8px;
+  font-weight: normal;
+  font-size: 12px;
+}
+
 .configuration select {
   width: 190px;
-  margin: 11px 0;
+  margin: 7px 0;
 }
 
 select.compare.yc {
@@ -53,26 +59,23 @@ select.compare.yc {
 }
 
 .configuration label {
-  display: block;
-  margin: 4px 0;
   font-size: 12px;
   font-style: italic;
 }
 
-select.data-name {
-  margin-bottom: 80px;
+.configuration input[type=checkbox] {
+  margin-right: 4px;
 }
 
-.update.button {
-  float: left;
-  margin-left: 0;
+select.data-name {
+  margin-bottom: 30px;
 }
 
 .action.button {
   padding: 6px 11px;
 }
 
-.active.action.button {
+.active.button {
   color: #eee;
   background-color: #991735;
   background-image: -ms-linear-gradient(top, #991735, #6F1127);
@@ -82,13 +85,13 @@ select.data-name {
   background-image: linear-gradient(top, #991735, #6F1127);
 }
 
-.active.action.button:hover {
+.active.button:hover {
   background: #6F1127;
 }
 
 .clear.button {
-  float: right;
-  margin-right: 0;
+  float: left;
+  margin-left: 0;
 }
 
 ul.charts-list {
@@ -117,7 +120,7 @@ ul.charts-list {
 }
 
 ul.bar.charts-list {
-  height: 300px;
+  height: 310px;
 }
 
 .bar.charts-list .item:hover {
@@ -159,10 +162,29 @@ ul.bar.charts-list {
   width: 217px;
 }
 
+.add.button {
+  margin-bottom: 30px;
+}
+
+.update-and-cancel {
+  overflow: auto;
+  margin-bottom: 10px;
+}
+
+.update.button {
+  float: left;
+  margin-left: 0;
+}
+
+.cancel.button {
+  float: right;
+  margin-top: 10px;
+}
+
 ul.selected.charts-list {
   width: 205px;
   overflow-y: visible;
-  min-height: 260px;
+  min-height: 270px;
   margin-bottom: 10px;
   position: relative;
 }

@@ -18,18 +18,18 @@ binfo._register('drag', [], function() {
     listNode = list.node();
     ghostNode = document.createElement('li');
     ghost = d3.select(ghostNode).attr('class', 'ghost');
-    holder.on('mouseup', function() {
+    holder.on('mouseup.drag', function() {
       if (drag) {
         endDrag();
         onDragEnd();
       }
     });
-    holder.on('mousemove', function() {
+    holder.on('mousemove.drag', function() {
       if (drag) {
         updateDrag();
       }
     });
-    list.on('mousedown', function() {
+    list.on('mousedown.drag', function() {
       var target = d3.event.target,
           parent;
       if (d3.select(target).classed('close')) {
