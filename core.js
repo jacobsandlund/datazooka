@@ -142,7 +142,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     });
   }
 
-  binfo.render = function(dataName, rawChartIds, filters) {
+  binfo.render = function(dataName, rawChartIds, filters, autoUpdate) {
 
     var dataSet = setupApi.dataSet(dataName);
 
@@ -151,7 +151,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       return;
     }
 
-    filters = filters || {};
+    filters = filters || currentFilters;
     var data = dataSet.data,
         holder = setupApi.holder(),
         shownChartIds,
@@ -186,18 +186,22 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     added = arrayDiff(chartIds, currentChartIds);
 
     if (!cross || currentDataName !== dataName || removed.length) {
+      if (autoUpdate) {
+        return false;
+      }
       cross = crossfilter(data);
       crossAll = cross.groupAll();
       added = chartIds;
+    }
+    if (autoUpdate && added.length) {
+      return false;
     }
     currentChartIds = chartIds;
     currentShownChartIds = shownChartIds;
     currentDataName = dataName;
     currentFilters = filters;
 
-    setupApi.changeDataName(dataName, false);
-    setupApi.setSelectedCharts(shownChartIds);
-
+    setupApi.updateUponRender(dataName, rawChartIds);
     updateHash();
 
     added.forEach(function(id) {
@@ -233,6 +237,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
 
     renderAll();
 
+    return true;
   };
 
   function updateHash() {

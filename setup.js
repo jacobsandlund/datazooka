@@ -6,7 +6,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
   var holder,
       renderLater,
       selected = [],
-      previousSel,
+      selectedList,
       dataSets = {},
       dataName,
       setupApi = {};
@@ -64,18 +64,18 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
 
     selectedPane = config.append('div').attr('class', 'selected pane');
     selectedPane.append('h3').text('Selected Charts');
-    selectedPane.append('ul')
+    selectedList = selectedPane.append('ul')
         .attr('class', 'selected charts-list');
     selectedPane.append('div')
         .text('Clear')
         .attr('class', 'clear button')
         .on('click', clearSelectedCharts);
 
-    dragApi.setList(holder, holder.select('.selected.charts-list'), function() {
+    dragApi.setList(holder, selectedList, function() {
       var select = [],
-          li = holder.select('.selected.charts-list').selectAll('li');
+          li = selectedList.selectAll('li');
       li.each(function(d) { select.push(d); });
-      setSelectedCharts(select);
+      userSelectCharts(select);
     });
 
     selectedPane.append('div')
@@ -262,7 +262,6 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
         .text(labelFromId);
     optionYc.exit().remove();
   }
-  setupApi.changeDataName = changeDataName;
 
   // I'm encountering an odd bug where the select value won't update,
   // so this will force it to.
@@ -295,25 +294,31 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
   function addChart(id) {
     if (selected.indexOf(id) < 0) {
       selected.push(id);
-      setSelectedCharts(selected);
+      userSelectCharts(selected);
     }
   }
 
   function removeChart(id) {
     var index = selected.indexOf(id);
     selected.splice(index, 1);
-    setSelectedCharts(selected);
+    userSelectCharts(selected);
   }
 
   function clearSelectedCharts() {
-    setSelectedCharts([]);
+    userSelectCharts([]);
+  }
+
+  function userSelectCharts(selected) {
+    setSelectedCharts(selected);
+    var updated = binfo.render(dataName, selected, null, true);
+    holder.select('.update.action.button').classed('active', !updated);
   }
 
   function setSelectedCharts(_) {
     selected = _;
     var item,
         active,
-        li = holder.select('.selected.charts-list').selectAll('li')
+        li = selectedList.selectAll('li')
         .data(selected, function(d) { return d; });
 
     item = li.enter().append('li')
@@ -337,12 +342,13 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     li.order();
 
     li.exit().remove();
-
-    active = previousSel && selected.join(',') !== previousSel.join(',');
-    holder.select('.update.action.button').classed('active', active);
-    previousSel = selected.slice();
   }
-  setupApi.setSelectedCharts = setSelectedCharts;
+
+  setupApi.updateUponRender = function(renderDataName, renderSelected) {
+    changeDataName(renderDataName, false);
+    setSelectedCharts(renderSelected);
+    holder.select('.update.action.button').classed('active', false);
+  };
 
   return setupApi;
 });
