@@ -369,6 +369,7 @@ binfo._register('charts', ['logic'], function(logicApi) {
         x   .domain([minX, maxX])
             .rangeRound([0, bar.api.numGroups() * dim.binWidth]);
       }
+      bar.x = x;
       if (!bar.ordinal) {
         axis.scale(x);
       }

@@ -9,7 +9,7 @@ binfo._register('logic', [], function() {
 
   logicApi.barLogic = function(bar, spec, data) {
 
-    var filterRange = [0, 0],
+    var filterRange,
         filterActive,
         crossAll,
         dimension,
@@ -179,6 +179,12 @@ binfo._register('logic', [], function() {
         maxX = +groups[groups.length - 1].key + separation;
       }
       bar.setCrossChart();
+      if (!filterRange) {
+        var ticks = bar.x.ticks(20),
+            dummyLeft = ticks[Math.round(ticks.length * 0.3)],
+            dummyRight = ticks[Math.round(ticks.length * 0.7)];
+        filterRange = [dummyLeft, dummyRight];
+      }
     };
 
     bar.api.update = function() {
