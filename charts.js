@@ -407,12 +407,12 @@ binfo._register('charts', ['logic'], function(logicApi) {
     var dim = findDim(spec),
         xc = compare.xc,
         yc = compare.yc,
+        bgPath,
         paths = [],
-        levels = 8,
-        scaleLevel = spec.scaleLevel || levels;
+        levels = 54;
 
     dim.left = yc.dim.bottom + 60;
-    dim.bottom = xc.dim.bottom + 30;
+    dim.bottom = xc.dim.bottom + 50;
     compare.api.label = 'Comparing ' + xc.label + ' and ' + yc.label,
 
     compare.updateChart = function() {
@@ -423,29 +423,23 @@ binfo._register('charts', ['logic'], function(logicApi) {
           xi,
           yi,
           level,
-          area,
-          val,
-          val2,
           bWidth = dim.binWidth,
-          mid = bWidth / 2,
           x,
           y;
-      for (xi = 0; xi < levels; xi++) {
+      for (xi = 1; xi < levels; xi++) {
         pathParts[xi] = [];
       }
-      pathParts[-2] = pathParts[-1] = {push: function() {}};
+      pathParts[-1] = pathParts[0] = {
+        push: function() {},
+        join: function() { return bgPath; }
+      };
       for (xi = 0; xi < xn; xi++) {
-        x = xi * bWidth + mid;
+        x = xi * bWidth;
         for (yi = 0; yi < yn; yi++) {
-          y = yi * bWidth + mid;
-          area = values[xi][yi] * scaleLevel;
-          level = Math.min(Math.floor(area), levels - 1);
-          val = Math.sqrt(area - level) * mid;
-          val2 = val * 2;
-          pathParts[level].push('M', x - val, ',', y - val,
-                                'v', val2, 'h', val2, 'v', -val2);
-          pathParts[level-1].push('M', x - mid, ',', y - mid,
-                                  'v', bWidth, 'h', bWidth, 'v', -bWidth);
+          y = yi * bWidth;
+          level = Math.floor(values[xi][yi] * levels - 1e-6);
+          pathParts[level].push('M', x, ',', y, 'v', bWidth,
+                                'h', bWidth, 'v', -bWidth);
         }
       }
       for (xi = 0; xi < levels; xi++) {
@@ -470,6 +464,8 @@ binfo._register('charts', ['logic'], function(logicApi) {
     function setupChart(g) {
       var levelNums = [],
           gCompare,
+          rectWidth,
+          rectHeight,
           i;
       for (i = 0; i < levels; i++) {
         levelNums.push(i);
@@ -484,12 +480,6 @@ binfo._register('charts', ['logic'], function(logicApi) {
           .attr('class', 'xc inner-chart')
           .attr('transform', 'translate(' + dim.xLeft + ',' + dim.xTop + ')')
           .datum({compare: true, orientFlip: false});
-      g.append('path')
-          .attr('stroke', 'black')
-          .attr('fill', 'white')
-          .attr('shape-rendering', 'crispEdges')
-          .attr('d', 'M' + (dim.yHeight + 1) + ',1V' + (dim.xTop - 2) +
-                      'H' + (dim.width - 2) + 'V1' + 'H' + (dim.yHeight + 1));
       gCompare = g.append('g')
           .attr('transform', 'translate(' + dim.xLeft + ',' + dim.yTop + ')');
       gCompare.selectAll('.compare.bar')
@@ -505,9 +495,22 @@ binfo._register('charts', ['logic'], function(logicApi) {
           .text(yc.label);
       g.append('text')
           .attr('x', dim.xLeft + dim.xWidth / 2)
-          .attr('y', dim.height + dim.bottom - 5)
+          .attr('y', dim.height + dim.bottom - 20)
           .attr('class', 'axis-label')
           .text(xc.label);
+
+      rectWidth = 3;
+      rectHeight = 15;
+      g.selectAll('rect.level')
+          .data(levelNums)
+        .enter().append('rect')
+          .attr('class', function(d) { return 'level level-' + d; })
+          .attr('x', function(d, i) {
+            return dim.xLeft + dim.xWidth / 2 + (i - levels / 2) * rectWidth;
+          })
+          .attr('y', dim.height + dim.bottom - rectHeight)
+          .attr('width', rectWidth)
+          .attr('height', rectHeight);
       return g;
     }
 
@@ -545,12 +548,14 @@ binfo._register('charts', ['logic'], function(logicApi) {
       dim.yHeight = yc.dim.compareHeight;
       dim.xWidth = xc.dim.width;
       dim.yWidth = yc.dim.width;
-      dim.xTop = dim.yWidth + 6;
-      dim.xLeft = dim.yHeight + 3;
-      dim.yTop = 3;
-      dim.width = dim.yHeight + dim.xWidth + 6;
-      dim.height = dim.yWidth + dim.xHeight + 6;
+      dim.xTop = dim.yWidth + 4;
+      dim.xLeft = dim.yHeight + 2;
+      dim.yTop = 2;
+      dim.width = dim.yHeight + dim.xWidth + 4;
+      dim.height = dim.yWidth + dim.xHeight + 4;
       dim.actualHeight = dim.height;
+      bgPath = 'M-1,-1V' + (dim.xTop - dim.yTop - 2) +
+               'H' + (dim.width - dim.xLeft - 2) + 'V-1H-1';
     };
 
     compare.api.cleanUp = function() {
