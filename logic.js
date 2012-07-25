@@ -6,14 +6,6 @@ binfo._register('logic', [], function() {
   var logicApi = {};
 
 
-  logicApi.idFromRaw = function(rawId) {
-    var ids = rawId.split('*');
-    if (ids.length === 1) {
-      return ids[0];
-    }
-    return ids[0] + '*' + ids[1];
-  };
-
 
   logicApi.barLogic = function(bar, spec, data) {
 
@@ -38,7 +30,6 @@ binfo._register('logic', [], function() {
 
 
     bar.api.id = spec.id;
-    bar.api.rawId = function() { return bar.api.id; };
     bar.api.compare = false;
     bar.round = spec.round;
 
@@ -202,7 +193,7 @@ binfo._register('logic', [], function() {
 
   logicApi.compareLogic = function(compare, spec) {
 
-    var ids = spec.id.split('*'),
+    var ids = spec.id.split('-'),
         xc = spec.charts[ids[0]],
         yc = spec.charts[ids[1]],
         given = null,
@@ -229,8 +220,9 @@ binfo._register('logic', [], function() {
       if (!arguments.length) return given;
       given = _;
     };
-    compare.api.rawId = function() {
-      return compare.api.id + (given ? '*' + given : '');
+
+    compare.api.filter = function(_) {
+      compare.api.given(_ ? _[0] : null);
     };
 
     dimensionFunc = function(d) {

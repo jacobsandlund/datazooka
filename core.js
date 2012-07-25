@@ -142,12 +142,12 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     });
   }
 
-  binfo.render = function(dataName, rawChartIds, filters, autoUpdate) {
+  binfo.render = function(dataName, renderChartIds, filters, autoUpdate) {
 
     var dataSet = setupApi.dataSet(dataName);
 
     if (!dataSet) {
-      setupApi.renderLater([dataName, rawChartIds, filters]);
+      setupApi.renderLater([dataName, renderChartIds, filters]);
       return;
     }
 
@@ -160,19 +160,15 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
         removed;
 
     charts = dataSet.charts;
-
-    chartIds = rawChartIds.map(function(raw) {
-      return logicApi.idFromRaw(raw);
-    });
+    chartIds = renderChartIds;
     shownChartIds = chartIds.slice();
+
     chartData = shownChartIds.map(function(id, i) {
-      var raw = rawChartIds[i];
       if (!charts[id]) {
         // Must be a compare chart
         charts[id] = chartsApi.compareChart({id: id, charts: charts});
       }
       if (charts[id].compare) {
-        charts[id].given(raw.split('*')[2]);
         chartIds = charts[id].addChartIds(chartIds);
       }
       return {
@@ -196,12 +192,18 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     if (autoUpdate && added.length) {
       return false;
     }
+
+    removed.forEach(function(id) {
+      filters[id] = null;
+      charts[id].filter(null);
+    });
+
     currentChartIds = chartIds;
     currentShownChartIds = shownChartIds;
     currentDataName = dataName;
     currentFilters = filters;
 
-    setupApi.updateUponRender(dataName, rawChartIds);
+    setupApi.updateUponRender(dataName, shownChartIds);
     updateHash();
 
     added.forEach(function(id) {
@@ -231,7 +233,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       if (filters[id]) {
         charts[id].filter(filters[id]);
       } else {
-        if (charts[id].filter) charts[id].filter(null);
+        charts[id].filter(null);
       }
     });
 
@@ -247,7 +249,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
         filterArray = [];
 
     chartString += currentShownChartIds.map(function(id) {
-      return charts[id].rawId();
+      return charts[id].id;
     }).join(',');
 
     function filterEncode(d) {
@@ -289,11 +291,8 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
   };
 
   chartsApi.given = function(id, given) {
-    charts[id].given(given);
-    renderAll();
-    updateHash();
+    chartsApi.filter(id, given ? [given] : null);
   };
-
 
   function callCharts(name) {
     return function(chartData) {

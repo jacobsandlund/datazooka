@@ -102,7 +102,7 @@ h1, h2 {
 <script>
 
 binfo.holder('#charts');
-binfo.renderFromHash() || binfo.render('flights', ['time*delay', 'distance']);
+binfo.renderFromHash() || binfo.render('flights', ['time-delay', 'distance']);
 
 // Randomly get the definitions before or after the data comes in.
 var before = Math.random() < 0.5

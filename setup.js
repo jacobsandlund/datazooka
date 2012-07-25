@@ -11,7 +11,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
       dataSets = {},
       dataName,
       autoUpdate = false,
-      autoTimer,
+      autoTimer = null,
       setupApi = {};
 
   setupApi.holder = function() { return holder; };
@@ -121,7 +121,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     });
 
     holder.on('mousemove', function() {
-      if (autoTimer) {
+      if (autoTimer !== null) {
         clearAutoTimer();
         startAutoTimer();
       }
@@ -319,7 +319,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     if (yc === '--nothing--') {
       addChart(xc);
     } else {
-      addChart(xc + '*' + yc);
+      addChart(xc + '-' + yc);
     }
   }
 
@@ -351,7 +351,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
   }
 
   function clearAutoTimer() {
-    if (autoTimer) {
+    if (autoTimer !== null) {
       clearTimeout(autoTimer);
       autoTimer = null;
     }
@@ -376,8 +376,8 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     item.append('div')
         .attr('class', 'label')
         .html(function(id) {
-          if (id.match(/\*/)) {
-            var ids = id.split('*');
+          if (id.match(/-/)) {
+            var ids = id.split('-');
             return labelFromId(ids[0]) + ' <em>vs.</em> ' +
                    labelFromId(ids[1]);
           }
