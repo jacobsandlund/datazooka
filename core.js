@@ -142,7 +142,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     });
   }
 
-  binfo.render = function(dataName, renderChartIds, filters, autoUpdate) {
+  binfo.render = function(dataName, renderChartIds, filters, smartUpdate) {
 
     var dataSet = setupApi.dataSet(dataName);
 
@@ -182,14 +182,14 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     added = arrayDiff(chartIds, currentChartIds);
 
     if (!cross || currentDataName !== dataName || removed.length) {
-      if (autoUpdate) {
+      if (smartUpdate) {
         return false;
       }
       cross = crossfilter(data);
       crossAll = cross.groupAll();
       added = chartIds;
     }
-    if (autoUpdate && added.length) {
+    if (smartUpdate && added.length) {
       return false;
     }
 

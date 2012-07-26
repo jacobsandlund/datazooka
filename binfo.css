@@ -63,12 +63,8 @@ select.compare.yc {
   font-style: italic;
 }
 
-.configuration input[type=checkbox] {
+.configuration input[type=radio] {
   margin-right: 4px;
-}
-
-select.data-name {
-  margin-bottom: 30px;
 }
 
 .action.button {
@@ -120,7 +116,7 @@ ul.charts-list {
 }
 
 ul.bar.charts-list {
-  height: 310px;
+  height: 330px;
 }
 
 .bar.charts-list .item:hover {
@@ -154,6 +150,14 @@ ul.bar.charts-list {
   width: 236px;
 }
 
+.sub-pane {
+  margin-bottom: 30px;
+}
+
+.add-comparisons.sub-pane {
+  height: 160px;
+}
+
 .main.pane {
   width: 190px;
 }
@@ -163,7 +167,11 @@ ul.bar.charts-list {
 }
 
 .add.button {
-  margin-bottom: 30px;
+  display: none;
+}
+
+.add.active.button {
+  display: inline-block;
 }
 
 .update-and-cancel {
@@ -181,10 +189,15 @@ ul.bar.charts-list {
   margin-top: 10px;
 }
 
+.options.button {
+  margin-bottom: 5px;
+  margin-top: 12px;
+}
+
 ul.selected.charts-list {
   width: 205px;
   overflow-y: visible;
-  min-height: 270px;
+  min-height: 290px;
   margin-bottom: 10px;
   position: relative;
 }
