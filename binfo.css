@@ -274,12 +274,16 @@ ul.selected.charts-list {
 }
 
 .filter-bar {
-  width: 145px;
+  width: 150px;
   margin: 0px auto;
 }
 
-.filter-bar .button {
+.filter.button {
   margin-right: 0px;
+  width: 50px;
+  text-align: center;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .range {

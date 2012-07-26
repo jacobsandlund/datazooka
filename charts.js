@@ -265,32 +265,53 @@ binfo._register('charts', ['logic'], function(logicApi) {
     }
 
     function setupChartPeripherals(div, setupDim) {
-      // The filter toggle and endpoints
-      var filterBar = div.append('div').attr('class', 'peripherals filter-bar');
-      filterBar.append('div')
-          .text('Filter')
+      var filterButton,
+          filterBar = div.append('div').attr('class', 'peripherals filter-bar');
+      function toggleActive() {
+        var el = d3.select(this);
+        if (!bar.filterActive()) {
+          chartsApi.filter(bar.api.id, bar.filterRange());
+        } else {
+          chartsApi.filter(bar.api.id, null);
+        }
+      }
+      function submitChange() {
+        var range = [];
+        filterBar.selectAll('.range').each(function() { range.push(this.value); });
+        var left = x(range[0]),
+            right = x(range[1]);
+        if (left <= right && right >= 0 && left <= setupDim.width) {
+          chartsApi.filter(bar.api.id, range);
+        }
+        setUpdating(false);
+      }
+      filterButton = filterBar.append('div')
           .attr('class', 'filter button')
-          .classed('down', bar.filterActive())
-          .on('click', function() {
-            var el = d3.select(this);
-            if (!bar.filterActive()) {
-              chartsApi.filter(bar.api.id, bar.filterRange());
-            } else {
-              chartsApi.filter(bar.api.id, null);
-            }
-          });
+      function setUpdating(updating) {
+        if (updating) {
+          filterButton
+              .classed('down', false)
+              .text('Update')
+              .on('click', submitChange);
+        } else {
+          filterButton
+              .classed('down', bar.filterActive())
+              .text('Filter')
+              .on('click', toggleActive);
+        }
+      }
+      setUpdating(false);
+
       filterBar.selectAll('.range').data(['left', 'right'])
         .enter().append('input')
           .attr('type', 'text')
           .attr('class', function(d) { return 'range ' + d; })
           .property('value', function(d, i) { return bar.filterRange()[i]; })
-          .on('change', function(d, i) {
-            var range = bar.filterRange();
-            range[i] = this.value;
-            var left = x(range[0]),
-                right = x(range[1]);
-            if (left <= right && right >= 0 && left <= setupDim.width) {
-              chartsApi.filter(bar.api.id, range);
+          .on('keydown', function() {
+            if (d3.event.keyCode === 13) {
+              submitChange();
+            } else {
+              setUpdating(true);
             }
           });
     }
