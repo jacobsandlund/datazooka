@@ -86,8 +86,8 @@ select.compare.yc {
 }
 
 .clear.button {
-  float: left;
-  margin-left: 0;
+  float: right;
+  margin: 9px;
 }
 
 ul.charts-list {
@@ -116,7 +116,7 @@ ul.charts-list {
 }
 
 ul.bar.charts-list {
-  height: 330px;
+  height: 405px;
 }
 
 .bar.charts-list .item:hover {
@@ -152,10 +152,26 @@ ul.bar.charts-list {
 
 .sub-pane {
   margin-bottom: 30px;
+  overflow: auto;
 }
 
 .add-comparisons.sub-pane {
   height: 160px;
+}
+
+.options.sub-pane {
+  height: 100px;
+  position: relative;
+  margin-top: 93px;
+  margin-bottom: 0;
+}
+
+.selected.sub-pane {
+  border: solid 1px #aaa;
+}
+
+.update-shown.sub-pane {
+  margin-bottom: 0;
 }
 
 .main.pane {
@@ -174,11 +190,6 @@ ul.bar.charts-list {
   display: inline-block;
 }
 
-.update-and-cancel {
-  overflow: auto;
-  margin-bottom: 10px;
-}
-
 .update.button {
   float: left;
   margin-left: 0;
@@ -190,8 +201,9 @@ ul.bar.charts-list {
 }
 
 .options.button {
-  margin-bottom: 5px;
-  margin-top: 12px;
+  position: absolute;
+  bottom: 0px;
+  margin-left: 0;
 }
 
 ul.selected.charts-list {
@@ -200,6 +212,7 @@ ul.selected.charts-list {
   min-height: 290px;
   margin-bottom: 10px;
   position: relative;
+  border: 0;
 }
 
 .selected.charts-list li {

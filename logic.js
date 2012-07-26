@@ -183,6 +183,10 @@ binfo._register('logic', [], function() {
         var ticks = bar.x.ticks(20),
             dummyLeft = ticks[Math.round(ticks.length * 0.3)],
             dummyRight = ticks[Math.round(ticks.length * 0.7)];
+        if (bar.round) {
+          dummyLeft = bar.round(dummyLeft);
+          dummyRight = bar.round(dummyRight);
+        }
         filterRange = [dummyLeft, dummyRight];
       }
     };

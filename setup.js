@@ -7,9 +7,11 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
       renderLater,
       selected = [],
       selectedList,
-      rendered = [],
+      selectedRendered = [],
       dataSets = {},
       dataName,
+      dataNameRendered,
+      isUpdateActive,
       updateStyle = 'always-update',
       smartTimer = null,
       setupApi = {};
@@ -36,10 +38,11 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
         changeDatasetPane,
         addComparisonsPane,
         updateShownPane,
-        updateAndCancel,
+        optionsPane,
         options,
         barPane,
-        selectedPane;
+        selectedPane,
+        selectedSubPane;
 
     config.attr('class', 'configuration');
 
@@ -70,37 +73,14 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
         .attr('class', 'add action button')
         .on('click', addCompareChart);
 
-    updateShownPane = mainPane.append('div')
-        .attr('class', 'sub-pane update-shown');
-    updateShownPane.append('h3').text('Update Shown');
-    updateAndCancel = updateShownPane.append('div')
-        .attr('class', 'update-and-cancel');
-    updateAndCancel.append('div')
-        .text('Update')
-        .attr('class', 'update action button')
-        .on('click', function() { renderSelected(); });
-    updateAndCancel.append('div')
-        .text('Cancel')
-        .attr('class', 'cancel button')
-        .style('display', 'none')
-        .on('click', function() {
-          setSelectedCharts(rendered);
-          renderSelected();
-        });
-
-
-    mainPane.append('div')
-        .text('Options')
-        .attr('class', 'options button')
-        .on('click', function() {
-          var disp = options.style('display');
-          options.style('display', disp === 'block' ? 'none' : 'block');
-          d3.select(this).classed('down', disp === 'none');
-        });
-    options = mainPane.append('div')
+    optionsPane = mainPane.append('div')
+        .attr('class', 'options sub-pane');
+    options = optionsPane.append('div')
         .style('display', 'none');
     function changeUpdateStyle() {
       updateStyle = this.id;
+      var alwaysUpdate = updateStyle === 'always-update';
+      updateShownPane.style('display', alwaysUpdate ? 'none' : 'block');
     }
     function addUpdateStyle(style, label) {
       var div = options.append('div');
@@ -116,7 +96,15 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     addUpdateStyle('always-update', 'Always update automatically');
     addUpdateStyle('smart-update', 'Smart update (on mouse still)');
     addUpdateStyle('manual-update', 'Manual update');
-    mainPane.select('#always-update').property('checked', true);
+    optionsPane.select('#always-update').property('checked', true);
+    optionsPane.append('div')
+        .text('Options')
+        .attr('class', 'options button')
+        .on('click', function() {
+          var disp = options.style('display');
+          options.style('display', disp === 'block' ? 'none' : 'block');
+          d3.select(this).classed('down', disp === 'none');
+        });
 
     barPane = config.append('div').attr('class', 'bar pane');
     barPane.append('h3').html('Add Bar Charts<small>(click)<small>');
@@ -125,12 +113,30 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
 
     selectedPane = config.append('div').attr('class', 'selected pane');
     selectedPane.append('h3').text('Move/Remove Selected');
-    selectedList = selectedPane.append('ul')
+    selectedSubPane = selectedPane.append('div')
+        .attr('class', 'selected sub-pane');
+    selectedList = selectedSubPane.append('ul')
         .attr('class', 'selected charts-list');
-    selectedPane.append('div')
+    selectedSubPane.append('div')
         .text('Remove All')
         .attr('class', 'clear button')
         .on('click', clearSelectedCharts);
+
+    updateShownPane = selectedPane.append('div')
+        .attr('class', 'sub-pane update-shown')
+        .style('display', 'none');
+    updateShownPane.append('div')
+        .text('Update')
+        .attr('class', 'update action button')
+        .on('click', function() { renderSelected(); });
+    updateShownPane.append('div')
+        .text('Cancel')
+        .attr('class', 'cancel button')
+        .style('display', 'none')
+        .on('click', function() {
+          changeDataName(dataNameRendered, false);
+          userSelectCharts(selectedRendered, true);
+        });
 
     holder.append('div')
         .attr('class', 'charts');
@@ -150,7 +156,9 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
           li = selectedList.selectAll('li');
       li.each(function(d) { select.push(d); });
       setSelectedCharts(select);
-      renderSelected();
+      if (!isUpdateActive) {
+        renderSelected();
+      }
     });
 
     holder.on('mousemove', function() {
@@ -373,12 +381,12 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     userSelectCharts([]);
   }
 
-  function userSelectCharts(selected) {
+  function userSelectCharts(selected, override) {
     var updated,
-        smartUpdate = updateStyle === 'smart-update';
+        smartUpdate = override || updateStyle === 'smart-update';
     clearSmartTimer();
     setSelectedCharts(selected);
-    if (updateStyle !== 'manual-update') {
+    if (override || updateStyle !== 'manual-update') {
       updated = renderSelected(smartUpdate);
     }
     updateActive(!updated);
@@ -388,6 +396,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
   }
 
   function updateActive(active) {
+    isUpdateActive = active;
     holder.select('.update.action.button').classed('active', active);
     holder.select('.cancel.button').style('display', active ? null : 'none');
   }
@@ -440,9 +449,10 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     return binfo.render(dataName, selected, null, smartUpdate);
   }
 
-  setupApi.updateUponRender = function(dataNameRendered, selectedRendered) {
-    rendered = selectedRendered.slice();
-    changeDataName(dataNameRendered, false);
+  setupApi.updateUponRender = function(dataNameRend, selectedRend) {
+    selectedRendered = selectedRend.slice();
+    dataNameRendered = dataNameRend;
+    changeDataName(dataNameRend, false);
     setSelectedCharts(selectedRendered);
   };
 

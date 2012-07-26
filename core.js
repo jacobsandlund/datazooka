@@ -156,6 +156,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
         holder = setupApi.holder(),
         shownChartIds,
         chartData,
+        oldCharts = charts,
         added,
         removed;
 
@@ -195,8 +196,9 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
 
     removed.forEach(function(id) {
       filters[id] = null;
-      charts[id].filter(null);
+      oldCharts[id].filter(null);
     });
+
 
     currentChartIds = chartIds;
     currentShownChartIds = shownChartIds;
