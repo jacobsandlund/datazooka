@@ -142,12 +142,12 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     });
   }
 
-  binfo.render = function(dataName, renderChartIds, filters, smartUpdate) {
+  binfo.render = function(dataName, shownChartIds, filters, smartUpdate) {
 
     var dataSet = setupApi.dataSet(dataName);
 
     if (!dataSet) {
-      setupApi.renderLater([dataName, renderChartIds, filters]);
+      setupApi.renderLater([dataName, shownChartIds, filters]);
       return;
     }
 
@@ -161,8 +161,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
         removed;
 
     charts = dataSet.charts;
-    chartIds = renderChartIds;
-    shownChartIds = chartIds.slice();
+    chartIds = shownChartIds.slice();
 
     chartData = shownChartIds.map(function(id, i) {
       if (!charts[id]) {
@@ -182,16 +181,22 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     removed = arrayDiff(currentChartIds, chartIds);
     added = arrayDiff(chartIds, currentChartIds);
 
-    if (!cross || currentDataName !== dataName || removed.length) {
+    if (!cross || currentDataName !== dataName || removed.length || added.length) {
       if (smartUpdate) {
         return false;
       }
+      if (holder.select('.charts').style('opacity') > 0.4) {;
+        holder.select('.charts').style('opacity', 0.3);
+        setTimeout(function() {
+          binfo.render(dataName, shownChartIds, filters);
+        }, 30);
+        return false;
+      }
+    }
+    if (!cross || currentDataName !== dataName || removed.length) {
       cross = crossfilter(data);
       crossAll = cross.groupAll();
       added = chartIds;
-    }
-    if (smartUpdate && added.length) {
-      return false;
     }
 
     removed.forEach(function(id) {
@@ -228,6 +233,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
 
     chartSelection.order();
 
+    holder.select('.charts').style('opacity', null);
     holder.select('.total')
         .text(formatNumber(cross.size()) + ' ' + dataName + ' selected.');
 
