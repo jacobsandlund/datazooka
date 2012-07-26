@@ -31,6 +31,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
 
   binfo.holder = function(_) {
     holder = d3.select(_);
+    holder.attr('class', 'holder');
 
     // Create skeleton.
     var config = holder.append('div'),
@@ -149,6 +150,22 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     totals.append('span').text(' of ');
     totals.append('span')
         .attr('class', 'total');
+    function toggleDock() {
+      var dockButton = totals.select('.total-dock.button'),
+          dock = dockButton.classed('down');
+      dockButton.classed('down', !dock);
+      totals.style('position', dock ? null : 'fixed');
+      if (dock) {
+        dockButton.text('Undock');
+      } else {
+        dockButton.text('Dock');
+      }
+    }
+    totals.append('div')
+        .attr('class', 'total-dock button')
+        .on('click', toggleDock);
+    toggleDock();
+
 
 
     dragApi.setList(holder, selectedList, function() {

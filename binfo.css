@@ -1,4 +1,8 @@
 
+.holder {
+  overflow: auto;
+}
+
 .charts {
   font-family: Arial, sans-serif;
   padding: 10px 0;
@@ -12,7 +16,7 @@
   padding: 5px;
 }
 
-.chart, .configuration {
+.chart, .configuration, .totals {
   border-style: solid;
   border-width: 5px;
   border-radius: 15px;
@@ -510,6 +514,10 @@ ul.selected.charts-list {
 .totals {
   font-size: smaller;
   float: right;
+  bottom: 0px;
+  right: 0px;
+  padding: 5px;
+  margin: 10px;
 }
 
 .percent {
