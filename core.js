@@ -3,6 +3,10 @@ var binfo = {
   numGroups: 35,
   tickSpacing: 46,
   compareHeightScale: 0.20,
+  chartHeight: 200,
+  chartPadding: 5,
+  chartBorder: 5,
+  maxLevels: 50,
   chartDimensions: {
     top: 20,
     right: 10,
@@ -126,7 +130,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       chartIds,
       cross,
       crossAll,
-      charts,
+      currentCharts,
       currentDataName,
       currentHash,
       hashUpdatedRecently = false,
@@ -154,13 +158,13 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     filters = filters || currentFilters;
     var data = dataSet.data,
         holder = setupApi.holder(),
+        chartsHolder = holder.select('.charts'),
         shownChartIds,
         chartData,
-        oldCharts = charts,
+        charts = dataSet.charts,
         added,
         removed;
 
-    charts = dataSet.charts;
     chartIds = shownChartIds.slice();
 
     chartData = shownChartIds.map(function(id, i) {
@@ -185,12 +189,12 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       if (smartUpdate) {
         return false;
       }
-      if (holder.select('.charts').style('opacity') > 0.4) {;
-        holder.select('.charts').style('opacity', 0.3);
+      if (chartsHolder.style('opacity') > 0.4) {;
+        chartsHolder.style('opacity', 0.3);
         setTimeout(function() {
           binfo.render(dataName, shownChartIds, filters);
         }, 30);
-        return false;
+        return true;
       }
     }
     if (!cross || currentDataName !== dataName || removed.length) {
@@ -201,10 +205,11 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
 
     removed.forEach(function(id) {
       filters[id] = null;
-      oldCharts[id].filter(null);
+      currentCharts[id].filter(null);
     });
 
 
+    currentCharts = charts;
     currentChartIds = chartIds;
     currentShownChartIds = shownChartIds;
     currentDataName = dataName;
@@ -220,7 +225,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       if (charts[id].compare) charts[id].setCross(cross, crossAll);
     });
 
-    chartSelection = holder.select('.charts').selectAll('.chart')
+    chartSelection = chartsHolder.selectAll('.chart')
         .data(chartData, function(d) { return d.chart.id; });
 
     chartSelection.enter()
@@ -233,7 +238,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
 
     chartSelection.order();
 
-    holder.select('.charts').style('opacity', null);
+    chartsHolder.style('opacity', null);
     holder.select('.total')
         .text(formatNumber(cross.size()) + ' ' + dataName + ' selected.');
 
@@ -247,7 +252,72 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
 
     renderAll();
 
+    arrangeCharts();
+
     return true;
+
+  };
+
+  function arrangeCharts() {
+    var dims = {},
+        widths = [],
+        maxWidth = binfo.width,
+        maxLevel = 0,
+        i;
+    chartSelection.each(function(d) {
+      var height = this.offsetHeight - binfo.chartBorder,
+          levels = Math.ceil(height / binfo.chartHeight);
+      height = levels * binfo.chartHeight - (binfo.chartBorder +
+                                             2 * binfo.chartPadding);
+      d3.select(this).style('height', height + 'px');
+      dims[d.chart.id] = {
+        levels: levels,
+        width: this.offsetWidth - binfo.chartBorder
+      };
+    });
+
+    for (i = 0; i < binfo.maxLevels; i++) {
+      widths[i] = maxWidth;
+    }
+    currentShownChartIds.forEach(function(id) {
+      var chart = currentCharts[id],
+          levels = dims[id].levels,
+          width = dims[id].width,
+          fitting = 0,
+          fitWidth,
+          i,
+          j;
+      for (i = 0; i < widths.length; i++) {
+        if (widths[i] >= width || widths[i] === maxWidth) {
+          if (widths[i] === fitWidth) {
+            fitting += 1;
+          } else {
+            fitWidth = widths[i];
+            fitting = 1;
+          }
+        }
+        if (fitting === levels) {
+          break;
+        }
+      }
+      for (j = i - levels + 1; j <= i; j++) {
+        widths[j] -= width;
+      }
+      maxLevel = Math.max(i, maxLevel);
+      dims[id].left = maxWidth - fitWidth;
+      dims[id].top = (i - levels + 1) * binfo.chartHeight;
+    });
+
+    chartSelection.each(function(d) {
+      var dim = dims[d.chart.id];
+      d3.select(this)
+          .style('left', dim.left + 'px')
+          .style('top', dim.top + 'px');
+    });
+
+    var chartHolderHeight = (maxLevel + 1) * binfo.chartHeight + 200,
+        holder = setupApi.holder();
+    holder.select('.charts').style('height', chartHolderHeight + 'px');
   };
 
   function updateHash() {
@@ -257,7 +327,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
         filterArray = [];
 
     chartString += currentShownChartIds.map(function(id) {
-      return charts[id].id;
+      return currentCharts[id].id;
     }).join(',');
 
     function filterEncode(d) {
@@ -293,7 +363,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
 
   chartsApi.filter = function(id, range) {
     currentFilters[id] = range;
-    charts[id].filter(range);
+    currentCharts[id].filter(range);
     renderAll();
     updateHash();
   };
@@ -316,7 +386,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       cleanUpCharts = callCharts('cleanUp');
 
   function renderAll() {
-    chartIds.forEach(function(id) { charts[id].update(); });
+    chartIds.forEach(function(id) { currentCharts[id].update(); });
     chartSelection.each(renderCharts);
     chartSelection.each(cleanUpCharts);
     d3.select('.active-data').text(formatNumber(crossAll.value()));

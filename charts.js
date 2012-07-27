@@ -51,7 +51,6 @@ binfo._register('charts', ['logic'], function(logicApi) {
       fullHeight += height;
     }
     div.select('.title').text(label);
-    div.attr('width', fullWidth);
 
     var g = div.append('svg')
         .attr('width', fullWidth)
@@ -521,16 +520,16 @@ binfo._register('charts', ['logic'], function(logicApi) {
           .attr('class', 'axis-label')
           .text(xc.label);
 
-      rectWidth = 3;
-      rectHeight = 15;
+      rectWidth = 5;
+      rectHeight = 3;
       g.selectAll('rect.level')
           .data(levelNums)
         .enter().append('rect')
           .attr('class', function(d) { return 'level level-' + d; })
-          .attr('x', function(d, i) {
-            return dim.xLeft + dim.xWidth / 2 + (i - levels / 2) * rectWidth;
+          .attr('x', dim.width + 5)
+          .attr('y', function(d, i) {
+            return dim.xTop - 4 - i * rectHeight;
           })
-          .attr('y', dim.height + dim.bottom - rectHeight)
           .attr('width', rectWidth)
           .attr('height', rectHeight);
       return g;

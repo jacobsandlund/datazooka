@@ -29,9 +29,12 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     return set;
   };
 
-  binfo.holder = function(_) {
+  binfo.holder = function(_, width) {
+    binfo.width = width;
     holder = d3.select(_);
-    holder.attr('class', 'holder');
+    holder
+        .attr('class', 'holder')
+        .style('width', width);
 
     // Create skeleton.
     var config = holder.append('div'),
@@ -322,11 +325,11 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     if (newDataName === dataName) {
       return;
     }
+    dataName = newDataName;
+    ensureChangeDataName(dataName);
     if (clearSelected) {
       clearSelectedCharts();
     }
-    dataName = newDataName;
-    ensureChangeDataName(dataName);
 
     li = holder.select('.bar.charts-list').selectAll('li')
         .data(ids, function(d) { return d; });
