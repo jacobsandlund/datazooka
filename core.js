@@ -262,6 +262,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     var dims = {},
         widths = [],
         maxWidth = binfo.width,
+        lastLevel = 0,
         maxLevel = 0,
         i;
     chartSelection.each(function(d) {
@@ -285,11 +286,12 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
           width = dims[id].width,
           fitting = 0,
           fitWidth,
-          i,
+          direction = -1,
+          i = lastLevel,
           j;
-      for (i = 0; i < widths.length; i++) {
+      while (i < widths.length) {
         if (widths[i] >= width || widths[i] === maxWidth) {
-          if (widths[i] === fitWidth) {
+          if (fitting && widths[i] === fitWidth) {
             fitting += 1;
           } else {
             fitWidth = widths[i];
@@ -299,13 +301,23 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
         if (fitting === levels) {
           break;
         }
+        if (i === 0 && direction === -1) {
+          direction = 1;
+          i = lastLevel - levels;
+          if (i < 0) {
+            i = -1;
+          }
+          fitting = 0;
+        }
+        i += direction;
       }
-      for (j = i - levels + 1; j <= i; j++) {
+      lastLevel = (direction === 1) ? i - levels + 1 : i;
+      for (j = lastLevel; j < lastLevel + levels; j++) {
         widths[j] -= width;
       }
       maxLevel = Math.max(i, maxLevel);
       dims[id].left = maxWidth - fitWidth;
-      dims[id].top = (i - levels + 1) * binfo.chartHeight;
+      dims[id].top = lastLevel * binfo.chartHeight;
     });
 
     chartSelection.each(function(d) {
