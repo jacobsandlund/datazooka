@@ -112,13 +112,13 @@ binfo._register('charts', ['logic'], function(modules, logicApi) {
             .call(brush.extent(extent = extent.map(bar.round)));
       }
       if (!brush.empty()) {
-        chartsApi.filter(bar.api.id, extent);
+        renderingApi.filter(bar.api.id, extent);
       }
     });
 
     brush.on('brushend.chart', function() {
       if (brush.empty()) {
-        chartsApi.filter(bar.api.id, null);
+        renderingApi.filter(bar.api.id, null);
       }
     });
 
@@ -269,9 +269,9 @@ binfo._register('charts', ['logic'], function(modules, logicApi) {
       function toggleActive() {
         var el = d3.select(this);
         if (!bar.filterActive()) {
-          chartsApi.filter(bar.api.id, bar.filterRange());
+          renderingApi.filter(bar.api.id, bar.filterRange());
         } else {
-          chartsApi.filter(bar.api.id, null);
+          renderingApi.filter(bar.api.id, null);
         }
       }
       function submitChange() {
@@ -280,7 +280,7 @@ binfo._register('charts', ['logic'], function(modules, logicApi) {
         var left = x(range[0]),
             right = x(range[1]);
         if (left <= right && right >= 0 && left <= setupDim.width) {
-          chartsApi.filter(bar.api.id, range);
+          renderingApi.filter(bar.api.id, range);
         }
         setUpdating(false);
       }
@@ -548,9 +548,9 @@ binfo._register('charts', ['logic'], function(modules, logicApi) {
           .on('click', function(d) {
             var el = d3.select(this);
             if (compare.api.given() === d) {
-              chartsApi.given(compare.api.id, null);
+              renderingApi.given(compare.api.id, null);
             } else {
-              chartsApi.given(compare.api.id, d);
+              renderingApi.given(compare.api.id, d);
             }
           });
     }

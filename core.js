@@ -63,7 +63,7 @@ binfo._register = (function() {
 }());
 
 
-binfo._register('hashRetrieval', [], function() {
+binfo._register('hashRetrieval', ['rendering'], function(modules, renderingApi) {
 
   "use strict";
 
@@ -86,7 +86,7 @@ binfo._register('hashRetrieval', [], function() {
     return hashParams;
   }
 
-  function renderFromHash() {
+  function renderFromHash(defaultDataName, defaultCharts, defaultFilters) {
     var params = getHashParams();
     var dataName = params.data,
         charts = params.charts && params.charts.split(','),
@@ -100,10 +100,15 @@ binfo._register('hashRetrieval', [], function() {
       });
     }
     if (!dataName || !charts || !charts.length) {
-      return false;
+      if (!arguments.length) {
+        return;
+      }
+      dataName = defaultDataName;
+      charts = defaultCharts;
+      myFilters = defaultFilters;
     }
-    binfo.render(dataName, charts, myFilters);
-    return true;
+    renderingApi.dataName(dataName);
+    renderingApi.render(charts, myFilters);
   }
 
   window.onhashchange = renderFromHash;
@@ -114,18 +119,20 @@ binfo._register('hashRetrieval', [], function() {
 
 
 
-binfo._register('rendering', ['setup', 'charts', 'logic'],
-                function(modules, setupApi, chartsApi, logicApi) {
+binfo._register('rendering', ['ui', 'setup', 'charts', 'logic'],
+                function(modules, uiApi, setupApi, chartsApi, logicApi) {
 
   "use strict";
 
   var renderingApi = modules.rendering,
+      holder,
       chartSelection,
       chartIds,
       cross,
       crossAll,
       currentCharts,
       currentDataName,
+      dataNameChanged,
       currentHash,
       hashUpdatedRecently = false,
       hashNeedsUpdated = false,
@@ -134,16 +141,28 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
       currentFilters = {},
       formatNumber = d3.format(',d');
 
+  uiApi.getHolder(function(_) { holder = _; });
+
   function arrayDiff(one, two) {
     return one.filter(function(id) {
       return two.indexOf(id) < 0;
     });
   }
 
-  binfo.render = renderingApi.render = function(dataName, shownChartIds,
-                                                filters, smartUpdate) {
+  renderingApi.dataName = function(dataName) {
+    currentDataName = dataName;
+    dataNameChanged = true;
+    uiApi.renderedDataName(dataName);
+  };
 
-    var dataSet = setupApi.dataSet(dataName);
+  renderingApi.addChart = function(chartId) {
+    renderingApi.render(currentChartIds.concat([chartId]));
+  };
+
+  renderingApi.render = function(shownChartIds, filters, smartUpdate) {
+
+    var dataName = currentDataName,
+        dataSet = setupApi.dataSet(dataName);
 
     if (!dataSet) {
       setupApi.renderLater([dataName, shownChartIds, filters]);
@@ -152,7 +171,6 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
 
     filters = filters || currentFilters;
     var data = dataSet.data,
-        holder = setupApi.holder(),
         chartsHolder = holder.select('.charts'),
         shownChartIds,
         chartData,
@@ -180,19 +198,19 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     removed = arrayDiff(currentChartIds, chartIds);
     added = arrayDiff(chartIds, currentChartIds);
 
-    if (!cross || currentDataName !== dataName || removed.length || added.length) {
+    if (!cross || dataNameChanged || removed.length || added.length) {
       if (smartUpdate) {
         return false;
       }
       if (chartsHolder.style('opacity') > 0.4) {;
         chartsHolder.style('opacity', 0.3);
         setTimeout(function() {
-          binfo.render(dataName, shownChartIds, filters);
+          renderingApi.render(shownChartIds, filters);
         }, 30);
         return true;
       }
     }
-    if (!cross || currentDataName !== dataName || removed.length) {
+    if (!cross || dataNameChanged || removed.length) {
       cross = crossfilter(data);
       crossAll = cross.groupAll();
       added = chartIds;
@@ -207,10 +225,10 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     currentCharts = charts;
     currentChartIds = chartIds;
     currentShownChartIds = shownChartIds;
-    currentDataName = dataName;
     currentFilters = filters;
+    dataNameChanged = false;
 
-    setupApi.updateUponRender(dataName, shownChartIds);
+    uiApi.renderOccurred();
     updateHash();
 
     added.forEach(function(id) {
@@ -322,8 +340,7 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
           .style('top', dim.top + 'px');
     });
 
-    var chartHolderHeight = (maxLevel + 1) * binfo.chartHeight + 200,
-        holder = setupApi.holder();
+    var chartHolderHeight = (maxLevel + 1) * binfo.chartHeight + 200;
     holder.select('.charts').style('height', chartHolderHeight + 'px');
   };
 
@@ -368,15 +385,15 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     }
   }
 
-  chartsApi.filter = function(id, range) {
+  renderingApi.filter = function(id, range) {
     currentFilters[id] = range;
     currentCharts[id].filter(range);
     renderAll();
     updateHash();
   };
 
-  chartsApi.given = function(id, given) {
-    chartsApi.filter(id, given ? [given] : null);
+  renderingApi.given = function(id, given) {
+    renderingApi.filter(id, given ? [given] : null);
   };
 
   function callCharts(name) {

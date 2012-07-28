@@ -96,13 +96,15 @@ h1, h2 {
   <script src="core.js"></script>
   <script src="logic.js"></script>
   <script src="charts.js"></script>
+  <script src="ui.js"></script>
   <script src="setup.js"></script>
   <script src="drag.js"></script>
 
 <script>
 
 binfo.holder('#charts', window.innerWidth - 90);
-binfo.renderFromHash() || binfo.render('flights', ['time-delay', 'distance']);
+binfo.renderFromHash('flights', ['time-delay', 'distance'],
+                     {distance: [200, 600]});
 
 // Randomly get the definitions before or after the data comes in.
 var before = Math.random() < 0.5
