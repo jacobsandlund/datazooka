@@ -23,28 +23,20 @@ binfo._register = (function() {
 
   "use strict";
 
-  var components = {},
-      componentNames = ['logic', 'hashRetrieval', 'charts',
-                        'drag', 'setup', 'rendering'];
+  var componentNames = [],
+      modules = {},
+      dependencies = {},
+      compFuncs = {},
+      completed = {};
 
   return function(name, deps, component) {
-    var names = componentNames;
-    if (components[name] || names.indexOf(name) < 0) {
-      return;
-    }
-    components[name] = {component: component, dependencies: deps};
-    if (names.some(function(c) { return !components[c]; })) {
-      return;
-    }
-    binfo._register = null;
-    var dependencies = {},
-        compFuncs = {},
-        completed = {};
-
-    names.forEach(function(c) {
-      dependencies[c] = components[c].dependencies;
-      compFuncs[c] = components[c].component;
-    });
+    var names = componentNames,
+        completedOne = true;
+    names.push(name);
+    modules[name] = {};
+    dependencies[name] = deps;
+    compFuncs[name] = component;
+    completed[name] = false;
 
     function notCompleted(c) {
       return !completed[c];
@@ -53,16 +45,17 @@ binfo._register = (function() {
     function completeLoop(name) {
       var func = compFuncs[name],
           deps = dependencies[name],
-          compDeps,
-          me;
+          compDeps;
       if (completed[name]) return;
       if (deps.some(notCompleted)) return;
-      compDeps = deps.map(function(d) { return completed[d]; });
-      me = compFuncs[name].apply(null, compDeps);
-      completed[name] = me ? me : true;
+      compDeps = deps.map(function(d) { return modules[d]; });
+      compFuncs[name].apply(null, [modules].concat(compDeps));
+      completed[name] = true;
+      completedOne = true;
     }
 
-    while (names.some(notCompleted)) {
+    while (names.some(notCompleted) && completedOne) {
+      completedOne = false;
       names.forEach(completeLoop);
     }
   };
@@ -122,11 +115,12 @@ binfo._register('hashRetrieval', [], function() {
 
 
 binfo._register('rendering', ['setup', 'charts', 'logic'],
-                function(setupApi, chartsApi, logicApi) {
+                function(modules, setupApi, chartsApi, logicApi) {
 
   "use strict";
 
-  var chartSelection,
+  var renderingApi = modules.rendering,
+      chartSelection,
       chartIds,
       cross,
       crossAll,
@@ -146,7 +140,8 @@ binfo._register('rendering', ['setup', 'charts', 'logic'],
     });
   }
 
-  binfo.render = function(dataName, shownChartIds, filters, smartUpdate) {
+  binfo.render = renderingApi.render = function(dataName, shownChartIds,
+                                                filters, smartUpdate) {
 
     var dataSet = setupApi.dataSet(dataName);
 

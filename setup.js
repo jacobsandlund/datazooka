@@ -1,9 +1,11 @@
 
-binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
+binfo._register('setup', ['charts', 'drag'],
+                function(modules, chartsApi, dragApi) {
 
   "use strict";
 
-  var holder,
+  var setupApi = modules.setup,
+      holder,
       renderLater,
       selected = [],
       selectedList,
@@ -13,8 +15,7 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
       dataNameRendered,
       isUpdateActive,
       updateStyle = 'always-update',
-      smartTimer = null,
-      setupApi = {};
+      smartTimer = null;
 
   setupApi.holder = function() { return holder; };
   setupApi.renderLater = function(_) {
@@ -475,7 +476,5 @@ binfo._register('setup', ['charts', 'drag'], function(chartsApi, dragApi) {
     changeDataName(dataNameRend, false);
     setSelectedCharts(selectedRendered);
   };
-
-  return setupApi;
 });
 

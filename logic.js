@@ -1,9 +1,9 @@
 
-binfo._register('logic', [], function() {
+binfo._register('logic', [], function(modules) {
 
   "use strict";
 
-  var logicApi = {};
+  var logicApi = modules.logic;
 
 
 
@@ -322,7 +322,5 @@ binfo._register('logic', [], function() {
     };
 
   };
-
-  return logicApi;
 });
 

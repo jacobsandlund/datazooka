@@ -1,9 +1,9 @@
 
-binfo._register('charts', ['logic'], function(logicApi) {
+binfo._register('charts', ['logic'], function(modules, logicApi) {
 
   "use strict";
 
-  var chartsApi = {};
+  var chartsApi = modules.charts;
 
   chartsApi.barChart = function(spec, data) {
     var bar = {api: {}};
@@ -583,7 +583,5 @@ binfo._register('charts', ['logic'], function(logicApi) {
     };
 
   };
-
-  return chartsApi;
 });
 

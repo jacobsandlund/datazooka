@@ -1,7 +1,7 @@
 
-binfo._register('drag', [], function() {
+binfo._register('drag', [], function(modules) {
 
-  var dragApi = {},
+  var dragApi = modules.drag,
       holder,
       drag,
       dragNode,
@@ -92,7 +92,5 @@ binfo._register('drag', [], function() {
     ghost.remove();
     drag = null;
   }
-
-  return dragApi;
 });
 
