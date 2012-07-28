@@ -74,62 +74,6 @@ binfo._register = (function() {
 }());
 
 
-binfo._register('hashRetrieval', ['rendering'], function(_, renderingApi) {
-
-  "use strict";
-
-  // Yarin's answer on this SO post:
-  // http://stackoverflow.com/questions/4197591/
-  // parsing-url-hash-fragment-identifier-with-javascript
-  function getHashParams() {
-    var hashParams = {};
-    var e,
-        a = /\+/g,  // Regex for replacing addition symbol with a space
-        r = /([^&;=]+)=?([^&;]*)/g,
-        d = function (s) { return decodeURIComponent(s.replace(a, ' ')); },
-        q = window.location.hash.substring(1);
-
-    e = r.exec(q);
-    while (e) {
-      hashParams[d(e[1])] = d(e[2]);
-      e = r.exec(q);
-    }
-    return hashParams;
-  }
-
-  function renderFromHash(defaultDataName, defaultCharts, defaultFilters) {
-    var params = getHashParams();
-    var dataName = params.data,
-        charts = params.charts && params.charts.split(','),
-        filters = params.filters && params.filters.split(',');
-
-    var myFilters = {};
-    if (filters) {
-      filters.forEach(function(f) {
-        var filterMap = f.split('*');
-        myFilters[filterMap[0]] = filterMap.slice(1);
-      });
-    }
-    if (!dataName || !charts || !charts.length) {
-      if (!arguments.length) {
-        return;
-      }
-      dataName = defaultDataName;
-      charts = defaultCharts;
-      myFilters = defaultFilters;
-    }
-    renderingApi.dataName(dataName);
-    renderingApi.render(charts, myFilters);
-  }
-
-  window.onhashchange = renderFromHash;
-
-  binfo.renderFromHash = renderFromHash;
-
-});
-
-
-
 binfo._register('rendering', ['ui', 'setup', 'charts', 'logic'],
                 function(renderingApi, uiApi, setupApi, chartsApi, logicApi) {
 

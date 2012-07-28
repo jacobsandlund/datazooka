@@ -1,5 +1,5 @@
 
-binfo._register('ui', ['drag'], function(uiApi, dragApi) {
+binfo._register('ui', [], function(uiApi) {
 
   "use strict";
 
@@ -167,17 +167,6 @@ binfo._register('ui', ['drag'], function(uiApi, dragApi) {
         .on('click', toggleDock);
     toggleDock();
 
-
-
-    dragApi.setList(holder, selectedList, function() {
-      var select = [],
-          li = selectedList.selectAll('li');
-      li.each(function(d) { select.push(d); });
-      setSelectedCharts(select);
-      if (!isUpdateActive) {
-        renderSelected();
-      }
-    });
 
     holder.on('mousemove', function() {
       if (smartTimer !== null) {
