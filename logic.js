@@ -1,11 +1,7 @@
 
-binfo._register('logic', [], function(modules) {
+binfo._register('logic', [], function(logicApi) {
 
   "use strict";
-
-  var logicApi = modules.logic;
-
-
 
   logicApi.barLogic = function(bar, spec, data) {
 

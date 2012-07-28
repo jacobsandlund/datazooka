@@ -1,12 +1,11 @@
 
 binfo._register('setup', ['ui', 'charts'],
-                function(modules, uiApi, chartsApi) {
+                function(setupApi, uiApi, chartsApi) {
 
   "use strict";
 
-  var setupApi = modules.setup,
-      renderingApi = modules.rendering,   // Can't be formal to prevent circular
-      holder,                             // dependencies.
+  var renderingApi = setupApi.dependency('rendering'),
+      holder,
       dataSets = {},
       renderLater;
 

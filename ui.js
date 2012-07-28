@@ -1,11 +1,10 @@
 
-binfo._register('ui', ['drag'], function(modules, dragApi) {
+binfo._register('ui', ['drag'], function(uiApi, dragApi) {
 
   "use strict";
 
-  var uiApi = modules.ui,
-      renderingApi = modules.rendering,   // Can't be formal dependencies,
-      setupApi = modules.setup,           // to prevent circular dependencies.
+  var renderingApi = uiApi.dependency('rendering'),
+      setupApi = uiApi.dependency('setup'),
       holder,
       getHolders = [],
       selected = [],

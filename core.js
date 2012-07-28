@@ -29,11 +29,22 @@ binfo._register = (function() {
       compFuncs = {},
       completed = {};
 
+  function ensureExistence(dep) {
+    return modules[dep] = modules[dep] || module();
+  }
+
+  function module() {
+    return {
+      dependency: ensureExistence
+    };
+  }
+
   return function(name, deps, component) {
     var names = componentNames,
         completedOne = true;
     names.push(name);
-    modules[name] = {};
+    ensureExistence(name);
+    deps.forEach(function(d) { ensureExistence(d); });
     dependencies[name] = deps;
     compFuncs[name] = component;
     completed[name] = false;
@@ -45,11 +56,11 @@ binfo._register = (function() {
     function completeLoop(name) {
       var func = compFuncs[name],
           deps = dependencies[name],
-          compDeps;
+          compArgs;
       if (completed[name]) return;
       if (deps.some(notCompleted)) return;
-      compDeps = deps.map(function(d) { return modules[d]; });
-      compFuncs[name].apply(null, [modules].concat(compDeps));
+      compArgs = [name].concat(deps).map(function(d) { return modules[d]; });
+      compFuncs[name].apply(null, compArgs);
       completed[name] = true;
       completedOne = true;
     }
@@ -63,7 +74,7 @@ binfo._register = (function() {
 }());
 
 
-binfo._register('hashRetrieval', ['rendering'], function(modules, renderingApi) {
+binfo._register('hashRetrieval', ['rendering'], function(_, renderingApi) {
 
   "use strict";
 
@@ -120,12 +131,11 @@ binfo._register('hashRetrieval', ['rendering'], function(modules, renderingApi) 
 
 
 binfo._register('rendering', ['ui', 'setup', 'charts', 'logic'],
-                function(modules, uiApi, setupApi, chartsApi, logicApi) {
+                function(renderingApi, uiApi, setupApi, chartsApi, logicApi) {
 
   "use strict";
 
-  var renderingApi = modules.rendering,
-      holder,
+  var holder,
       chartSelection,
       chartIds,
       cross,
