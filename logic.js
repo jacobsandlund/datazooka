@@ -28,7 +28,6 @@ binfo._register('logic', [], function(logicApi) {
 
 
     bar.api.id = spec.id;
-    bar.api.compare = false;
     bar.round = spec.round;
 
     function groupFuncBy(groupBy) {
@@ -230,6 +229,10 @@ binfo._register('logic', [], function(logicApi) {
       bar.resetUpdateChart();
     };
 
+    bar.api.addToFilters = function(filters) {
+      filters[bar.api.id] = bar.api.filter();
+    };
+
   };
 
 
@@ -252,7 +255,6 @@ binfo._register('logic', [], function(logicApi) {
         values;
 
     compare.api.id = spec.id;
-    compare.api.compare = true;
 
     compare.xc = xc;
     compare.yc = yc;
@@ -273,15 +275,10 @@ binfo._register('logic', [], function(logicApi) {
       return x + y * ycScale;
     };
 
-    compare.api.otherFilters = function(chartIds) {
-      var others = {};
-      if (chartIds.indexOf(xc.id) < 0) {
-        others[xc.id] = xc.filter();
-      }
-      if (chartIds.indexOf(yc.id) < 0) {
-        others[yc.id] = yc.filter();
-      }
-      return others;
+    compare.api.addToFilters = function(filters) {
+      filters[compare.api.id] = given ? [given] : null;
+      filters[xc.id] = xc.filter();
+      filters[yc.id] = yc.filter();
     };
 
     compare.api.add = function(cross, crossAll) {

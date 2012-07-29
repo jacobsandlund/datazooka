@@ -155,6 +155,8 @@ binfo._register('charts', ['core', 'logic'],
           checkSelection,
           i;
 
+      if (typeof orientFlip === 'undefined') orientFlip = defaultOrientFlip;
+
       if (compare) {
         g = root;
         checkSelection = g.select('path');

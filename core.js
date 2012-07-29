@@ -276,11 +276,7 @@ binfo._register('rendering', ['core'], function(renderingApi, coreApi) {
         chartData;
 
     chartData = chartIds.map(function(id, i) {
-      return {
-        chart: charts[id],
-        compare: charts[id].compare,
-        orientFlip: charts[id].defaultOrientFlip
-      };
+      return {chart: charts[id]};
     });
 
     chartSelection = chartsHolder.selectAll('.chart')
@@ -388,23 +384,26 @@ binfo._register('rendering', ['core'], function(renderingApi, coreApi) {
       hashNeedsUpdated = false;
 
   function updateHash() {
-    var filter, filterData,
+    var filters = {},
+        id,
+        filterData,
         chartString = 'charts=' + chartIds.join(','),
         filterString = 'filters=',
         filterArray = [];
 
-    //function filterEncode(d) {
-    //  if (typeof d === 'object') {
-    //    d = d.valueOf();
-    //  }
-    //  return encodeURIComponent(d);
-    //}
-    //for (filter in currentFilters) {
-    //  if (currentFilters.hasOwnProperty(filter) && currentFilters[filter]) {
-    //    filterData = currentFilters[filter].map(filterEncode).join('*');
-    //    filterArray.push(filter + '*' + filterData);
-    //  }
-    //}
+    function filterEncode(d) {
+      if (typeof d === 'object') {
+        d = d.valueOf();
+      }
+      return encodeURIComponent(d);
+    }
+    chartIds.forEach(function(id) { charts[id].addToFilters(filters); });
+    for (id in filters) {
+      if (filters.hasOwnProperty(id) && filters[id]) {
+        filterData = filters[id].map(filterEncode).join('*');
+        filterArray.push(id + '*' + filterData);
+      }
+    }
     filterString += filterArray.join(',');
     var params = ['data=' + dataName, chartString, filterString].join('&');
     currentHash = '#' + params;
