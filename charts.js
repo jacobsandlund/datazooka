@@ -63,7 +63,19 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
 
     return g;
 
-  };
+  }
+
+  function baseArrange(api, div) {
+    var height = div.property('offsetHeight') - binfo.chartBorder,
+        levels = Math.ceil(height / binfo.chartHeight);
+    height = levels * binfo.chartHeight - (binfo.chartBorder +
+                                            2 * binfo.chartPadding);
+    api.levels = levels;
+    api.width = div.property('offsetWidth') - binfo.chartBorder;
+    api.div = div;
+    api.arranged = false;
+    div.style('height', height + 'px');
+  }
 
 
 
@@ -182,6 +194,7 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
         setupChart(g, setupDim, data);
         if (!compare) {
           setupChartPeripherals(div, setupDim);
+          baseArrange(bar.api, div);
         }
       }
 
@@ -442,7 +455,7 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
 
     dim.left = yc.dim.bottom + 60;
     dim.bottom = xc.dim.bottom + 50;
-    compare.api.label = 'Comparing ' + xc.label + ' and ' + yc.label;
+    compare.api.label = xc.label + ' vs. ' + yc.label;
 
     function given(what) {
       compare.api.given(what);
@@ -490,6 +503,7 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
         g = baseSetupChart(div, compare.api.label, dim, false);
         setupChart(g);
         setupChartPeripherals(div);
+        baseArrange(compare.api, div);
       }
 
       renderUpdate(div, g);
