@@ -74,28 +74,83 @@ binfo._register = (function() {
 }());
 
 
-binfo._register('rendering', ['ui', 'setup', 'charts', 'logic'],
-                function(renderingApi, uiApi, setupApi, chartsApi, logicApi) {
+binfo._register('core', [], function(coreApi) {
 
-  "use strict";
-
-  var holder,
-      chartSelection,
-      chartIds,
+  var uiApi = coreApi.dependency('ui'),
+      renderingApi = coreApi.dependency('rendering'),
+      chartsApi = coreApi.dependency('charts'),
+      dataSets = {},
       cross,
       crossAll,
-      currentCharts,
-      currentDataName,
-      dataNameChanged,
-      currentHash,
-      hashUpdatedRecently = false,
-      hashNeedsUpdated = false,
-      currentChartIds = [],
-      currentShownChartIds = [],
-      currentFilters = {},
-      formatNumber = d3.format(',d');
+      updateMode = 'always',
+      renderFreshLater,
+      needsToUpdate = true,
+      updating,
+      addedIds,
+      removedIds,
+      dataName,
+      chartIds = [],
+      charts,
+      nextDataName,
+      nextChartIds,
+      nextCharts;
 
-  uiApi.getHolder(function(_) { holder = _; });
+  coreApi.dataSet = function(name, definitions, data) {
+    var set,
+        id;
+    if (!definitions) {
+      set = dataSets[name];
+      if (!set) {
+        return null;
+      }
+      return set;
+    }
+    dataSets[name] = set = {definitions: definitions, data: data};
+    set.definitionIds = [];
+    set.charts = {};
+    for (id in definitions) {
+      if (definitions.hasOwnProperty(id)) {
+        set.charts[id] = chartsApi.barChart(definitions[id], data)
+        set.definitionIds.push(id);
+      }
+    }
+    set.chartIds = set.definitionIds.slice();
+    if (renderFreshLater && renderFreshLater[0] === name) {
+      coreApi.renderFresh.apply(null, renderFreshLater);
+    };
+    // TODO, figure out displaying the first definition
+    //firstDefinition = holder.selectAll('.data-name option').empty();
+    //holder.select('.data-name').append('option')
+    //    .attr('value', dataName)
+    //    .text(dataName);
+    //if (firstDefinition) {
+    //  uiApi.changeDataName(dataName);
+    //}
+  };
+
+  binfo.setup = function(_, width) {
+    binfo.width = width;
+    holder = d3.select(_);
+    uiApi.setup(holder, width);
+    renderingApi.setHolder(holder);
+  };
+
+  coreApi.dataName = function(_) {
+    if (!arguments.length) return dataName;
+    if (_ === dataName) return;
+    needsToUpdate = true;
+    nextDataName = _;
+    nextCharts = dataSets[nextDataName].charts;
+    nextChartIds = [];
+  };
+
+  coreApi.addChart = function(add) {
+    coreApi.chartIds(nextChartIds.concat([add]));
+  };
+
+  coreApi.clearCharts = function() {
+    coreApi.chartIds([]);
+  };
 
   function arrayDiff(one, two) {
     return one.filter(function(id) {
@@ -103,93 +158,129 @@ binfo._register('rendering', ['ui', 'setup', 'charts', 'logic'],
     });
   }
 
-  renderingApi.dataName = function(dataName) {
-    currentDataName = dataName;
-    dataNameChanged = true;
-    uiApi.renderedDataName(dataName);
+  coreApi.chartIds = function(_) {
+    if (!arguments.length) return chartIds;
+    nextChartIds = _;
+    nextChartIds.forEach(function(id) {
+      if (!nextCharts[id]) {
+        // Must be a compare chart
+        nextCharts[id] = chartsApi.compareChart({id: id, charts: nextCharts});
+      }
+    });
+    removedIds = arrayDiff(chartIds, nextChartIds);
+    addedIds = arrayDiff(nextChartIds, chartIds);
+    if (addedIds.length || removedIds.length) {
+      needsToUpdate = true;
+    }
   };
 
-  renderingApi.addChart = function(chartId) {
-    renderingApi.render(currentChartIds.concat([chartId]));
+  binfo.defaultRender = function(dataName, charts, filters) {
+    if (!renderFreshLater) {
+      coreApi.renderFresh(dataName, charts, filters);
+    }
   };
 
-  renderingApi.render = function(shownChartIds, filters, smartUpdate) {
-
-    var dataName = currentDataName,
-        dataSet = setupApi.dataSet(dataName);
-
-    if (!dataSet) {
-      setupApi.renderLater([dataName, shownChartIds, filters]);
+  coreApi.renderFresh = function(dataName, charts, filters) {
+    if (!dataSets[dataName]) {
+      renderFreshLater = [dataName, charts, filters];
       return;
     }
-
-    filters = filters || currentFilters;
-    var data = dataSet.data,
-        chartsHolder = holder.select('.charts'),
-        shownChartIds,
-        chartData,
-        charts = dataSet.charts,
-        added,
-        removed;
-
-    chartIds = shownChartIds.slice();
-
-    chartData = shownChartIds.map(function(id, i) {
-      if (!charts[id]) {
-        // Must be a compare chart
-        charts[id] = chartsApi.compareChart({id: id, charts: charts});
+    coreApi.dataName(dataName);
+    coreApi.chartIds(charts);
+    var id;
+    for (id in filters) {
+      if (filters.hasOwnProperty(id)) {
+        nextCharts[id].filter(filters[id]);
       }
-      if (charts[id].compare) {
-        chartIds = charts[id].addChartIds(chartIds);
+    }
+    coreApi.update('force');
+  };
+
+  coreApi.updateMode = function(_) {
+    if (!arguments.length) return updateMode;
+    updateMode = _;
+  };
+
+  coreApi.update = function(mode) {
+    if (!mode) mode = updateMode;
+    if (!needsToUpdate && mode !== 'force') return;
+    if (mode === 'manual') {
+      uiApi.needsUpdate(true);
+      return;
+    }
+    if (!cross || nextDataName !== dataName ||
+        removedIds.length || addedIds.length) {
+      if (mode === 'smart') {
+        uiApi.needsUpdate(true);
+        return;
       }
+      if (!updating) {
+        updating = true;
+        uiApi.updating(true);
+        setTimeout(function() { coreApi.update(mode); }, 30);
+        return;
+      }
+    }
+    var data = dataSets[nextDataName].data;
+    if (!cross || nextDataName !== dataName || removedIds.length) {
+      cross = crossfilter(data);
+      crossAll = cross.groupAll();
+      renderingApi.setCross(cross, crossAll, nextDataName);
+      addedIds = nextChartIds;
+      removedIds = chartIds;
+    }
+    removedIds.forEach(function(id) { charts[id].remove(); });
+    addedIds.forEach(function(id) { nextCharts[id].add(cross, crossAll); });
+    dataName = nextDataName;
+    charts = nextCharts;
+    chartIds = nextChartIds;
+    renderingApi.render(charts, chartIds);
+    updating = false;
+    uiApi.updating(false);
+    uiApi.needsUpdate(false);
+  };
+
+  coreApi.refresh = function() {
+    renderingApi.refresh();
+  };
+});
+
+
+binfo._register('rendering', ['core'], function(renderingApi, coreApi) {
+
+  "use strict";
+
+  var holder,
+      chartSelection,
+      cross,
+      crossAll,
+      dataName,
+      charts,
+      chartIds,
+      formatNumber = d3.format(',d');
+
+  renderingApi.setHolder = function(_) { holder = _; };
+
+  renderingApi.setCross = function(_, all, name) {
+    cross = _;
+    crossAll = all;
+    dataName = name;  // TODO, possibly remove this.
+  };
+
+  renderingApi.render = function(_, ids) {
+
+    charts = _;
+    chartIds = ids;
+
+    var chartsHolder = holder.select('.charts'),
+        chartData;
+
+    chartData = chartIds.map(function(id, i) {
       return {
         chart: charts[id],
         compare: charts[id].compare,
         orientFlip: charts[id].defaultOrientFlip
       };
-    });
-
-    removed = arrayDiff(currentChartIds, chartIds);
-    added = arrayDiff(chartIds, currentChartIds);
-
-    if (!cross || dataNameChanged || removed.length || added.length) {
-      if (smartUpdate) {
-        return false;
-      }
-      if (chartsHolder.style('opacity') > 0.4) {;
-        chartsHolder.style('opacity', 0.3);
-        setTimeout(function() {
-          renderingApi.render(shownChartIds, filters);
-        }, 30);
-        return true;
-      }
-    }
-    if (!cross || dataNameChanged || removed.length) {
-      cross = crossfilter(data);
-      crossAll = cross.groupAll();
-      added = chartIds;
-    }
-
-    removed.forEach(function(id) {
-      filters[id] = null;
-      currentCharts[id].filter(null);
-    });
-
-
-    currentCharts = charts;
-    currentChartIds = chartIds;
-    currentShownChartIds = shownChartIds;
-    currentFilters = filters;
-    dataNameChanged = false;
-
-    uiApi.renderOccurred();
-    updateHash();
-
-    added.forEach(function(id) {
-      if (!charts[id].compare) charts[id].setCross(cross, crossAll);
-    });
-    added.forEach(function(id) {
-      if (charts[id].compare) charts[id].setCross(cross, crossAll);
     });
 
     chartSelection = chartsHolder.selectAll('.chart')
@@ -205,24 +296,12 @@ binfo._register('rendering', ['ui', 'setup', 'charts', 'logic'],
 
     chartSelection.order();
 
-    chartsHolder.style('opacity', null);
     holder.select('.total')
         .text(formatNumber(cross.size()) + ' ' + dataName + ' selected.');
 
-    chartIds.forEach(function(id) {
-      if (filters[id]) {
-        charts[id].filter(filters[id]);
-      } else {
-        charts[id].filter(null);
-      }
-    });
-
-    renderAll();
+    renderingApi.refresh();
 
     arrangeCharts();
-
-    return true;
-
   };
 
   function arrangeCharts() {
@@ -247,8 +326,8 @@ binfo._register('rendering', ['ui', 'setup', 'charts', 'logic'],
     for (i = 0; i < binfo.maxLevels; i++) {
       widths[i] = maxWidth;
     }
-    currentShownChartIds.forEach(function(id) {
-      var chart = currentCharts[id],
+    chartIds.forEach(function(id) {
+      var chart = charts[id],
           levels = dims[id].levels,
           width = dims[id].width,
           fitting = 0,
@@ -298,30 +377,36 @@ binfo._register('rendering', ['ui', 'setup', 'charts', 'logic'],
     holder.select('.charts').style('height', chartHolderHeight + 'px');
   };
 
+  renderingApi.refresh = function() {
+    renderAll();
+    updateHash();
+  };
+
+
+  var currentHash,
+      hashUpdatedRecently = false,
+      hashNeedsUpdated = false;
+
   function updateHash() {
     var filter, filterData,
-        chartString = 'charts=',
+        chartString = 'charts=' + chartIds.join(','),
         filterString = 'filters=',
         filterArray = [];
 
-    chartString += currentShownChartIds.map(function(id) {
-      return currentCharts[id].id;
-    }).join(',');
-
-    function filterEncode(d) {
-      if (typeof d === 'object') {
-        d = d.valueOf();
-      }
-      return encodeURIComponent(d);
-    }
-    for (filter in currentFilters) {
-      if (currentFilters.hasOwnProperty(filter) && currentFilters[filter]) {
-        filterData = currentFilters[filter].map(filterEncode).join('*');
-        filterArray.push(filter + '*' + filterData);
-      }
-    }
+    //function filterEncode(d) {
+    //  if (typeof d === 'object') {
+    //    d = d.valueOf();
+    //  }
+    //  return encodeURIComponent(d);
+    //}
+    //for (filter in currentFilters) {
+    //  if (currentFilters.hasOwnProperty(filter) && currentFilters[filter]) {
+    //    filterData = currentFilters[filter].map(filterEncode).join('*');
+    //    filterArray.push(filter + '*' + filterData);
+    //  }
+    //}
     filterString += filterArray.join(',');
-    var params = ['data=' + currentDataName, chartString, filterString].join('&');
+    var params = ['data=' + dataName, chartString, filterString].join('&');
     currentHash = '#' + params;
     hashNeedsUpdated = true;
     if (!hashUpdatedRecently) {
@@ -339,32 +424,19 @@ binfo._register('rendering', ['ui', 'setup', 'charts', 'logic'],
     }
   }
 
-  renderingApi.filter = function(id, range) {
-    currentFilters[id] = range;
-    currentCharts[id].filter(range);
-    renderAll();
-    updateHash();
-  };
-
-  renderingApi.given = function(id, given) {
-    renderingApi.filter(id, given ? [given] : null);
-  };
-
   function callCharts(name) {
     return function(chartData) {
       /*jshint validthis:true */
-      var method = chartData.chart[name];
-      if (method) {
-        d3.select(this).each(method);
-      }
+      d3.select(this).each(chartData.chart[name]);
     };
   }
 
-  var renderCharts = callCharts('render'),
-      cleanUpCharts = callCharts('cleanUp');
+  var updateCharts = callCharts('update'),
+      renderCharts = callCharts('render'),
+      cleanUpCharts = callCharts('resetUpdate');
 
   function renderAll() {
-    chartIds.forEach(function(id) { currentCharts[id].update(); });
+    chartSelection.each(updateCharts);
     chartSelection.each(renderCharts);
     chartSelection.each(cleanUpCharts);
     d3.select('.active-data').text(formatNumber(crossAll.value()));

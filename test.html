@@ -101,9 +101,9 @@ h1, h2 {
 
 <script>
 
-binfo.holder('#charts', window.innerWidth - 90);
-binfo.renderFromHash('flights', ['time-delay', 'distance'],
-                     {distance: [200, 600]});
+binfo.setup('#charts', window.innerWidth - 90);
+binfo.defaultRender('flights', ['time-delay', 'distance'],
+                    {distance: [200, 600]});
 
 // Randomly get the definitions before or after the data comes in.
 var before = Math.random() < 0.5

@@ -1,5 +1,6 @@
 
-binfo._register('charts', ['logic'], function(chartsApi, logicApi) {
+binfo._register('charts', ['core', 'logic'],
+                function(chartsApi, coreApi, logicApi) {
 
   "use strict";
 
@@ -102,6 +103,11 @@ binfo._register('charts', ['logic'], function(chartsApi, logicApi) {
       div.select('.filter.button').classed('down', true);
     });
 
+    function filter(range) {
+      bar.api.filter(range);
+      coreApi.refresh();
+    }
+
     brush.on('brush.chart', function() {
       var g = d3.select(this.parentNode),
           extent = brush.extent();
@@ -110,13 +116,13 @@ binfo._register('charts', ['logic'], function(chartsApi, logicApi) {
             .call(brush.extent(extent = extent.map(bar.round)));
       }
       if (!brush.empty()) {
-        renderingApi.filter(bar.api.id, extent);
+        filter(extent);
       }
     });
 
     brush.on('brushend.chart', function() {
       if (brush.empty()) {
-        renderingApi.filter(bar.api.id, null);
+        filter(null);
       }
     });
 
@@ -267,9 +273,9 @@ binfo._register('charts', ['logic'], function(chartsApi, logicApi) {
       function toggleActive() {
         var el = d3.select(this);
         if (!bar.filterActive()) {
-          renderingApi.filter(bar.api.id, bar.filterRange());
+          filter(true);
         } else {
-          renderingApi.filter(bar.api.id, null);
+          filter(null);
         }
       }
       function submitChange() {
@@ -278,7 +284,7 @@ binfo._register('charts', ['logic'], function(chartsApi, logicApi) {
         var left = x(range[0]),
             right = x(range[1]);
         if (left <= right && right >= 0 && left <= setupDim.width) {
-          renderingApi.filter(bar.api.id, range);
+          filter(range);
         }
         setUpdating(false);
       }
@@ -373,7 +379,7 @@ binfo._register('charts', ['logic'], function(chartsApi, logicApi) {
               'V' + (y + h - h / 4);
     }
 
-    bar.setCrossChart = function() {
+    bar.addChart = function() {
       var minX = bar.minX(),
           maxX = bar.maxX(),
           tix;
@@ -413,7 +419,7 @@ binfo._register('charts', ['logic'], function(chartsApi, logicApi) {
     bar.api.defaultOrientFlip = defaultOrientFlip;
     bar.api.dim = dim;
 
-    bar.api.cleanUp = function() {
+    bar.resetUpdateChart = function() {
       brushDirty = false;
     };
 
@@ -432,7 +438,12 @@ binfo._register('charts', ['logic'], function(chartsApi, logicApi) {
 
     dim.left = yc.dim.bottom + 60;
     dim.bottom = xc.dim.bottom + 50;
-    compare.api.label = 'Comparing ' + xc.label + ' and ' + yc.label,
+    compare.api.label = 'Comparing ' + xc.label + ' and ' + yc.label;
+
+    function given(what) {
+      compare.api.given(what);
+      coreApi.refresh();
+    }
 
     compare.updateChart = function() {
       var values = compare.values(),
@@ -546,9 +557,9 @@ binfo._register('charts', ['logic'], function(chartsApi, logicApi) {
           .on('click', function(d) {
             var el = d3.select(this);
             if (compare.api.given() === d) {
-              renderingApi.given(compare.api.id, null);
+              given(null);
             } else {
-              renderingApi.given(compare.api.id, d);
+              given(d);
             }
           });
     }
@@ -562,7 +573,7 @@ binfo._register('charts', ['logic'], function(chartsApi, logicApi) {
           .classed('down', function(d) { return compare.api.given() === d; });
     }
 
-    compare.setCrossChart = function() {
+    compare.addChart = function() {
       dim.xHeight = xc.dim.compareHeight;
       dim.yHeight = yc.dim.compareHeight;
       dim.xWidth = xc.dim.width;

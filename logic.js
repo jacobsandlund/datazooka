@@ -5,7 +5,9 @@ binfo._register('logic', [], function(logicApi) {
 
   logicApi.barLogic = function(bar, spec, data) {
 
-    var filterRange,
+    var added = 0,
+        updated,
+        filterRange,
         filterActive,
         crossAll,
         dimension,
@@ -132,24 +134,39 @@ binfo._register('logic', [], function(logicApi) {
 
     setData(data);
 
-    bar.api.filter = function(_) {
-      if (_) {
+    bar.api.filter = function(range) {
+      if (!arguments.length) {
+        return filterActive ? filterRange : null;
+      }
+      if (range) {
         filterActive = true;
-        filterRange = _;
-        if (+_[0] === +_[1]) {
-          dimension.filterExact(_[0]);
+        if (range === true) {
+          range = filterRange;
         } else {
-          dimension.filterRange(_);
+          filterRange = range;
+        }
+        if (dimension) {
+          if (+range[0] === +range[1]) {
+            dimension.filterExact(range[0]);
+          } else {
+            dimension.filterRange(range);
+          }
         }
       } else {
         filterActive = false;
-        dimension.filterAll();
+        if (dimension) {
+          dimension.filterAll();
+        }
       }
-      bar.chartFilter(_);
+      bar.chartFilter(range);
       return bar;
     };
 
-    bar.api.setCross = function(cross, all) {
+    bar.api.add = function(cross, all) {
+      added += 1;
+      if (added > 1) {
+        return;
+      }
       crossAll = all;
       dimension = cross.dimension(dimensionFunc);
       if (!groupFunc) {
@@ -174,7 +191,7 @@ binfo._register('logic', [], function(logicApi) {
       if (!spec.maxX) {
         maxX = +groups[groups.length - 1].key + separation;
       }
-      bar.setCrossChart();
+      bar.addChart();
       if (!filterRange) {
         var ticks = bar.x.ticks(20),
             dummyLeft = ticks[Math.round(ticks.length * 0.3)],
@@ -185,13 +202,32 @@ binfo._register('logic', [], function(logicApi) {
         }
         filterRange = [dummyLeft, dummyRight];
       }
+      if (filterActive) {
+        bar.api.filter(filterRange)
+      }
+      return true;
+    };
+
+    bar.api.remove = function() {
+      added -= 1;
+      if (!added) {
+        filterActive = false;
+      }
     };
 
     bar.api.update = function() {
+      if (updated) return;
+      updated = true;
       if (!spec.maxY) {
         maxY = group.top(1)[0].value;
       }
       bar.updateChart();
+    };
+
+    bar.api.resetUpdate = function() {
+      if (!updated) return;
+      updated = false;
+      bar.resetUpdateChart();
     };
 
   };
@@ -237,18 +273,20 @@ binfo._register('logic', [], function(logicApi) {
       return x + y * ycScale;
     };
 
-    compare.api.addChartIds = function(chartIds) {
-      var added = [];
+    compare.api.otherFilters = function(chartIds) {
+      var others = {};
       if (chartIds.indexOf(xc.id) < 0) {
-        added.push(xc.id);
+        others[xc.id] = xc.filter();
       }
       if (chartIds.indexOf(yc.id) < 0) {
-        added.push(yc.id);
+        others[yc.id] = yc.filter();
       }
-      return chartIds.concat(added);
+      return others;
     };
 
-    compare.api.setCross = function(cross, crossAll) {
+    compare.api.add = function(cross, crossAll) {
+      xc.add(cross, crossAll);
+      yc.add(cross, crossAll);
       xcDimensionFunc = xc.dimensionFunc();
       ycDimensionFunc = yc.dimensionFunc();
       xcGroupFunc = xc.groupFunc();
@@ -263,10 +301,17 @@ binfo._register('logic', [], function(logicApi) {
       for (i = 0; i < xcNumGroups; i++) {
         values[i] = [];
       }
-      compare.setCrossChart();
+      compare.addChart();
+    };
+
+    compare.api.remove = function() {
+      xc.remove();
+      yc.remove();
     };
 
     compare.api.update = function() {
+      xc.update();
+      yc.update();
       var xi,
           yi,
           i,
@@ -315,6 +360,11 @@ binfo._register('logic', [], function(logicApi) {
       }
 
       compare.updateChart();
+    };
+
+    compare.api.resetUpdate = function() {
+      xc.resetUpdate();
+      yc.resetUpdate();
     };
 
   };

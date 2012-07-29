@@ -1,38 +1,25 @@
 
-binfo._register('ui', [], function(uiApi) {
+binfo._register('ui', ['core'], function(uiApi, coreApi) {
 
   "use strict";
 
   var renderingApi = uiApi.dependency('rendering'),
       setupApi = uiApi.dependency('setup'),
       holder,
-      getHolders = [],
       selected = [],
       selectedList,
       selectedRendered = [],
       dataName,
       dataNameRendered,
-      isUpdateActive,
+      isNeedsUpdate,
       updateStyle = 'always-update',
       smartTimer = null;
 
-  uiApi.getHolder = function(getCallback) {
-    if (holder) {
-      if (getCallback) {
-        getCallback(holder);
-      }
-      return holder;
-    }
-    getHolders.push(getCallback);
-  };
-
-  binfo.holder = function(_, width) {
-    binfo.width = width;
-    holder = d3.select(_);
+  uiApi.setup = function(_, width) {
+    holder = _;
     holder
         .attr('class', 'holder')
         .style('width', width);
-    getHolders.forEach(function(h) { h(holder); });
 
     // Create skeleton.
     var config = holder.append('div'),
@@ -177,7 +164,7 @@ binfo._register('ui', [], function(uiApi) {
   };
 
   function renderSelected(smartUpdate) {
-    updateActive(false);
+    needsUpdate(false);
     return renderingApi.render(selected, null, smartUpdate);
   }
 
@@ -285,17 +272,22 @@ binfo._register('ui', [], function(uiApi) {
     if (override || updateStyle !== 'manual-update') {
       updated = renderSelected(smartUpdate);
     }
-    updateActive(!updated);
+    needsUpdate(!updated);
     if (smartUpdate && !updated) {
       startSmartTimer();
     }
   }
 
-  function updateActive(active) {
-    isUpdateActive = active;
-    holder.select('.update.action.button').classed('active', active);
-    holder.select('.cancel.button').style('display', active ? null : 'none');
+  function needsUpdate(needs) {
+    isNeedsUpdate = needs;
+    holder.select('.update.action.button').classed('active', needs);
+    holder.select('.cancel.button').style('display', needs ? null : 'none');
   }
+  uiApi.needsUpdate = needsUpdate;
+
+  uiApi.updating = function(updating) {
+    holder.select('.charts').style('opacity', updating ? 0.3 : null);
+  };
 
   function clearSmartTimer() {
     if (smartTimer !== null) {

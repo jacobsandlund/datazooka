@@ -1,35 +1,13 @@
 
-binfo._register('setup', ['ui', 'charts'],
-                function(setupApi, uiApi, chartsApi) {
+binfo._register('setup', ['core'], function(setupApi, coreApi) {
 
   "use strict";
 
-  var renderingApi = setupApi.dependency('rendering'),
-      holder,
-      dataSets = {},
-      renderLater;
+  var definitions = {},
+      data = {},
+      untypedData = {};
 
-  uiApi.getHolder(function(_) { holder = _; });
-
-  setupApi.renderLater = function(_) {
-    if (!arguments.length) return renderLater;
-    renderLater = _;
-  };
-  setupApi.dataSet = function(dataName, definitions) {
-    var set = dataSets[dataName];
-    if (!set) {
-      return null;
-    }
-    if (definitions && !set.definitions) {
-      return null;
-    }
-    if (!definitions && !set.complete) {
-      return null;
-    }
-    return set;
-  };
-
-  binfo.definitionsFromJSON = function(dataName, definitions) {
+  binfo.definitionsFromJSON = function(dataName, defns) {
     /*jshint evil:true */
     var id, defn,
         evil = [],
@@ -40,7 +18,7 @@ binfo._register('setup', ['ui', 'charts'],
         if (!defn[part]) {
           return;
         }
-        evil.push('definitions["', id, '"].', part, ' = ', defn[part], ';');
+        evil.push('defns["', id, '"].', part, ' = ', defn[part], ';');
       };
     }
     function maybeMakeEvil(defn, id) {
@@ -53,50 +31,48 @@ binfo._register('setup', ['ui', 'charts'],
       };
     }
 
-    for (id in definitions) {
-      if (definitions.hasOwnProperty(id)) {
-        defn = definitions[id];
+    for (id in defns) {
+      if (defns.hasOwnProperty(id)) {
+        defn = defns[id];
         evalParts.forEach(makeEvil(defn, id));
         evalPartsIfFunc.forEach(maybeMakeEvil(defn, id));
       }
     }
     eval(evil.join(''));
-    binfo.definitions(dataName, definitions);
+    binfo.definitions(dataName, defns);
   };
 
-  binfo.definitions = function(dataName, definitions) {
-    var definitionIds = [],
-        id,
-        firstDefinition;
-    for (id in definitions) {
-      if (definitions.hasOwnProperty(id)) {
-        definitions[id].id = id;
-        definitions[id].type = definitions[id].type || 'number';
-        definitionIds.push(id);
+  binfo.definitions = function(dataName, defns) {
+    var id;
+    for (id in defns) {
+      if (defns.hasOwnProperty(id)) {
+        defns[id].id = id;
+        defns[id].type = defns[id].type || 'number';
       }
     }
-    setDataSet(dataName, {definitions: definitions, definitionIds: definitionIds});
-    firstDefinition = holder.selectAll('.data-name option').empty();
-    holder.select('.data-name').append('option')
-        .attr('value', dataName)
-        .text(dataName);
-    if (firstDefinition) {
-      uiApi.changeDataName(dataName);
+    definitions[dataName] = defns;
+    if (untypedData[dataName]) {
+      binfo.dataFromUntyped(dataName, untypedData[dataName]);
     }
+    checkLoaded(dataName);
   };
 
   binfo.dataFromUntyped = function(dataName, data) {
-    if (!(dataSets[dataName] && dataSets[dataName].definitions)) {
-      dataSets[dataName] = {dataUntyped: data};
+    if (!definitions[dataName]) {
+      untypedData[dataName] = data;
       return;
     }
-    var definitions = dataSets[dataName].definitions,
-        ids = dataSets[dataName].definitionIds;
+    var defns = definitions[dataName],
+        id,
+        defn;
     data.forEach(function(d) {
-      ids.forEach(function(id) {
-        var defn = definitions[id];
+      for (id in defns) {
+        if (!defns.hasOwnProperty(id)) {
+          continue;
+        }
+        defn = defns[id];
         if (defn.derived) {
-          return;
+          continue;
         }
         if (typeof defn.type === 'function') {
           d[id] = defn.type(d[id]);
@@ -112,52 +88,26 @@ binfo._register('setup', ['ui', 'charts'],
         default:
           // string, so no modification needed
         }
-      });
+      }
     });
     binfo.data(dataName, data);
   };
 
-  binfo.data = function(dataName, data) {
-    setDataSet(dataName, {data: data});
+  binfo.data = function(dataName, _) {
+    data[dataName] = _;
+    checkLoaded(dataName);
   };
 
-  function setDataSet(dataName, set) {
-    var i,
-        dataUntyped,
-        dataSet = dataSets[dataName] = dataSets[dataName] || {};
-
-    for (i in set) {
-      if (set.hasOwnProperty(i)) {
-        dataSet[i] = set[i];
-      }
-    }
-    if (dataSet.dataUntyped) {
-      dataUntyped = dataSet.dataUntyped;
-      delete dataSet.dataUntyped;
-      binfo.dataFromUntyped(dataName, dataUntyped);
-      return;
-    }
-    if (dataSet.data && dataSet.definitions) {
-      dataSet.complete = true;
-      dataSet.charts = {};
-      dataSet.chartIds = dataSet.definitionIds.slice();
-      dataSet.definitionIds.forEach(function(id) {
-        dataSet.charts[id] = chartsApi.barChart(dataSet.definitions[id],
-                                                dataSet.data);
-      });
-      if (renderLater && renderLater[0] === dataName) {
-        renderingApi.dataName(dataName);
-        renderLater.shift();
-        renderingApi.render.apply(null, renderLater);
-        renderLater = null;
-      }
+  function checkLoaded(name) {
+    if (definitions[name] && data[name]) {
+      coreApi.dataSet(name, definitions[name], data[name]);
     }
   }
 
 });
 
 
-binfo._register('hashRetrieval', ['rendering'], function(_, renderingApi) {
+binfo._register('hashRetrieval', ['core'], function(_, coreApi) {
 
   "use strict";
 
@@ -180,7 +130,7 @@ binfo._register('hashRetrieval', ['rendering'], function(_, renderingApi) {
     return hashParams;
   }
 
-  function renderFromHash(defaultDataName, defaultCharts, defaultFilters) {
+  function renderFromHash() {
     var params = getHashParams();
     var dataName = params.data,
         charts = params.charts && params.charts.split(','),
@@ -194,20 +144,14 @@ binfo._register('hashRetrieval', ['rendering'], function(_, renderingApi) {
       });
     }
     if (!dataName || !charts || !charts.length) {
-      if (!arguments.length) {
-        return;
-      }
-      dataName = defaultDataName;
-      charts = defaultCharts;
-      myFilters = defaultFilters;
+      return;
     }
-    renderingApi.dataName(dataName);
-    renderingApi.render(charts, myFilters);
+    coreApi.renderFresh(dataName, charts, myFilters);
   }
 
   window.onhashchange = renderFromHash;
 
-  binfo.renderFromHash = renderFromHash;
+  renderFromHash();
 
 });
 
