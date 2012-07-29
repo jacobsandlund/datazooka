@@ -2,36 +2,78 @@
 binfo._register('arrange', ['core'], function(arrange, core) {
 
   var holder,
-      maxWidth;
+      maxWidth,
+      maxLevel,
+      layout;
 
   arrange.setup = function(h, width) {
     holder = h;
     maxWidth = width - 10;
-  };
-
-  arrange.arrange = function(charts, chartIds) {
-    var widths = [],
-        lastLevel = 0,
-        maxLevel = 0,
+    maxLevel = 0;
+    layout = [];
+    var dummyChart = {left: 0, width: 0, levels: 0},
         i;
     for (i = 0; i < binfo.maxLevels; i++) {
-      widths[i] = maxWidth;
+      layout[i] = [dummyChart];
     }
-    chartIds.forEach(function(id) {
+  };
+
+  arrange.remove = function(removed, charts) {
+    removed.forEach(function(id) {
+      var chart = charts[id],
+          row,
+          i,
+          j;
+      for (i = chart.startLevel; i < chart.startLevel + chart.levels; i++) {
+        row = layout[i];
+        for (j = 1; j < row.length; j++) {
+          if (row[j] === chart) {
+            row.splice(j, 1);
+          }
+        }
+      }
+    });
+
+    var i,
+        j,
+        row,
+        found;
+    for (i = maxLevel; i >= 0; i--) {
+      row = layout[i];
+      for (j = 1; j < row.length; j++) {
+        if (row[j].startLevel === i) {
+          maxLevel = i;
+          found = true;
+          break;
+        }
+      }
+      if (found) break;
+    }
+  };
+
+  arrange.add = function(added, charts) {
+    added.forEach(function(id) {
       var chart = charts[id],
           levels = chart.levels,
           width = chart.width,
+          left,
+          remaining,
+          otherChart,
           fitting = 0,
           fitWidth,
+          startLevel,
           direction = -1,
-          i = lastLevel,
+          i = maxLevel,
           j;
-      while (i < widths.length) {
-        if (widths[i] >= width || widths[i] === maxWidth) {
-          if (fitting && widths[i] === fitWidth) {
+      while (i < layout.length) {
+        otherChart = layout[i][layout[i].length - 1];
+        left = otherChart.left + otherChart.width;
+        remaining = maxWidth - left;
+        if (remaining >= width || remaining === maxWidth) {
+          if (fitting && remaining === fitWidth) {
             fitting += 1;
           } else {
-            fitWidth = widths[i];
+            fitWidth = remaining;
             fitting = 1;
           }
         }
@@ -40,7 +82,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         }
         if (i === 0 && direction === -1) {
           direction = 1;
-          i = lastLevel - levels;
+          i = maxLevel - levels;
           if (i < 0) {
             i = -1;
           }
@@ -48,19 +90,45 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         }
         i += direction;
       }
-      lastLevel = (direction === 1) ? i - levels + 1 : i;
-      for (j = lastLevel; j < lastLevel + levels; j++) {
-        widths[j] -= width;
+      startLevel = (direction === 1) ? i - levels + 1 : i;
+      for (j = startLevel; j < startLevel + levels; j++) {
+        layout[j].push(chart);
       }
-      maxLevel = Math.max(i, maxLevel);
+      maxLevel = Math.max(startLevel, maxLevel);
+      chart.startLevel = startLevel;
+      chart.left = maxWidth - fitWidth;
       chart.div
-          .style('left', (maxWidth - fitWidth) + 'px')
-          .style('top', (lastLevel * binfo.chartHeight) + 'px');
+          .style('left', chart.left + 'px')
+          .style('top', (startLevel * binfo.chartHeight) + 'px');
       chart.arranged = true;
     });
 
-    var chartHolderHeight = (maxLevel + 1) * binfo.chartHeight + 200;
+    var levels = d3.max(layout[maxLevel], function(d) { return d.levels; }),
+        chartHolderHeight = (maxLevel + levels) * binfo.chartHeight + 200;
     holder.select('.charts').style('height', chartHolderHeight + 'px');
+  };
+
+  arrange.orderedChartIds = function(chartIds) {
+    var added = {},
+        newChartIds = [],
+        row,
+        chart,
+        i,
+        j;
+    for (i = 0; i < layout.length; i++) {
+      row = layout[i];
+      for (j = 1; j < row.length; j++) {
+        chart = row[j];
+        if (!added[chart.id]) {
+          newChartIds.push(chart.id);
+          added[chart.id] = true;
+        }
+      }
+      if (newChartIds.length === chartIds.length) {
+        break;
+      }
+    }
+    return newChartIds;
   };
 
 });

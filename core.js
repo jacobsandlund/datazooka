@@ -251,12 +251,18 @@ binfo._register('core', [], function(core) {
         return;
       }
     }
-    var data = dataSets[nextDataName].data;
+    var data = dataSets[nextDataName].data,
+        arrangeAdded = addedIds,
+        arrangeRemoved = removedIds;
     if (!cross || nextDataName !== dataName || removedIds.length) {
       cross = crossfilter(data);
       crossAll = cross.groupAll();
       addedIds = nextChartIds;
       removedIds = chartIds;
+      if (!removedIds.length) {
+        arrangeAdded = addedIds;
+        arrangeRemoved = removedIds;
+      }
     }
     removedIds.forEach(function(id) { charts[id].remove(); });
     addedIds.forEach(function(id) { nextCharts[id].add(cross, crossAll); });
@@ -266,7 +272,10 @@ binfo._register('core', [], function(core) {
     rendering.render(charts, chartIds);
     rendering.renderTotal(cross.size());
     refresh();
-    arrange.arrange(charts, chartIds);
+    arrange.remove(arrangeRemoved, charts);
+    arrange.add(arrangeAdded, charts);
+    chartIds = arrange.orderedChartIds(chartIds);
+    hash.refresh(dataName, charts, chartIds);
     doneUpdating();
   };
 
@@ -280,7 +289,7 @@ binfo._register('core', [], function(core) {
       }
       renderFreshFilters = null;
     }
-    core.refresh();
+    rendering.refresh(crossAll);
   }
 
   function doneUpdating() {
