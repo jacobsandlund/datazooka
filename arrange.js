@@ -1,15 +1,18 @@
 
 binfo._register('arrange', ['core'], function(arrange, core) {
 
-  var holder;
+  var holder,
+      maxWidth;
 
-  core.getHolder(function(h) { holder = h; });
+  arrange.setup = function(h, width) {
+    holder = h;
+    maxWidth = width;
+  };
 
   arrange.arrange = function(charts, chartIds) {
     var selection = holder.select('.charts').selectAll('.chart'),
         dims = {},
         widths = [],
-        maxWidth = binfo.width,
         lastLevel = 0,
         maxLevel = 0,
         i;

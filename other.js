@@ -217,7 +217,7 @@ binfo._register('rendering', ['core'], function(rendering, core) {
       chartIds,
       formatNumber = d3.format(',d');
 
-  core.getHolder(function(_) { holder = _; });
+  rendering.setup = function(_) { holder = _; };
 
   rendering.setCross = function(_, all, name) {
     cross = _;
@@ -240,7 +240,7 @@ binfo._register('rendering', ['core'], function(rendering, core) {
     chartSelection.each(updateCharts);
     chartSelection.each(renderCharts);
     chartSelection.each(cleanUpCharts);
-    d3.select('.active-data').text(formatNumber(crossAll.value()));
+    holder.select('.active-data').text(formatNumber(crossAll.value()));
   }
 
   rendering.render = function(charts, chartIds) {
@@ -265,9 +265,8 @@ binfo._register('rendering', ['core'], function(rendering, core) {
     chartSelection.order();
   };
 
-  rendering.renderTotal = function(total, dataName) {
-    holder.select('.total')
-        .text(formatNumber(total) + ' ' + dataName + ' selected.');
+  rendering.renderTotal = function(total) {
+    holder.select('.total').text(formatNumber(total));
   };
 });
 

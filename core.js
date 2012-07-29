@@ -81,11 +81,11 @@ binfo._register('core', [], function(core) {
       chartsApi = core.dependency('charts'),
       hash = core.dependency('hash'),
       arrange = core.dependency('arrange'),
-      getHolders = [],
       dataSets = {},
       cross,
       crossAll,
       updateMode = 'always',
+      smartTimer = null,
       renderFreshLater,
       needsToUpdate = true,
       updating,
@@ -118,28 +118,23 @@ binfo._register('core', [], function(core) {
       }
     }
     set.chartIds = set.definitionIds.slice();
+    ui.addDataName(name);
     if (renderFreshLater && renderFreshLater[0] === name) {
       core.renderFresh.apply(null, renderFreshLater);
     };
-    // TODO, figure out displaying the first definition
-    //firstDefinition = holder.selectAll('.data-name option').empty();
-    //holder.select('.data-name').append('option')
-    //    .attr('value', dataName)
-    //    .text(dataName);
-    //if (firstDefinition) {
-    //  ui.changeDataName(dataName);
-    //}
   };
 
-  binfo.setup = function(_, width) {
-    binfo.width = width;
+  binfo.setup = function(_, width, root) {
     holder = d3.select(_);
     ui.setup(holder, width);
-    getHolders.forEach(function(g) { g(holder); });
-  };
-
-  core.getHolder = function(get) {
-    getHolders.push(get);
+    rendering.setup(holder);
+    arrange.setup(holder, width);
+    d3.select(root).on('mousemove', function() {
+      if (smartTimer !== null) {
+        clearSmartTimer();
+        startSmartTimer();
+      }
+    });
   };
 
   core.dataName = function(_) {
@@ -153,6 +148,7 @@ binfo._register('core', [], function(core) {
 
   core.addChart = function(add) {
     core.chartIds(nextChartIds.concat([add]));
+    core.update();
   };
 
   core.clearCharts = function() {
@@ -200,13 +196,26 @@ binfo._register('core', [], function(core) {
         nextCharts[id].filter(filters[id]);
       }
     }
-    core.update('force');
+    core.update('always');
   };
 
   core.updateMode = function(_) {
     if (!arguments.length) return updateMode;
     updateMode = _;
   };
+
+  function clearSmartTimer() {
+    if (smartTimer !== null) {
+      clearTimeout(smartTimer);
+      smartTimer = null;
+    }
+  }
+
+  function startSmartTimer() {
+    smartTimer = setTimeout(function() {
+      core.update('always');
+    }, 700);
+  }
 
   core.update = function(mode) {
     if (!mode) mode = updateMode;
@@ -215,10 +224,12 @@ binfo._register('core', [], function(core) {
       ui.needsUpdate(true);
       return;
     }
+    clearSmartTimer();
     if (!cross || nextDataName !== dataName ||
         removedIds.length || addedIds.length) {
       if (mode === 'smart') {
         ui.needsUpdate(true);
+        startSmartTimer();
         return;
       }
       if (!updating) {
@@ -242,12 +253,11 @@ binfo._register('core', [], function(core) {
     charts = nextCharts;
     chartIds = nextChartIds;
     rendering.render(charts, chartIds);
-    rendering.renderTotal(cross.size(), dataName);
+    rendering.renderTotal(cross.size());
     core.refresh();
     arrange.arrange(charts, chartIds);
     updating = false;
-    ui.updating(false);
-    ui.needsUpdate(false);
+    ui.updated(dataName);
   };
 
   core.refresh = function() {

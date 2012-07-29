@@ -102,7 +102,7 @@ h1, h2 {
 
 <script>
 
-binfo.setup('#charts', window.innerWidth - 90);
+binfo.setup('#charts', window.innerWidth - 90, document);
 binfo.defaultRender('flights', ['time-delay', 'distance'],
                     {distance: [200, 600]});
 
