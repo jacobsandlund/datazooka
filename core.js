@@ -147,12 +147,28 @@ binfo._register('core', [], function(core) {
   };
 
   core.addChart = function(add) {
+    if (nextChartIds.indexOf(add) >= 0) {
+      return;
+    }
     core.chartIds(nextChartIds.concat([add]));
+    core.update();
+  };
+
+  core.changeDataName = function(name) {
+    core.dataName(name);
     core.update();
   };
 
   core.clearCharts = function() {
     core.chartIds([]);
+    core.update();
+  };
+
+  core.cancel = function() {
+    nextDataName = dataName;
+    nextCharts = charts;
+    nextChartIds = chartIds;
+    doneUpdating();
   };
 
   function arrayDiff(one, two) {
@@ -243,7 +259,6 @@ binfo._register('core', [], function(core) {
     if (!cross || nextDataName !== dataName || removedIds.length) {
       cross = crossfilter(data);
       crossAll = cross.groupAll();
-      rendering.setCross(cross, crossAll, nextDataName);
       addedIds = nextChartIds;
       removedIds = chartIds;
     }
@@ -256,7 +271,12 @@ binfo._register('core', [], function(core) {
     rendering.renderTotal(cross.size());
     core.refresh();
     arrange.arrange(charts, chartIds);
+    doneUpdating();
+  };
+
+  function doneUpdating() {
     updating = false;
+    needsToUpdate = false;
     ui.updated(dataName);
   };
 

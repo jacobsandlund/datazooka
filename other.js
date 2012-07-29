@@ -53,8 +53,9 @@ binfo._register('setup', ['core'], function(setup, core) {
     definitions[dataName] = defns;
     if (untypedData[dataName]) {
       binfo.dataFromUntyped(dataName, untypedData[dataName]);
+    } else {
+      checkLoaded(dataName);
     }
-    checkLoaded(dataName);
   };
 
   binfo.dataFromUntyped = function(dataName, data) {
@@ -210,20 +211,9 @@ binfo._register('rendering', ['core'], function(rendering, core) {
 
   var holder,
       chartSelection,
-      cross,
-      crossAll,
-      dataName,
-      charts,
-      chartIds,
       formatNumber = d3.format(',d');
 
   rendering.setup = function(_) { holder = _; };
-
-  rendering.setCross = function(_, all, name) {
-    cross = _;
-    crossAll = all;
-    dataName = name;  // TODO, possibly remove this.
-  };
 
   function callCharts(name) {
     return function(chartData) {

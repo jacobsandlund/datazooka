@@ -33,9 +33,29 @@
 }
 
 .control.panel {
-  right: 30px;
+  right: 100px;
   bottom: 30px;
-  width: 525px;
+  width: 485px;
+}
+
+.options.panel {
+  position: absolute;
+  bottom: -5px;
+  left: -220px;
+  width: 200px;
+  font-size: 12px;
+  padding: 5px;
+}
+
+.update.panel {
+  position: absolute;
+  right: -97px;
+  bottom: -5px;
+  width: 87px;
+}
+
+.options.panel label {
+  margin-left: 5px;
 }
 
 .panel-line {
@@ -47,9 +67,21 @@
   font-size: 14px;
 }
 
+.line-one.panel-line {
+  height: 38px;
+}
+
+.line-two.panel-line {
+  height: 22px;
+}
+
 .clear.button {
-  float: right;
-  margin: 9px;
+  margin-left: 260px;
+}
+
+.cancel.button {
+  margin-left: 10px;
+  margin-bottom: -1px;
 }
 
 .statistics {
@@ -61,7 +93,7 @@
   background-color: white;
   width: 225px;
   display: inline-block;
-  max-height: 45px;
+  max-height: 64px;
 }
 
 .statistics.show {
@@ -102,22 +134,12 @@
 
 .totals {
   display: inline-block;
-  width: 255px;
+  width: 264px;
   text-align: right;
 }
 
 .data-name {
-  margin: 0 5px;
-}
-
-.update.button {
-  float: left;
-  margin-left: 0;
-}
-
-.cancel.button {
-  float: right;
-  margin-top: 10px;
+  margin: 0 7px;
 }
 
 .dock.button {

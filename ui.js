@@ -21,6 +21,7 @@ binfo._register('ui', ['core'], function(ui, core) {
         lineTwo,
         statistics,
         totals,
+        updatePanel,
         optionsPanel;
 
     holder.append('div')
@@ -31,7 +32,7 @@ binfo._register('ui', ['core'], function(ui, core) {
 
 
     lineOne = panel.append('div')
-        .attr('class', 'panel-line');
+        .attr('class', 'line-one panel-line');
 
     lineOne.append('div')
         .attr('class', 'compare button')
@@ -53,28 +54,58 @@ binfo._register('ui', ['core'], function(ui, core) {
         .text('Statistics');
     statistics.append('ul');
 
-    //updateShownPane = selectedPane.append('div')
-    //    .attr('class', 'sub-pane update-shown')
-    //    .style('display', 'none');
-    //updateShownPane.append('div')
-    //    .text('Update')
-    //    .attr('class', 'update action button')
-    //    .on('click', function() { renderSelected(); });
-    //updateShownPane.append('div')
-    //    .text('Cancel')
-    //    .attr('class', 'cancel button')
-    //    .style('display', 'none')
-    //    .on('click', function() {
-    //      changeDataName(dataNameRendered, false);
-    //      userSelectCharts(selectedRendered, true);
-    //    });
+    lineOne.append('div')
+        .attr('class', 'clear button')
+        .text('Clear')
+        .on('click', core.clearCharts);
 
-    optionsPanel = panel.append('div')
+    updatePanel = panel.append('div')
+        .attr('class', 'update panel')
         .style('display', 'none');
-    function changeUpdateStyle() {
-      updateStyle = this.id;
-      var alwaysUpdate = updateStyle === 'always-update';
-      updateShownPane.style('display', alwaysUpdate ? 'none' : 'block');
+    updatePanel.append('div')
+        .attr('class', 'line-one panel-line')
+      .append('div')
+        .attr('class', 'update action button')
+        .text('Update')
+        .on('click', function() { core.update('force'); });
+    updatePanel.append('div')
+        .attr('class', 'line-two panel-line')
+      .append('div')
+        .attr('class', 'cancel button')
+        .text('Cancel')
+        .style('display', 'none')
+        .on('click', core.cancel);
+
+    function toggleDock() {
+      var dockButton = lineOne.select('.dock.button'),
+          dock = dockButton.classed('down');
+      dockButton.classed('down', !dock);
+      panel.style('position', dock ? null : 'fixed');
+      if (dock) {
+        dockButton.text('Undock');
+      } else {
+        dockButton.text('Dock');
+      }
+    }
+    lineOne.append('div')
+        .attr('class', 'dock button')
+        .on('click', toggleDock);
+    toggleDock();
+
+    lineTwo = panel.append('div')
+        .attr('class', 'line-two panel-line');
+
+    optionsPanel = lineTwo.append('div')
+        .attr('class', 'options panel')
+        .style('display', 'none');
+    function changeUpdateMode() {
+      var updateMode = this.id.slice(7);
+      var always = updateMode === 'always';
+      core.updateMode(updateMode);
+      updatePanel.style('display', always ? 'none' : 'block');
+      if (always) {
+        core.update();
+      }
     }
     function addUpdateStyle(style, label) {
       var div = optionsPanel.append('div');
@@ -82,18 +113,15 @@ binfo._register('ui', ['core'], function(ui, core) {
           .attr('type', 'radio')
           .attr('name', 'update')
           .attr('id', style)
-          .on('click', changeUpdateStyle);
+          .on('click', changeUpdateMode);
       div.append('label')
           .attr('for', style)
           .text(label);
     }
-    addUpdateStyle('always-update', 'Always update automatically');
-    addUpdateStyle('smart-update', 'Smart update (on mouse still)');
-    addUpdateStyle('manual-update', 'Manual update');
-    optionsPanel.select('#always-update').property('checked', true);
-
-    lineTwo = panel.append('div')
-        .attr('class', 'panel-line');
+    addUpdateStyle('update-always', 'Always update automatically');
+    addUpdateStyle('update-smart', 'Smart update (on mouse still)');
+    addUpdateStyle('update-manual', 'Manual update');
+    optionsPanel.select('#update-' + core.updateMode()).property('checked', true);
 
     lineTwo.append('div')
         .text('Options')
@@ -118,26 +146,8 @@ binfo._register('ui', ['core'], function(ui, core) {
         .attr('class', 'data-name')
         .on('change', function() {
           changeDataName(this.value);
-        })
-      .append('option')
-        .attr('value', '')
-        .text('');
-
-    function toggleDock() {
-      var dockButton = lineTwo.select('.dock.button'),
-          dock = dockButton.classed('down');
-      dockButton.classed('down', !dock);
-      panel.style('position', dock ? null : 'fixed');
-      if (dock) {
-        dockButton.text('Undock');
-      } else {
-        dockButton.text('Dock');
-      }
-    }
-    lineTwo.append('div')
-        .attr('class', 'dock button')
-        .on('click', toggleDock);
-    toggleDock();
+          core.changeDataName(this.value);
+        });
   };
 
   function compare(active) {
@@ -152,7 +162,7 @@ binfo._register('ui', ['core'], function(ui, core) {
     panel.select('.statistics').classed('show', show);
   };
 
-  function changeDataName(newDataName, clearSelected) {
+  function changeDataName(newDataName) {
     if (newDataName === dataName) {
       return;
     }
@@ -162,10 +172,11 @@ binfo._register('ui', ['core'], function(ui, core) {
         data,
         li;
     dataName = newDataName;
+    panel.select('.data-name').property('value', dataName);
     data = ids.map(function(id) { return {id: id, label: defns[id].label}; });
 
     li = panel.select('.statistics ul').selectAll('li')
-        .data(data, function(d) { return d; });
+        .data(data, function(d) { return d.id; });
     li.enter().append('li')
         .on('click', function(d) { core.addChart(d.id); })
         .text(function(d) { return d.label; });
@@ -190,13 +201,14 @@ binfo._register('ui', ['core'], function(ui, core) {
   };
 
   function needsUpdate(needs) {
-    //holder.select('.update.action.button').classed('active', needs);
-    //holder.select('.cancel.button').style('display', needs ? null : 'none');
+    holder.select('.update.action.button').classed('active', needs);
+    holder.select('.cancel.button').style('display', needs ? null : 'none');
   }
   ui.needsUpdate = needsUpdate;
 
   ui.updating = function(updating) {
     holder.select('.charts').style('opacity', updating ? 0.3 : null);
+    panel.style('opacity', updating ? 0.3 : null);
   };
 
   ui.updated = function(name) {
