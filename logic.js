@@ -201,10 +201,7 @@ binfo._register('logic', [], function(logicApi) {
         }
         filterRange = [dummyLeft, dummyRight];
       }
-      if (filterActive) {
-        bar.api.filter(filterRange)
-      }
-      return true;
+      bar.api.filter(filterActive);
     };
 
     bar.api.remove = function() {

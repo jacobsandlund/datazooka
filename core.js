@@ -79,6 +79,9 @@ binfo._register('core', [], function(coreApi) {
   var uiApi = coreApi.dependency('ui'),
       renderingApi = coreApi.dependency('rendering'),
       chartsApi = coreApi.dependency('charts'),
+      hashApi = coreApi.dependency('hash'),
+      arrangeApi = coreApi.dependency('arrange'),
+      getHolders = [],
       dataSets = {},
       cross,
       crossAll,
@@ -132,7 +135,11 @@ binfo._register('core', [], function(coreApi) {
     binfo.width = width;
     holder = d3.select(_);
     uiApi.setup(holder, width);
-    renderingApi.setHolder(holder);
+    getHolders.forEach(function(g) { g(holder); });
+  };
+
+  coreApi.getHolder = function(get) {
+    getHolders.push(get);
   };
 
   coreApi.dataName = function(_) {
@@ -235,211 +242,17 @@ binfo._register('core', [], function(coreApi) {
     charts = nextCharts;
     chartIds = nextChartIds;
     renderingApi.render(charts, chartIds);
+    renderingApi.renderTotal(cross.size(), dataName);
+    coreApi.refresh();
+    arrangeApi.arrange(charts, chartIds);
     updating = false;
     uiApi.updating(false);
     uiApi.needsUpdate(false);
   };
 
   coreApi.refresh = function() {
-    renderingApi.refresh();
+    renderingApi.refresh(crossAll);
+    hashApi.refresh(dataName, charts, chartIds);
   };
-});
-
-
-binfo._register('rendering', ['core'], function(renderingApi, coreApi) {
-
-  "use strict";
-
-  var holder,
-      chartSelection,
-      cross,
-      crossAll,
-      dataName,
-      charts,
-      chartIds,
-      formatNumber = d3.format(',d');
-
-  renderingApi.setHolder = function(_) { holder = _; };
-
-  renderingApi.setCross = function(_, all, name) {
-    cross = _;
-    crossAll = all;
-    dataName = name;  // TODO, possibly remove this.
-  };
-
-  renderingApi.render = function(_, ids) {
-
-    charts = _;
-    chartIds = ids;
-
-    var chartsHolder = holder.select('.charts'),
-        chartData;
-
-    chartData = chartIds.map(function(id, i) {
-      return {chart: charts[id]};
-    });
-
-    chartSelection = chartsHolder.selectAll('.chart')
-        .data(chartData, function(d) { return d.chart.id; });
-
-    chartSelection.enter()
-      .append('div')
-        .attr('class', 'chart')
-      .append('div')
-        .attr('class', 'title');
-
-    chartSelection.exit().remove();
-
-    chartSelection.order();
-
-    holder.select('.total')
-        .text(formatNumber(cross.size()) + ' ' + dataName + ' selected.');
-
-    renderingApi.refresh();
-
-    arrangeCharts();
-  };
-
-  function arrangeCharts() {
-    var dims = {},
-        widths = [],
-        maxWidth = binfo.width,
-        lastLevel = 0,
-        maxLevel = 0,
-        i;
-    chartSelection.each(function(d) {
-      var height = this.offsetHeight - binfo.chartBorder,
-          levels = Math.ceil(height / binfo.chartHeight);
-      height = levels * binfo.chartHeight - (binfo.chartBorder +
-                                             2 * binfo.chartPadding);
-      d3.select(this).style('height', height + 'px');
-      dims[d.chart.id] = {
-        levels: levels,
-        width: this.offsetWidth - binfo.chartBorder
-      };
-    });
-
-    for (i = 0; i < binfo.maxLevels; i++) {
-      widths[i] = maxWidth;
-    }
-    chartIds.forEach(function(id) {
-      var chart = charts[id],
-          levels = dims[id].levels,
-          width = dims[id].width,
-          fitting = 0,
-          fitWidth,
-          direction = -1,
-          i = lastLevel,
-          j;
-      while (i < widths.length) {
-        if (widths[i] >= width || widths[i] === maxWidth) {
-          if (fitting && widths[i] === fitWidth) {
-            fitting += 1;
-          } else {
-            fitWidth = widths[i];
-            fitting = 1;
-          }
-        }
-        if (fitting === levels) {
-          break;
-        }
-        if (i === 0 && direction === -1) {
-          direction = 1;
-          i = lastLevel - levels;
-          if (i < 0) {
-            i = -1;
-          }
-          fitting = 0;
-        }
-        i += direction;
-      }
-      lastLevel = (direction === 1) ? i - levels + 1 : i;
-      for (j = lastLevel; j < lastLevel + levels; j++) {
-        widths[j] -= width;
-      }
-      maxLevel = Math.max(i, maxLevel);
-      dims[id].left = maxWidth - fitWidth;
-      dims[id].top = lastLevel * binfo.chartHeight;
-    });
-
-    chartSelection.each(function(d) {
-      var dim = dims[d.chart.id];
-      d3.select(this)
-          .style('left', dim.left + 'px')
-          .style('top', dim.top + 'px');
-    });
-
-    var chartHolderHeight = (maxLevel + 1) * binfo.chartHeight + 200;
-    holder.select('.charts').style('height', chartHolderHeight + 'px');
-  };
-
-  renderingApi.refresh = function() {
-    renderAll();
-    updateHash();
-  };
-
-
-  var currentHash,
-      hashUpdatedRecently = false,
-      hashNeedsUpdated = false;
-
-  function updateHash() {
-    var filters = {},
-        id,
-        filterData,
-        chartString = 'charts=' + chartIds.join(','),
-        filterString = 'filters=',
-        filterArray = [];
-
-    function filterEncode(d) {
-      if (typeof d === 'object') {
-        d = d.valueOf();
-      }
-      return encodeURIComponent(d);
-    }
-    chartIds.forEach(function(id) { charts[id].addToFilters(filters); });
-    for (id in filters) {
-      if (filters.hasOwnProperty(id) && filters[id]) {
-        filterData = filters[id].map(filterEncode).join('*');
-        filterArray.push(id + '*' + filterData);
-      }
-    }
-    filterString += filterArray.join(',');
-    var params = ['data=' + dataName, chartString, filterString].join('&');
-    currentHash = '#' + params;
-    hashNeedsUpdated = true;
-    if (!hashUpdatedRecently) {
-      updateWindowHash();
-    }
-  }
-
-  function updateWindowHash() {
-    hashUpdatedRecently = false;
-    if (hashNeedsUpdated) {
-      window.history.replaceState({}, '', currentHash);
-      setTimeout(updateWindowHash, 300);
-      hashUpdatedRecently = true;
-      hashNeedsUpdated = false;
-    }
-  }
-
-  function callCharts(name) {
-    return function(chartData) {
-      /*jshint validthis:true */
-      d3.select(this).each(chartData.chart[name]);
-    };
-  }
-
-  var updateCharts = callCharts('update'),
-      renderCharts = callCharts('render'),
-      cleanUpCharts = callCharts('resetUpdate');
-
-  function renderAll() {
-    chartSelection.each(updateCharts);
-    chartSelection.each(renderCharts);
-    chartSelection.each(cleanUpCharts);
-    d3.select('.active-data').text(formatNumber(crossAll.value()));
-  }
-
 });
 

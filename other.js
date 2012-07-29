@@ -152,7 +152,124 @@ binfo._register('hashRetrieval', ['core'], function(_, coreApi) {
   window.onhashchange = renderFromHash;
 
   renderFromHash();
-
 });
 
+
+
+binfo._register('hash', [], function(hashApi) {
+
+  var currentHash,
+      hashUpdatedRecently = false,
+      hashNeedsUpdated = false;
+
+  hashApi.refresh = function(dataName, charts, chartIds) {
+    var filters = {},
+        id,
+        filterData,
+        chartString = 'charts=' + chartIds.join(','),
+        filterString = 'filters=',
+        filterArray = [];
+
+    function filterEncode(d) {
+      if (typeof d === 'object') {
+        d = d.valueOf();
+      }
+      return encodeURIComponent(d);
+    }
+    chartIds.forEach(function(id) { charts[id].addToFilters(filters); });
+    for (id in filters) {
+      if (filters.hasOwnProperty(id) && filters[id]) {
+        filterData = filters[id].map(filterEncode).join('*');
+        filterArray.push(id + '*' + filterData);
+      }
+    }
+    filterString += filterArray.join(',');
+    var params = ['data=' + dataName, chartString, filterString].join('&');
+    currentHash = '#' + params;
+    hashNeedsUpdated = true;
+    if (!hashUpdatedRecently) {
+      updateWindowHash();
+    }
+  }
+
+  function updateWindowHash() {
+    hashUpdatedRecently = false;
+    if (hashNeedsUpdated) {
+      window.history.replaceState({}, '', currentHash);
+      setTimeout(updateWindowHash, 300);
+      hashUpdatedRecently = true;
+      hashNeedsUpdated = false;
+    }
+  }
+});
+
+
+binfo._register('rendering', ['core'], function(renderingApi, coreApi) {
+
+  "use strict";
+
+  var holder,
+      chartSelection,
+      cross,
+      crossAll,
+      dataName,
+      charts,
+      chartIds,
+      formatNumber = d3.format(',d');
+
+  coreApi.getHolder(function(_) { holder = _; });
+
+  renderingApi.setCross = function(_, all, name) {
+    cross = _;
+    crossAll = all;
+    dataName = name;  // TODO, possibly remove this.
+  };
+
+  function callCharts(name) {
+    return function(chartData) {
+      /*jshint validthis:true */
+      d3.select(this).each(chartData.chart[name]);
+    };
+  }
+
+  var updateCharts = callCharts('update'),
+      renderCharts = callCharts('render'),
+      cleanUpCharts = callCharts('resetUpdate');
+
+  renderingApi.refresh = function(crossAll) {
+    chartSelection.each(updateCharts);
+    chartSelection.each(renderCharts);
+    chartSelection.each(cleanUpCharts);
+    d3.select('.active-data').text(formatNumber(crossAll.value()));
+  }
+
+  renderingApi.render = function(charts, chartIds) {
+    var chartsHolder = holder.select('.charts'),
+        chartData;
+
+    chartData = chartIds.map(function(id, i) {
+      return {chart: charts[id]};
+    });
+
+    chartSelection = chartsHolder.selectAll('.chart')
+        .data(chartData, function(d) { return d.chart.id; });
+
+    chartSelection.enter()
+      .append('div')
+        .attr('class', 'chart')
+      .append('div')
+        .attr('class', 'title');
+
+    chartSelection.exit().remove();
+
+    chartSelection.order();
+  };
+
+  renderingApi.renderTotal = function(total, dataName) {
+    holder.select('.total')
+        .text(formatNumber(total) + ' ' + dataName + ' selected.');
+  };
+
+
+});
 
