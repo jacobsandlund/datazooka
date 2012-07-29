@@ -11,7 +11,7 @@ binfo._register('setup', ['core'], function(setup, core) {
     /*jshint evil:true */
     var id, defn,
         evil = [],
-        evalParts = ['dimension', 'group', 'x', 'y', 'round'],
+        evalParts = ['dimension', 'group', 'x', 'y', 'round', 'format'],
         evalPartsIfFunc = ['type', 'ordinal'];
     function makeEvil(defn, id) {
       return function(part) {

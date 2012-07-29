@@ -21,6 +21,7 @@ binfo._register('logic', [], function(logic) {
         indexFromOrdinal = {},
         ordinalOrdered,
         ordinalHash = {},
+        format,
         minX = spec.minX,
         maxX = spec.maxX,
         maxY = spec.maxY,
@@ -60,6 +61,7 @@ binfo._register('logic', [], function(logic) {
       dimensionFunc = function(d) {
         return indexFromOrdinal[internalDimensionFunc(d)];
       };
+      format = spec.format || function(d) { return d; };
     }
 
     if (spec.group) {
@@ -126,7 +128,7 @@ binfo._register('logic', [], function(logic) {
         ordArray.sort(function(a, b) { return a.order - b.order; });
         ordArray.forEach(function(d, i) {
           indexFromOrdinal[d.value] = i;
-          ordinal[i] = d.value;
+          ordinal[i] = format(d.value);
         });
       }
     };

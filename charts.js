@@ -397,6 +397,9 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
       bar.x = x;
       if (!bar.ordinal) {
         axis.scale(x);
+        if (spec.format) {
+          axis.tickFormat(spec.format);
+        }
       }
       brush.x(x);
       dim.width = x.range()[1];

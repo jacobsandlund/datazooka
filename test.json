@@ -1,18 +1,15 @@
 {
   "time": {
     "label": "Time of Day",
-    "type": "number",
     "derived": true,
     "dimension": "function(d) { return d.date.getHours() + d.date.getMinutes() / 60; }"
   },
   "delay": {
     "label": "Arrival Delay (min.)",
-    "type": "number",
     "dimension": "function(d) { return Math.max(-60, Math.min(149, d.delay)); }"
   },
   "distance": {
     "label": "Distance (mi.)",
-    "type": "number",
     "dimension": "function(d) { return Math.min(1999, d.distance); }"
   },
   "date": {
@@ -24,5 +21,12 @@
     "separation": 86400000,
     "tickSpacing": 120,
     "x": "d3.time.scale().domain([new Date(2001, 0, 1), new Date(2001, 3, 1)]).range([0, 990])"
+  },
+  "day": {
+    "label": "Day of the Week",
+    "derived": true,
+    "dimension": "function(d) { var day = d.date.getDay() - 1; if (day < 0) { return 6; } else { return day; } }",
+    "ordinal": "function(d) { return d; }",
+    "format": "function(d) { return ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][d]; }"
   }
 }
