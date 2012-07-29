@@ -97,11 +97,6 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
       dim.bottom += 120;
     }
 
-    brush.on('brushstart.chart', function() {
-      var div = d3.select(this.parentNode.parentNode.parentNode);
-      div.select('.filter.button').classed('down', true);
-    });
-
     function filter(range) {
       bar.api.filter(range);
       core.refresh();
@@ -298,10 +293,8 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
               .text('Update')
               .on('click', submitChange);
         } else {
-          filterButton
-              .classed('down', bar.filterActive())
-              .text('Filter')
-              .on('click', toggleActive);
+          filterButton.on('click', toggleActive);
+          filterButtonDown(div);
         }
       }
       setUpdating(false);
@@ -320,6 +313,13 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
           });
     }
 
+    function filterButtonDown(div) {
+      var active = bar.filterActive();
+      div.select('.filter.button')
+          .text(active ? 'Reset' : 'Filter')
+          .classed('down', active);
+    }
+
     function renderUpdate(div, g, data) {
 
       var percentText,
@@ -331,7 +331,7 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
       if (brushDirty) {
         g.selectAll('.brush').call(brush);
         if (!compare) {
-          div.select('.filter.button').classed('down', bar.filterActive());
+          filterButtonDown(div);
           div.selectAll('.range')
               .property('value', function(d, i) { return bar.filterRange()[i]; });
         }
