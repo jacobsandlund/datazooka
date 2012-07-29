@@ -87,6 +87,7 @@ binfo._register('core', [], function(core) {
       updateMode = 'always',
       smartTimer = null,
       renderFreshLater,
+      renderFreshFilters,
       needsToUpdate = true,
       updating,
       addedIds,
@@ -199,20 +200,15 @@ binfo._register('core', [], function(core) {
     }
   };
 
-  core.renderFresh = function(dataName, charts, filters) {
-    if (!dataSets[dataName]) {
-      renderFreshLater = [dataName, charts, filters];
+  core.renderFresh = function(name, ids, filters) {
+    if (!dataSets[name]) {
+      renderFreshLater = [name, ids, filters];
       return;
     }
-    core.dataName(dataName);
-    core.chartIds(charts);
-    var id;
-    for (id in filters) {
-      if (filters.hasOwnProperty(id)) {
-        nextCharts[id].filter(filters[id]);
-      }
-    }
-    core.update('always');
+    core.dataName(name);
+    core.chartIds(ids);
+    renderFreshFilters = filters;
+    core.update('force');
   };
 
   core.updateMode = function(_) {
@@ -269,10 +265,23 @@ binfo._register('core', [], function(core) {
     chartIds = nextChartIds;
     rendering.render(charts, chartIds);
     rendering.renderTotal(cross.size());
-    core.refresh();
+    refresh();
     arrange.arrange(charts, chartIds);
     doneUpdating();
   };
+
+  function refresh() {
+    var id;
+    if (renderFreshFilters) {
+      for (id in renderFreshFilters) {
+        if (renderFreshFilters.hasOwnProperty(id)) {
+          charts[id].filter(renderFreshFilters[id]);
+        }
+      }
+      renderFreshFilters = null;
+    }
+    core.refresh();
+  }
 
   function doneUpdating() {
     updating = false;

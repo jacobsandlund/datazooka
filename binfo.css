@@ -36,6 +36,13 @@
   right: 100px;
   bottom: 30px;
   width: 485px;
+  position: fixed;
+}
+
+.control.panel.docked {
+  position: relative;
+  float: right;
+  bottom: 0px;
 }
 
 .options.panel {
@@ -175,7 +182,7 @@
   background: #CFCFCF;
 }
 
-.button.down {
+.button.down, .down {
   background-color: #2C9CAF;
   background-image: -ms-linear-gradient(top, #2C9CAF, #237B8B);
   background-image: -webkit-linear-gradient(top, #2C9CAF, #237B8B);
@@ -190,7 +197,7 @@
   padding: 6px 11px;
 }
 
-.active.button {
+.active.button, .active {
   color: #eee;
   background-color: #991735;
   background-image: -ms-linear-gradient(top, #991735, #6F1127);
@@ -200,7 +207,7 @@
   background-image: linear-gradient(top, #991735, #6F1127);
 }
 
-.active.button:hover {
+.active:hover {
   background: #6F1127;
 }
 
