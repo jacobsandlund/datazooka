@@ -1,9 +1,9 @@
 
-binfo._register('logic', [], function(logicApi) {
+binfo._register('logic', [], function(logic) {
 
   "use strict";
 
-  logicApi.barLogic = function(bar, spec, data) {
+  logic.barLogic = function(bar, spec, data) {
 
     var added = 0,
         updated,
@@ -233,7 +233,7 @@ binfo._register('logic', [], function(logicApi) {
   };
 
 
-  logicApi.compareLogic = function(compare, spec) {
+  logic.compareLogic = function(compare, spec) {
 
     var ids = spec.id.split('-'),
         xc = spec.charts[ids[0]],

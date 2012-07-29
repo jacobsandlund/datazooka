@@ -1,11 +1,11 @@
 
-binfo._register('arrange', ['core'], function(arrangeApi, coreApi) {
+binfo._register('arrange', ['core'], function(arrange, core) {
 
   var holder;
 
-  coreApi.getHolder(function(h) { holder = h; });
+  core.getHolder(function(h) { holder = h; });
 
-  arrangeApi.arrange = function(charts, chartIds) {
+  arrange.arrange = function(charts, chartIds) {
     var selection = holder.select('.charts').selectAll('.chart'),
         dims = {},
         widths = [],

@@ -1,10 +1,10 @@
 
-binfo._register('ui', ['core'], function(uiApi, coreApi) {
+binfo._register('ui', ['core'], function(ui, core) {
 
   "use strict";
 
-  var renderingApi = uiApi.dependency('rendering'),
-      setupApi = uiApi.dependency('setup'),
+  var rendering = ui.dependency('rendering'),
+      setup = ui.dependency('setup'),
       holder,
       selected = [],
       selectedList,
@@ -15,7 +15,7 @@ binfo._register('ui', ['core'], function(uiApi, coreApi) {
       updateStyle = 'always-update',
       smartTimer = null;
 
-  uiApi.setup = function(_, width) {
+  ui.setup = function(_, width) {
     holder = _;
     holder
         .attr('class', 'holder')
@@ -165,13 +165,13 @@ binfo._register('ui', ['core'], function(uiApi, coreApi) {
 
   function renderSelected(smartUpdate) {
     needsUpdate(false);
-    return renderingApi.render(selected, null, smartUpdate);
+    return rendering.render(selected, null, smartUpdate);
   }
 
-  uiApi.renderedDataName = function(_) {
+  ui.renderedDataName = function(_) {
   };
 
-  uiApi.renderOccurred = function() {
+  ui.renderOccurred = function() {
   };
 
   function changeDataNameToSelected() {
@@ -180,7 +180,7 @@ binfo._register('ui', ['core'], function(uiApi, coreApi) {
   }
 
   function changeDataName(newDataName, clearSelected) {
-    var ids = setupApi.dataSet(newDataName, true).definitionIds,
+    var ids = setup.dataSet(newDataName, true).definitionIds,
         optionXc,
         optionYc,
         li;
@@ -217,7 +217,7 @@ binfo._register('ui', ['core'], function(uiApi, coreApi) {
         .text(labelFromId);
     optionYc.exit().remove();
   }
-  uiApi.changeDataName = changeDataName;
+  ui.changeDataName = changeDataName;
 
   // I'm encountering an odd bug where the select value won't update,
   // so this will force it to.
@@ -233,7 +233,7 @@ binfo._register('ui', ['core'], function(uiApi, coreApi) {
     if (id === '--nothing--') {
       return '-- Nothing -- (add bar chart)';
     }
-    return setupApi.dataSet(dataName, true).definitions[id].label;
+    return setup.dataSet(dataName, true).definitions[id].label;
   }
 
   function addCompareChart() {
@@ -283,9 +283,9 @@ binfo._register('ui', ['core'], function(uiApi, coreApi) {
     holder.select('.update.action.button').classed('active', needs);
     holder.select('.cancel.button').style('display', needs ? null : 'none');
   }
-  uiApi.needsUpdate = needsUpdate;
+  ui.needsUpdate = needsUpdate;
 
-  uiApi.updating = function(updating) {
+  ui.updating = function(updating) {
     holder.select('.charts').style('opacity', updating ? 0.3 : null);
   };
 

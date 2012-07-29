@@ -1,19 +1,18 @@
 
-binfo._register('charts', ['core', 'logic'],
-                function(chartsApi, coreApi, logicApi) {
+binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
 
   "use strict";
 
-  chartsApi.barChart = function(spec, data) {
+  charts.barChart = function(spec, data) {
     var bar = {api: {}};
-    logicApi.barLogic(bar, spec, data);
+    logic.barLogic(bar, spec, data);
     barChart(bar, spec);
     return bar.api;
   };
 
-  chartsApi.compareChart = function(spec) {
+  charts.compareChart = function(spec) {
     var compare = {api: {}};
-    logicApi.compareLogic(compare, spec);
+    logic.compareLogic(compare, spec);
     compareChart(compare, spec);
     return compare.api;
   };
@@ -105,7 +104,7 @@ binfo._register('charts', ['core', 'logic'],
 
     function filter(range) {
       bar.api.filter(range);
-      coreApi.refresh();
+      core.refresh();
     }
 
     brush.on('brush.chart', function() {
@@ -444,7 +443,7 @@ binfo._register('charts', ['core', 'logic'],
 
     function given(what) {
       compare.api.given(what);
-      coreApi.refresh();
+      core.refresh();
     }
 
     compare.updateChart = function() {

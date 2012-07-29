@@ -74,13 +74,13 @@ binfo._register = (function() {
 }());
 
 
-binfo._register('core', [], function(coreApi) {
+binfo._register('core', [], function(core) {
 
-  var uiApi = coreApi.dependency('ui'),
-      renderingApi = coreApi.dependency('rendering'),
-      chartsApi = coreApi.dependency('charts'),
-      hashApi = coreApi.dependency('hash'),
-      arrangeApi = coreApi.dependency('arrange'),
+  var ui = core.dependency('ui'),
+      rendering = core.dependency('rendering'),
+      chartsApi = core.dependency('charts'),
+      hash = core.dependency('hash'),
+      arrange = core.dependency('arrange'),
       getHolders = [],
       dataSets = {},
       cross,
@@ -98,7 +98,7 @@ binfo._register('core', [], function(coreApi) {
       nextChartIds,
       nextCharts;
 
-  coreApi.dataSet = function(name, definitions, data) {
+  core.dataSet = function(name, definitions, data) {
     var set,
         id;
     if (!definitions) {
@@ -119,7 +119,7 @@ binfo._register('core', [], function(coreApi) {
     }
     set.chartIds = set.definitionIds.slice();
     if (renderFreshLater && renderFreshLater[0] === name) {
-      coreApi.renderFresh.apply(null, renderFreshLater);
+      core.renderFresh.apply(null, renderFreshLater);
     };
     // TODO, figure out displaying the first definition
     //firstDefinition = holder.selectAll('.data-name option').empty();
@@ -127,22 +127,22 @@ binfo._register('core', [], function(coreApi) {
     //    .attr('value', dataName)
     //    .text(dataName);
     //if (firstDefinition) {
-    //  uiApi.changeDataName(dataName);
+    //  ui.changeDataName(dataName);
     //}
   };
 
   binfo.setup = function(_, width) {
     binfo.width = width;
     holder = d3.select(_);
-    uiApi.setup(holder, width);
+    ui.setup(holder, width);
     getHolders.forEach(function(g) { g(holder); });
   };
 
-  coreApi.getHolder = function(get) {
+  core.getHolder = function(get) {
     getHolders.push(get);
   };
 
-  coreApi.dataName = function(_) {
+  core.dataName = function(_) {
     if (!arguments.length) return dataName;
     if (_ === dataName) return;
     needsToUpdate = true;
@@ -151,12 +151,12 @@ binfo._register('core', [], function(coreApi) {
     nextChartIds = [];
   };
 
-  coreApi.addChart = function(add) {
-    coreApi.chartIds(nextChartIds.concat([add]));
+  core.addChart = function(add) {
+    core.chartIds(nextChartIds.concat([add]));
   };
 
-  coreApi.clearCharts = function() {
-    coreApi.chartIds([]);
+  core.clearCharts = function() {
+    core.chartIds([]);
   };
 
   function arrayDiff(one, two) {
@@ -165,7 +165,7 @@ binfo._register('core', [], function(coreApi) {
     });
   }
 
-  coreApi.chartIds = function(_) {
+  core.chartIds = function(_) {
     if (!arguments.length) return chartIds;
     nextChartIds = _;
     nextChartIds.forEach(function(id) {
@@ -183,48 +183,48 @@ binfo._register('core', [], function(coreApi) {
 
   binfo.defaultRender = function(dataName, charts, filters) {
     if (!renderFreshLater) {
-      coreApi.renderFresh(dataName, charts, filters);
+      core.renderFresh(dataName, charts, filters);
     }
   };
 
-  coreApi.renderFresh = function(dataName, charts, filters) {
+  core.renderFresh = function(dataName, charts, filters) {
     if (!dataSets[dataName]) {
       renderFreshLater = [dataName, charts, filters];
       return;
     }
-    coreApi.dataName(dataName);
-    coreApi.chartIds(charts);
+    core.dataName(dataName);
+    core.chartIds(charts);
     var id;
     for (id in filters) {
       if (filters.hasOwnProperty(id)) {
         nextCharts[id].filter(filters[id]);
       }
     }
-    coreApi.update('force');
+    core.update('force');
   };
 
-  coreApi.updateMode = function(_) {
+  core.updateMode = function(_) {
     if (!arguments.length) return updateMode;
     updateMode = _;
   };
 
-  coreApi.update = function(mode) {
+  core.update = function(mode) {
     if (!mode) mode = updateMode;
     if (!needsToUpdate && mode !== 'force') return;
     if (mode === 'manual') {
-      uiApi.needsUpdate(true);
+      ui.needsUpdate(true);
       return;
     }
     if (!cross || nextDataName !== dataName ||
         removedIds.length || addedIds.length) {
       if (mode === 'smart') {
-        uiApi.needsUpdate(true);
+        ui.needsUpdate(true);
         return;
       }
       if (!updating) {
         updating = true;
-        uiApi.updating(true);
-        setTimeout(function() { coreApi.update(mode); }, 30);
+        ui.updating(true);
+        setTimeout(function() { core.update(mode); }, 30);
         return;
       }
     }
@@ -232,7 +232,7 @@ binfo._register('core', [], function(coreApi) {
     if (!cross || nextDataName !== dataName || removedIds.length) {
       cross = crossfilter(data);
       crossAll = cross.groupAll();
-      renderingApi.setCross(cross, crossAll, nextDataName);
+      rendering.setCross(cross, crossAll, nextDataName);
       addedIds = nextChartIds;
       removedIds = chartIds;
     }
@@ -241,18 +241,18 @@ binfo._register('core', [], function(coreApi) {
     dataName = nextDataName;
     charts = nextCharts;
     chartIds = nextChartIds;
-    renderingApi.render(charts, chartIds);
-    renderingApi.renderTotal(cross.size(), dataName);
-    coreApi.refresh();
-    arrangeApi.arrange(charts, chartIds);
+    rendering.render(charts, chartIds);
+    rendering.renderTotal(cross.size(), dataName);
+    core.refresh();
+    arrange.arrange(charts, chartIds);
     updating = false;
-    uiApi.updating(false);
-    uiApi.needsUpdate(false);
+    ui.updating(false);
+    ui.needsUpdate(false);
   };
 
-  coreApi.refresh = function() {
-    renderingApi.refresh(crossAll);
-    hashApi.refresh(dataName, charts, chartIds);
+  core.refresh = function() {
+    rendering.refresh(crossAll);
+    hash.refresh(dataName, charts, chartIds);
   };
 });
 

@@ -1,5 +1,5 @@
 
-binfo._register('setup', ['core'], function(setupApi, coreApi) {
+binfo._register('setup', ['core'], function(setup, core) {
 
   "use strict";
 
@@ -100,14 +100,14 @@ binfo._register('setup', ['core'], function(setupApi, coreApi) {
 
   function checkLoaded(name) {
     if (definitions[name] && data[name]) {
-      coreApi.dataSet(name, definitions[name], data[name]);
+      core.dataSet(name, definitions[name], data[name]);
     }
   }
 
 });
 
 
-binfo._register('hashRetrieval', ['core'], function(_, coreApi) {
+binfo._register('hashRetrieval', ['core'], function(_, core) {
 
   "use strict";
 
@@ -146,7 +146,7 @@ binfo._register('hashRetrieval', ['core'], function(_, coreApi) {
     if (!dataName || !charts || !charts.length) {
       return;
     }
-    coreApi.renderFresh(dataName, charts, myFilters);
+    core.renderFresh(dataName, charts, myFilters);
   }
 
   window.onhashchange = renderFromHash;
@@ -156,13 +156,13 @@ binfo._register('hashRetrieval', ['core'], function(_, coreApi) {
 
 
 
-binfo._register('hash', [], function(hashApi) {
+binfo._register('hash', [], function(hash) {
 
   var currentHash,
       hashUpdatedRecently = false,
       hashNeedsUpdated = false;
 
-  hashApi.refresh = function(dataName, charts, chartIds) {
+  hash.refresh = function(dataName, charts, chartIds) {
     var filters = {},
         id,
         filterData,
@@ -204,7 +204,7 @@ binfo._register('hash', [], function(hashApi) {
 });
 
 
-binfo._register('rendering', ['core'], function(renderingApi, coreApi) {
+binfo._register('rendering', ['core'], function(rendering, core) {
 
   "use strict";
 
@@ -217,9 +217,9 @@ binfo._register('rendering', ['core'], function(renderingApi, coreApi) {
       chartIds,
       formatNumber = d3.format(',d');
 
-  coreApi.getHolder(function(_) { holder = _; });
+  core.getHolder(function(_) { holder = _; });
 
-  renderingApi.setCross = function(_, all, name) {
+  rendering.setCross = function(_, all, name) {
     cross = _;
     crossAll = all;
     dataName = name;  // TODO, possibly remove this.
@@ -236,14 +236,14 @@ binfo._register('rendering', ['core'], function(renderingApi, coreApi) {
       renderCharts = callCharts('render'),
       cleanUpCharts = callCharts('resetUpdate');
 
-  renderingApi.refresh = function(crossAll) {
+  rendering.refresh = function(crossAll) {
     chartSelection.each(updateCharts);
     chartSelection.each(renderCharts);
     chartSelection.each(cleanUpCharts);
     d3.select('.active-data').text(formatNumber(crossAll.value()));
   }
 
-  renderingApi.render = function(charts, chartIds) {
+  rendering.render = function(charts, chartIds) {
     var chartsHolder = holder.select('.charts'),
         chartData;
 
@@ -265,11 +265,9 @@ binfo._register('rendering', ['core'], function(renderingApi, coreApi) {
     chartSelection.order();
   };
 
-  renderingApi.renderTotal = function(total, dataName) {
+  rendering.renderTotal = function(total, dataName) {
     holder.select('.total')
         .text(formatNumber(total) + ' ' + dataName + ' selected.');
   };
-
-
 });
 
