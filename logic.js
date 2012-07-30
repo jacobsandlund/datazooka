@@ -160,7 +160,7 @@ binfo._register('logic', [], function(logic) {
           dimension.filterAll();
         }
       }
-      bar.chartFilter(range);
+      bar.chartFilter();
       return bar;
     };
 
@@ -193,10 +193,12 @@ binfo._register('logic', [], function(logic) {
       if (!spec.maxX) {
         maxX = +groups[groups.length - 1].key + separation;
       }
+      bar.api.filter(filterActive);
     };
 
     bar.api.add = function() {
       added += 1;
+      bar.chartFilter();
       if (added > 1) {
         return;
       }
@@ -211,7 +213,6 @@ binfo._register('logic', [], function(logic) {
         }
         filterRange = [dummyLeft, dummyRight];
       }
-      bar.api.filter(filterActive);
     };
 
     bar.api.removeCross = function() {
@@ -221,7 +222,7 @@ binfo._register('logic', [], function(logic) {
     bar.api.remove = function() {
       added -= 1;
       if (!added) {
-        filterActive = false;
+        bar.api.filter(null);
       }
     };
 

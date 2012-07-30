@@ -426,9 +426,10 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
       }
     };
 
-    bar.chartFilter = function(_) {
-      if (_) {
-        brush.extent(_);
+    bar.chartFilter = function() {
+      var range = bar.filterActive() ? bar.filterRange() : null;
+      if (range) {
+        brush.extent(range);
       } else {
         brush.clear();
       }
