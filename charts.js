@@ -73,7 +73,6 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
     api.levels = levels;
     api.width = div.property('offsetWidth') - binfo.chartBorder;
     api.div = div;
-    api.arranged = false;
     div.style('height', height + 'px');
   }
 

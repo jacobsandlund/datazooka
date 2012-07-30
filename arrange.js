@@ -19,20 +19,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   };
 
   arrange.remove = function(removed, charts) {
-    removed.forEach(function(id) {
-      var chart = charts[id],
-          row,
-          i,
-          j;
-      for (i = chart.startLevel; i < chart.startLevel + chart.levels; i++) {
-        row = layout[i];
-        for (j = 1; j < row.length; j++) {
-          if (row[j] === chart) {
-            row.splice(j, 1);
-          }
-        }
-      }
-    });
+    removed.forEach(function(id) { remove(charts[id]); });
 
     var i,
         j,
@@ -50,6 +37,62 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       if (found) break;
     }
   };
+
+  function forRowAtChart(chart, callback) {
+    var row,
+        i,
+        j;
+    for (i = chart.startLevel; i < chart.startLevel + chart.levels; i++) {
+      row = layout[i];
+      for (j = 1; j < row.length; j++) {
+        if (row[j] === chart) {
+          callback(row, j);
+          break;
+        }
+      }
+    }
+  }
+
+  function checkAtChart(chart) {
+    var check = [];
+    forRowAtChart(chart, function(row, i) {
+      var next = row[i + 1];
+      if (next) {
+        if (check.indexOf(next) < 0) {
+          check.push(next);
+        }
+      }
+    });
+    return check;
+  }
+
+  function remove(chart) {
+    var check = checkAtChart(chart);
+    forRowAtChart(chart, function(row, i) { row.splice(i, 1); });
+    checkAllMove(check);
+  }
+
+  function checkAllMove(check) {
+    check.forEach(function(c) { checkMove(c); });
+  }
+
+  function checkMove(chart) {
+    var left = 0;
+    forRowAtChart(chart, function(row, i) {
+      left = Math.max(left, row[i - 1].left + row[i - 1].width);
+    });
+    if (left !== chart.left) {
+      chart.left = left;
+      reposition(chart);
+      checkAllMove(checkAtChart(chart));
+    }
+  }
+
+  function reposition(chart) {
+    chart.div
+        .style('left', chart.left + 'px')
+        .style('top', (chart.startLevel * binfo.chartHeight) + 'px');
+  }
 
   arrange.add = function(added, charts) {
     added.forEach(function(id) {
@@ -97,10 +140,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       maxLevel = Math.max(startLevel, maxLevel);
       chart.startLevel = startLevel;
       chart.left = maxWidth - fitWidth;
-      chart.div
-          .style('left', chart.left + 'px')
-          .style('top', (startLevel * binfo.chartHeight) + 'px');
-      chart.arranged = true;
+      reposition(chart);
     });
 
     var levels = d3.max(layout[maxLevel], function(d) { return d.levels; }),
