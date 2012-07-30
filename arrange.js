@@ -4,10 +4,16 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   var holder,
       maxWidth,
       maxLevel,
+      arranging,
+      chartsNode,
+      root,
+      zIndex = 1,
       layout;
 
-  arrange.setup = function(h, width) {
+  arrange.setup = function(r, h, width) {
     holder = h;
+    root = r;
+    chartsNode = holder.select('.charts').node();
     maxWidth = width - 10;
     maxLevel = 0;
     layout = [];
@@ -15,6 +21,60 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         i;
     for (i = 0; i < binfo.maxLevels; i++) {
       layout[i] = [dummyChart];
+    }
+    root.on('mousemove.arrange', function() {
+      var coords = mouseCoords();
+      if (arranging) {
+        drag.apply(null, coords);
+      }
+    });
+    root.on('mouseup.arrange', function() {
+      if (arranging) {
+        root.node().onselectstart = function() { return true; };
+        arranging = null;
+      }
+    });
+  };
+
+  arrange.start = function(chart) {
+    var coords = mouseCoords();
+    root.node().onselectstart = function() { return false; };
+    zIndex += 1;
+    chart.div.style('z-index', zIndex);
+    arranging = {
+      chart: chart,
+      offsetX: coords[0] - chart.left,
+      offsetY: coords[1] - chart.top
+    };
+  };
+
+  function mouseCoords() {
+    var coords = d3.mouse(chartsNode),
+        x = coords[0] + chartsNode.scrollLeft,
+        y = coords[1] + chartsNode.scrollTop;
+    return [x, y];
+  }
+
+  function drag(x, y) {
+    var chart = arranging.chart,
+        offsetX = arranging.offsetX,
+        offsetY = arranging.offsetY,
+        chartX = chart.left + offsetX,
+        chartY = chart.top + offsetY,
+        diffX = x - chartX,
+        diffY = y - chartY,
+        abs = Math.abs,
+        snapDiff = binfo.arrangeSnap;
+    if (chart.snapped) {
+      if (abs(diffX) > snapDiff || abs(diffY) > snapDiff) {
+        chart.div.classed('unsnapped', true);
+        remove(chart);
+      }
+    }
+    if (!chart.snapped) {
+      chart.left += diffX;
+      chart.top += diffY;
+      reposition(chart);
     }
   };
 
@@ -72,6 +132,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   function remove(chart) {
     var check = checkAtChart(chart);
     forRowAtChart(chart, function(row, i) { row.splice(i, 1); });
+    chart.snapped = false;
     checkAllMove(check);
   }
 
@@ -94,7 +155,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   function reposition(chart) {
     chart.div
         .style('left', chart.left + 'px')
-        .style('top', (chart.startLevel * binfo.chartHeight) + 'px');
+        .style('top', chart.top + 'px');
   }
 
   arrange.add = function(added, charts) {
@@ -143,6 +204,8 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       maxLevel = Math.max(startLevel, maxLevel);
       chart.startLevel = startLevel;
       chart.left = maxWidth - fitWidth;
+      chart.top = chart.startLevel * binfo.chartHeight;
+      chart.snapped = true;
       reposition(chart);
     });
 
@@ -151,27 +214,17 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     holder.select('.charts').style('height', chartHolderHeight + 'px');
   };
 
-  arrange.orderedChartIds = function(chartIds) {
-    var added = {},
-        newChartIds = [],
-        row,
-        chart,
-        i,
-        j;
-    for (i = 0; i < layout.length; i++) {
-      row = layout[i];
-      for (j = 1; j < row.length; j++) {
-        chart = row[j];
-        if (!added[chart.id]) {
-          newChartIds.push(chart.id);
-          added[chart.id] = true;
-        }
+  arrange.orderedChartIds = function(chartIds, charts) {
+    var order,
+        newChartIds = [];
+    order = chartIds.map(function(id) { return charts[id]; });
+    order.sort(function(a, b) {
+      if (a.top === b.top) {
+        return a.left - b.left;
       }
-      if (newChartIds.length === chartIds.length) {
-        break;
-      }
-    }
-    return newChartIds;
+      return a.top - b.top;
+    });
+    return order.map(function(chart) { return chart.id; });
   };
 
 });

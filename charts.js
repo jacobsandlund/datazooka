@@ -1,5 +1,6 @@
 
-binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
+binfo._register('charts', ['core', 'logic', 'arrange'],
+                function(charts, core, logic, arrange) {
 
   "use strict";
 
@@ -36,15 +37,20 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
   }
 
 
-  function baseSetupChartHeader(div, label, id) {
-    div.select('.title').text(label);
+  function baseSetupChart(div, api) {
+    var title = div.select('.title').text(api.label);
     div.append('div')
         .attr('class', 'remove')
         .html('&#10006;')
-        .on('click', function() { core.removeChart(id); });
+        .on('click', function() { core.removeChart(api.id); });
+    div.on('mousedown', function() {
+      var tgt = d3.event.target;
+      if (tgt !== div.node() && tgt !== title.node()) return;
+      arrange.start(api);
+    });
   }
 
-  function baseSetupChart(div, setupDim, orientFlip) {
+  function baseSetupSvg(div, setupDim, orientFlip) {
     var height = setupDim.actualHeight || setupDim.height,
         fullWidth = setupDim.left + setupDim.right,
         fullHeight = setupDim.top + setupDim.bottom;
@@ -75,8 +81,10 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
     height = levels * binfo.chartHeight - (binfo.chartBorder +
                                             2 * binfo.chartPadding);
     api.levels = levels;
+    api.height = height;
     api.width = div.property('offsetWidth') - binfo.chartBorder;
     api.div = div;
+    api.snapped = false;
     div.style('height', height + 'px');
   }
 
@@ -192,8 +200,8 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
         setupDim.actualHeight = compare ? setupDim.compareHeight : setupDim.height;
 
         if (!compare) {
-          baseSetupChartHeader(div, bar.api.label, bar.api.id);
-          g = baseSetupChart(div, setupDim, orientFlip);
+          baseSetupChart(div, bar.api);
+          g = baseSetupSvg(div, setupDim, orientFlip);
         }
         setupChart(g, setupDim, data);
         if (!compare) {
@@ -505,8 +513,8 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
           g = div.select('g');
 
       if (g.empty()) {
-        baseSetupChartHeader(div, compare.api.label, compare.api.id);
-        g = baseSetupChart(div, dim, false);
+        baseSetupChart(div, compare.api);
+        g = baseSetupSvg(div, dim, false);
         setupChart(g);
         setupChartPeripherals(div);
         baseArrange(div, compare.api);

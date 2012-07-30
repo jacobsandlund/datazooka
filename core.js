@@ -7,6 +7,7 @@ var binfo = {
   chartPadding: 5,
   chartBorder: 5,
   maxLevels: 50,
+  arrangeSnap: 30,
   chartDimensions: {
     top: 20,
     right: 10,
@@ -128,10 +129,11 @@ binfo._register('core', [], function(core) {
 
   binfo.setup = function(_, width, root) {
     holder = d3.select(_);
+    root = d3.select(root);
     ui.setup(holder, width);
     rendering.setup(holder);
-    arrange.setup(holder, width);
-    d3.select(root).on('mousemove', function() {
+    arrange.setup(root, holder, width);
+    root.on('mousemove.core', function() {
       if (smartTimer !== null) {
         clearSmartTimer();
         startSmartTimer();
@@ -296,7 +298,7 @@ binfo._register('core', [], function(core) {
 
     arrange.remove(removedIds, charts);
     arrange.add(addedIds, charts);
-    chartIds = arrange.orderedChartIds(chartIds);
+    chartIds = arrange.orderedChartIds(chartIds, charts);
     hash.refresh(dataName, charts, chartIds);
     doneUpdating();
   };
