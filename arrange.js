@@ -36,6 +36,9 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       }
       if (found) break;
     }
+    if (!found) {
+      maxLevel = 0;
+    }
   };
 
   function forRowAtChart(chart, callback) {

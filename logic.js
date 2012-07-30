@@ -6,6 +6,7 @@ binfo._register('logic', [], function(logic) {
   logic.barLogic = function(bar, spec, data) {
 
     var added = 0,
+        addedCross = 0,
         updated,
         filterRange,
         filterActive,
@@ -163,9 +164,9 @@ binfo._register('logic', [], function(logic) {
       return bar;
     };
 
-    bar.api.add = function(cross, all) {
-      added += 1;
-      if (added > 1) {
+    bar.api.addCross = function(cross, all) {
+      addedCross += 1;
+      if (addedCross > 1) {
         return;
       }
       crossAll = all;
@@ -192,6 +193,13 @@ binfo._register('logic', [], function(logic) {
       if (!spec.maxX) {
         maxX = +groups[groups.length - 1].key + separation;
       }
+    };
+
+    bar.api.add = function() {
+      added += 1;
+      if (added > 1) {
+        return;
+      }
       bar.addChart();
       if (!filterRange) {
         var ticks = bar.x.ticks(20),
@@ -204,6 +212,10 @@ binfo._register('logic', [], function(logic) {
         filterRange = [dummyLeft, dummyRight];
       }
       bar.api.filter(filterActive);
+    };
+
+    bar.api.removeCross = function() {
+      addedCross -= 1;
     };
 
     bar.api.remove = function() {
@@ -280,9 +292,9 @@ binfo._register('logic', [], function(logic) {
       filters[yc.id] = yc.filter();
     };
 
-    compare.api.add = function(cross, crossAll) {
-      xc.add(cross, crossAll);
-      yc.add(cross, crossAll);
+    compare.api.addCross = function(cross, crossAll) {
+      xc.addCross(cross, crossAll);
+      yc.addCross(cross, crossAll);
       xcDimensionFunc = xc.dimensionFunc();
       ycDimensionFunc = yc.dimensionFunc();
       xcGroupFunc = xc.groupFunc();
@@ -300,10 +312,15 @@ binfo._register('logic', [], function(logic) {
       compare.addChart();
     };
 
-    compare.api.remove = function() {
-      xc.remove();
-      yc.remove();
-    };
+    function passToXcYc(method) {
+      compare.api[method] = function() {
+        xc[method]();
+        yc[method]();
+      };
+    }
+    ['add', 'remove', 'removeCross', 'resetUpdate'].forEach(function(pass) {
+      passToXcYc(pass);
+    });
 
     compare.api.update = function() {
       xc.update();
@@ -356,11 +373,6 @@ binfo._register('logic', [], function(logic) {
       }
 
       compare.updateChart();
-    };
-
-    compare.api.resetUpdate = function() {
-      xc.resetUpdate();
-      yc.resetUpdate();
     };
 
   };

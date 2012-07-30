@@ -36,8 +36,15 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
   }
 
 
-  function baseSetupChart(div, label, setupDim, orientFlip) {
+  function baseSetupChartHeader(div, label, id) {
+    div.select('.title').text(label);
+    div.append('div')
+        .attr('class', 'remove')
+        .html('&#10006;')
+        .on('click', function() { core.removeChart(id); });
+  }
 
+  function baseSetupChart(div, setupDim, orientFlip) {
     var height = setupDim.actualHeight || setupDim.height,
         fullWidth = setupDim.left + setupDim.right,
         fullHeight = setupDim.top + setupDim.bottom;
@@ -48,8 +55,6 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
       fullWidth += setupDim.width;
       fullHeight += height;
     }
-    div.select('.title').text(label);
-
     var g = div.append('svg')
         .attr('width', fullWidth)
         .attr('height', fullHeight)
@@ -62,10 +67,9 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
     }
 
     return g;
-
   }
 
-  function baseArrange(api, div) {
+  function baseArrange(div, api) {
     var height = div.property('offsetHeight') - binfo.chartBorder,
         levels = Math.ceil(height / binfo.chartHeight);
     height = levels * binfo.chartHeight - (binfo.chartBorder +
@@ -188,12 +192,13 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
         setupDim.actualHeight = compare ? setupDim.compareHeight : setupDim.height;
 
         if (!compare) {
-          g = baseSetupChart(div, bar.api.label, setupDim, orientFlip);
+          baseSetupChartHeader(div, bar.api.label, bar.api.id);
+          g = baseSetupChart(div, setupDim, orientFlip);
         }
         setupChart(g, setupDim, data);
         if (!compare) {
           setupChartPeripherals(div, setupDim);
-          baseArrange(bar.api, div);
+          baseArrange(div, bar.api);
         }
       }
 
@@ -499,10 +504,11 @@ binfo._register('charts', ['core', 'logic'], function(charts, core, logic) {
           g = div.select('g');
 
       if (g.empty()) {
-        g = baseSetupChart(div, compare.api.label, dim, false);
+        baseSetupChartHeader(div, compare.api.label, compare.api.id);
+        g = baseSetupChart(div, dim, false);
         setupChart(g);
         setupChartPeripherals(div);
-        baseArrange(compare.api, div);
+        baseArrange(div, compare.api);
       }
 
       renderUpdate(div, g);

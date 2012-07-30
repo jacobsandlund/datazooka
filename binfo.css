@@ -211,6 +211,23 @@
   background: #6F1127;
 }
 
+.remove {
+  position: absolute;
+  right: 0px;
+  top: 0px;
+  width: 16px;
+  height: 18px;
+  color: #bbb;
+  cursor: pointer;
+  padding: 1px 2px;
+  text-align: center;
+  font-size: 15px;
+}
+
+.remove:hover {
+  color: #777;
+}
+
 .peripherals {
   font-size: 12px;
 }

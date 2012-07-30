@@ -88,6 +88,7 @@ binfo._register('core', [], function(core) {
       smartTimer = null,
       renderFreshLater,
       renderFreshFilters,
+      renderFresh,
       needsToUpdate = true,
       updating,
       addedIds,
@@ -155,6 +156,13 @@ binfo._register('core', [], function(core) {
     core.update();
   };
 
+  core.removeChart = function(remove) {
+    var ids = nextChartIds.slice();
+    ids.splice(ids.indexOf(remove), 1);
+    core.chartIds(ids);
+    core.update();
+  };
+
   core.changeDataName = function(name) {
     core.dataName(name);
     core.update();
@@ -207,7 +215,8 @@ binfo._register('core', [], function(core) {
     }
     core.dataName(name);
     core.chartIds(ids);
-    renderFreshFilters = filters;
+    renderFresh = true;
+    renderFreshFilters = filters || {};
     core.update('force');
   };
 
@@ -252,44 +261,54 @@ binfo._register('core', [], function(core) {
       }
     }
     var data = dataSets[nextDataName].data,
-        arrangeAdded = addedIds,
-        arrangeRemoved = removedIds;
+        addedCross = addedIds,
+        removedCross = removedIds;
     if (!cross || nextDataName !== dataName || removedIds.length) {
       cross = crossfilter(data);
       crossAll = cross.groupAll();
-      addedIds = nextChartIds;
-      removedIds = chartIds;
+      addedCross = nextChartIds;
+      removedCross = chartIds;
       if (!removedIds.length) {
-        arrangeAdded = addedIds;
-        arrangeRemoved = removedIds;
+        addedIds = addedCross;
+        removedIds = removedCross;
       }
     }
+    if (renderFresh) {
+      addedIds = nextChartIds;
+      removedIds = chartIds;
+    }
+    removedCross.forEach(function(id) { charts[id].removeCross(); });
+    addedCross.forEach(function(id) { nextCharts[id].addCross(cross, crossAll); });
     removedIds.forEach(function(id) { charts[id].remove(); });
-    addedIds.forEach(function(id) { nextCharts[id].add(cross, crossAll); });
+    addedIds.forEach(function(id) { nextCharts[id].add(); });
+
     dataName = nextDataName;
     charts = nextCharts;
     chartIds = nextChartIds;
+
     rendering.render(charts, chartIds);
     rendering.renderTotal(cross.size());
-    refresh();
-    arrange.remove(arrangeRemoved, charts);
-    arrange.add(arrangeAdded, charts);
+    if (renderFresh) {
+      filterForRenderFresh();
+      renderFresh = false;
+    }
+    rendering.refresh(crossAll);
+
+    arrange.remove(removedIds, charts);
+    arrange.add(addedIds, charts);
     chartIds = arrange.orderedChartIds(chartIds);
     hash.refresh(dataName, charts, chartIds);
     doneUpdating();
   };
 
-  function refresh() {
+  function filterForRenderFresh() {
     var id;
-    if (renderFreshFilters) {
-      for (id in renderFreshFilters) {
-        if (renderFreshFilters.hasOwnProperty(id)) {
-          charts[id].filter(renderFreshFilters[id]);
-        }
+    for (id in renderFreshFilters) {
+      if (renderFreshFilters.hasOwnProperty(id)) {
+        charts[id].filter(renderFreshFilters[id]);
       }
-      renderFreshFilters = null;
     }
-    rendering.refresh(crossAll);
+    renderFreshFilters = null;
   }
 
   function doneUpdating() {
