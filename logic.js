@@ -310,6 +310,11 @@ binfo._register('logic', [], function(logic) {
       for (i = 0; i < xcNumGroups; i++) {
         values[i] = [];
       }
+    };
+
+    compare.api.add = function() {
+      xc.add();
+      yc.add();
       compare.addChart();
     };
 
@@ -319,7 +324,7 @@ binfo._register('logic', [], function(logic) {
         yc[method]();
       };
     }
-    ['add', 'remove', 'removeCross', 'resetUpdate'].forEach(function(pass) {
+    ['remove', 'removeCross', 'resetUpdate'].forEach(function(pass) {
       passToXcYc(pass);
     });
 
