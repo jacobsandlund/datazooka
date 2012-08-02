@@ -7,7 +7,7 @@ var binfo = {
   chartPadding: 5,
   chartBorder: 5,
   maxLevels: 50,
-  arrangeSnap: 30,
+  arrangeSnap: 40,
   chartDimensions: {
     top: 20,
     right: 10,

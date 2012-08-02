@@ -75,8 +75,63 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       chart.left += diffX;
       chart.top += diffY;
       reposition(chart);
+      maybeSnap(chart);
     }
   };
+
+  function maybeSnap(chart) {
+    var level = Math.round(chart.top / binfo.chartHeight),
+        bestEdge = null,
+        bestDiff = binfo.arrangeSnap;
+    if (Math.abs(level * binfo.chartHeight - chart.top) >= bestDiff) {
+      return;
+    }
+    if (level < 0) {
+      return;
+    }
+    forEdgesAtLevels(level, chart.levels, function(edge) {
+      var diff = Math.abs(edge - chart.left);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        bestEdge = edge;
+      }
+    });
+    if (bestEdge === null) {
+      return;
+    }
+    var addAt = null;
+    forEdgesAtLevels(level, chart.levels, function(edge, i) {
+      if (edge > bestEdge && addAt === null) {
+        addAt = i;
+      }
+    }, function(row) {
+      if (addAt === null) {
+        addAt = row.length;
+      }
+      row.splice(addAt, 0, chart);
+      addAt = null;
+    });
+    snapPosition(chart, bestEdge, level);
+    chart.snapped = true;
+    checkAllMoveAtChart(chart);
+  }
+
+  function forEdgesAtLevels(level, levels, rowCallback, levelCallback) {
+    var i,
+        row,
+        j,
+        edge;
+    for (i = level; i < level + levels; i++) {
+      row = layout[i];
+      for (j = 0; j < row.length; j++) {
+        edge = row[j].left + row[j].width;
+        rowCallback(edge, j);
+      }
+      if (levelCallback) {
+        levelCallback(row);
+      }
+    }
+  }
 
   arrange.remove = function(removed, charts) {
     removed.forEach(function(id) { remove(charts[id]); });
@@ -140,6 +195,10 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     check.forEach(function(c) { checkMove(c); });
   }
 
+  function checkAllMoveAtChart(chart) {
+    checkAllMove(checkAtChart(chart));
+  }
+
   function checkMove(chart) {
     var left = 0;
     forRowAtChart(chart, function(row, i) {
@@ -148,8 +207,15 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     if (left !== chart.left) {
       chart.left = left;
       reposition(chart);
-      checkAllMove(checkAtChart(chart));
+      checkAllMoveAtChart(chart);
     }
+  }
+
+  function snapPosition(chart, left, level) {
+    chart.left = left;
+    chart.startLevel = level;
+    chart.top = level * binfo.chartHeight;
+    reposition(chart);
   }
 
   function reposition(chart) {
@@ -202,11 +268,8 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         layout[j].push(chart);
       }
       maxLevel = Math.max(startLevel, maxLevel);
-      chart.startLevel = startLevel;
-      chart.left = maxWidth - fitWidth;
-      chart.top = chart.startLevel * binfo.chartHeight;
+      snapPosition(chart, maxWidth - fitWidth, startLevel);
       chart.snapped = true;
-      reposition(chart);
     });
 
     var levels = d3.max(layout[maxLevel], function(d) { return d.levels; }),
