@@ -78,10 +78,9 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
   function baseArrange(div, api) {
     var height = div.property('offsetHeight') - binfo.chartBorder,
         levels = Math.ceil(height / binfo.chartHeight);
-    height = levels * binfo.chartHeight - (binfo.chartBorder +
-                                            2 * binfo.chartPadding);
     api.levels = levels;
-    api.height = height;
+    api.height = levels * binfo.chartHeight;
+    height = api.height - (binfo.chartBorder + 2 * binfo.chartPadding);
     api.width = div.property('offsetWidth') - binfo.chartBorder;
     api.div = div;
     api.snapped = false;
