@@ -10,8 +10,11 @@
   position: relative;
 }
 
-.chart {
+.chart, .ghost, .positioner {
   position: absolute;
+}
+
+.chart {
   display: inline-block;
   padding: 5px;
   margin: 0;
@@ -19,7 +22,11 @@
 }
 
 .chart.unsnapped {
-  border-left: solid 5px red;
+}
+
+.chart.unsnapped.arranging {
+  border-left-color: red;
+  opacity: 0.8;
 }
 
 .chart svg {
@@ -39,16 +46,18 @@
 }
 
 .ghost {
-  border-style: solid;
-  border-color: red;
-  border-width: 9px;
-  position: absolute;
-  z-index: 1;
-  margin: -2px;
+  border-style: dashed;
+  border-width: 1px;
+  border-color: rgba(100,100,100,0.4);
+  z-index: 16000000;
+  background-color: transparent;
+  margin: 2px;
 }
 
-.ghost.unsnapped {
-  border-width: 0 0 0 9px;
+.positioner {
+  z-index: 15999999;
+  border-style: solid;
+  border-width: 0 0 0 5px;
 }
 
 .panel {

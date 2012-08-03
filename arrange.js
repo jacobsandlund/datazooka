@@ -6,6 +6,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       maxLevel,
       arranging,
       ghost,
+      positioner,
       chartsNode,
       root,
       zIndex = 1,
@@ -20,6 +21,10 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         .attr('class', 'ghost')
         .style('display', 'none');
     ghost.div = ghost;
+    positioner = charts.append('div')
+        .attr('class', 'positioner')
+        .style('display', 'none');
+    positioner.div = positioner;
     maxWidth = width - 10;
     maxLevel = 0;
     layout = [];
@@ -47,13 +52,21 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     zIndex += 1;
     chart.div.style('z-index', zIndex);
     ghost.width = chart.width;
-    ghost.height = chart.height;
+    ghost.height = chart.height - binfo.chartBorder / 2;
+    ghost.left = chart.left;
+    ghost.top = chart.top;
+    positioner.height = chart.height + binfo.chartBorder;
     ghost.levels = chart.levels;
     ghost
         .style('display', 'block')
         .style('width', ghost.width + 'px')
         .style('height', ghost.height + 'px');
-    swapGhost(chart, ghost);
+    reposition(ghost);
+    positioner
+        .style('display', 'block')
+        .style('height', positioner.height + 'px');
+    whereToSnap(chart);
+    chart.div.classed('arranging', true);
     arranging = {
       chart: chart,
       offsetX: coords[0] - chart.left,
@@ -63,20 +76,11 @@ binfo._register('arrange', ['core'], function(arrange, core) {
 
   function arrangeEnd() {
     var chart = arranging.chart;
-    if (ghost.snapped) {
-      swapGhost(ghost, chart);
-      ghost.style('display', 'none');
-    }
+    ghost.style('display', 'none');
+    positioner.style('display', 'none');
+    chart.div.classed('arranging', false);
     root.node().onselectstart = function() { return true; };
     arranging = null;
-  }
-
-  function swapGhost(toRemove, toAdd) {
-    setSnapped(toAdd, true);
-    snapPosition(toAdd, toRemove.left, toRemove.startLevel);
-    forRowAtChart(toRemove, function(row, i) {
-      row.splice(i, 1, toAdd);
-    });
   }
 
   function mouseCoords() {
@@ -94,25 +98,27 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         diffY,
         abs = Math.abs,
         snapDiff = binfo.arrangeSnap;
-    chart.left = x - offsetX;
-    chart.top = y - offsetY;
-    reposition(chart);
-    diffX = ghost.left - chart.left;
-    diffY = ghost.top - chart.top;
-    if (ghost.snapped) {
+    ghost.left = x - offsetX;
+    ghost.top = y - offsetY;
+    reposition(ghost);
+    diffX = positioner.left - ghost.left;
+    diffY = positioner.top - ghost.top;
+    if (chart.snapped) {
       if (abs(diffX) > snapDiff || abs(diffY) > snapDiff) {
-        console.log('unsnap ghost');
-        remove(ghost);
+        remove(chart);
       }
     }
-    if (!ghost.snapped) {
+    if (!chart.snapped) {
+      chart.left = ghost.left;
+      chart.top = ghost.top;
+      reposition(chart);
       maybeSnap(chart);
     }
   };
 
-  function maybeSnap(chart) {
-    var level = Math.round(chart.top / binfo.chartHeight),
-        bestEdge = null,
+  function whereToSnap(chart) {
+    var level = Math.round(ghost.top / binfo.chartHeight),
+        bestEdge,
         bestDiff = 1e10;
     if (level < 0) {
       level = 0;
@@ -120,37 +126,44 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     if (level >= layout.length) {
       level = layout.length - 1;
     }
-    forEdgesAtLevels(level, ghost.levels, function(edge) {
-      var diff = Math.abs(edge - chart.left);
+    forEdgesAtLevels(level, chart.levels, function(edge) {
+      var diff = Math.abs(edge - ghost.left);
       if (diff < bestDiff) {
         bestDiff = diff;
         bestEdge = edge;
       }
     });
-    snapPosition(ghost, bestEdge, level);
-    if (Math.abs(level * binfo.chartHeight - chart.top) >= bestDiff) {
+    snapPosition(positioner, bestEdge, level);
+    return {level: level, left: bestEdge, diff: bestDiff};
+  }
+
+  function maybeSnap(chart) {
+    var snap = whereToSnap(chart),
+        level = snap.level,
+        left = snap.left,
+        diff = snap.diff;
+    if (Math.abs(level * binfo.chartHeight - ghost.top) >= binfo.arrangeSnap) {
       return;
     }
-    if (bestDiff >= binfo.arrangeSnap) {
+    if (diff >= binfo.arrangeSnap) {
       return;
     }
 
-    // Add ghost at edge.
-    console.log('snap ghost');
     var addAt = null;
-    forEdgesAtLevels(level, ghost.levels, function(edge, i) {
-      if (edge > bestEdge && addAt === null) {
+    forEdgesAtLevels(level, chart.levels, function(edge, i) {
+      if (edge > left && addAt === null) {
         addAt = i;
       }
     }, function(row) {
       if (addAt === null) {
         addAt = row.length;
       }
-      row.splice(addAt, 0, ghost);
+      row.splice(addAt, 0, chart);
       addAt = null;
     });
-    setSnapped(ghost, true);
-    checkAllMoveAtChart(ghost);
+    setSnapped(chart, true);
+    snapPosition(chart, left, level);
+    checkAllMoveAtChart(chart);
   }
 
   function forEdgesAtLevels(level, levels, rowCallback, levelCallback) {
@@ -258,6 +271,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   function setSnapped(chart, snap) {
     chart.snapped = snap
     chart.div.classed('unsnapped', !snap);
+    positioner.style('border-color', snap ? '#eee' : 'red');
   }
 
   function reposition(chart) {
