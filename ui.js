@@ -7,9 +7,9 @@ binfo._register('ui', ['core'], function(ui, core) {
       setup = ui.dependency('setup'),
       holder,
       panel,
+      disableModeTimer,
       dataName,
-      mouseOverStats,
-      compareActive,
+      chartMode,
       firstCompare;
 
   ui.setup = function(_, width) {
@@ -36,21 +36,33 @@ binfo._register('ui', ['core'], function(ui, core) {
         .attr('class', 'line-one panel-line');
 
     lineOne.append('div')
+        .attr('class', 'bar button')
+        .text('Bar')
+        .on('click', function() { setChartMode('bar'); });
+
+    lineOne.append('div')
         .attr('class', 'compare button')
         .text('Compare')
-        .on('click', function() { compare(!compareActive); });
+        .on('click', function() { setChartMode('compare'); });
 
     statistics = lineOne.append('div')
         .attr('class', 'statistics')
         .on('mouseover', function() {
-          mouseOverStats = true;
-          showStatistics(true);
+          if (disableModeTimer) {
+            clearTimeout(disableModeTimer);
+          }
         })
         .on('mouseout', function() {
-          mouseOverStats = false;
-          if (!compareActive) {
-            showStatistics(false)
+          var e = d3.event,
+              tgt = e.target,
+              related;
+          // Taken from quirksmode
+          related = e.relatedTarget;
+          while (related !== tgt && related.nodeName !== 'BODY') {
+            related = related.parentNode;
           }
+          if (related === tgt) return;
+          disableModeTimer = setTimeout(setChartMode, 550);
         });
     statistics.append('div')
         .attr('class', 'title')
@@ -179,14 +191,12 @@ binfo._register('ui', ['core'], function(ui, core) {
   }
 
   function clickChart(d) {
-    if (compareActive) {
+    if (chartMode === 'compare') {
       if (firstCompare) {
-        if (firstCompare === d.id) {
-          firstCompareReset();
-        } else {
+        if (firstCompare !== d.id) {
           core.addChart(firstCompare + '-' + d.id);
-          compare(false);
         }
+        firstCompareReset();
       } else {
         firstCompare = d.id;
         d3.select(this).classed('down', true);
@@ -201,15 +211,20 @@ binfo._register('ui', ['core'], function(ui, core) {
     panel.selectAll('.statistics li.down').classed('down', false);
   }
 
-  function compare(active) {
-    compareActive = active;
-    panel.select('.compare.button').classed('down', active);
-    if (active) {
+  function setChartMode(mode) {
+    if (chartMode === mode) {
+      mode = null;
+    }
+    if (disableModeTimer) {
+      clearTimeout(disableModeTimer);
+    }
+    chartMode = mode;
+    panel.select('.compare.button').classed('down', mode === 'compare');
+    panel.select('.bar.button').classed('down', mode === 'bar');
+    if (mode) {
       showStatistics(true);
     } else {
-      if (!mouseOverStats) {
-        showStatistics(false);
-      }
+      showStatistics(false);
       firstCompareReset();
     }
   }
