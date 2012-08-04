@@ -296,10 +296,10 @@ binfo._register('core', [], function(core) {
 
     arrange.remove(removedIds, charts);
     arrange.add(addedIds, nextCharts);
-    chartIds = arrange.orderedChartIds(nextChartIds, nextCharts);
 
     dataName = nextDataName;
     charts = nextCharts;
+    chartIds = nextChartIds;
 
     hash.refresh(dataName, chartIds, charts);
     doneUpdating();

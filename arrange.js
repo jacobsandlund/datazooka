@@ -5,6 +5,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       holder,
       maxWidth,
       maxLevel,
+      reordered,
       arranging,
       ghost,
       positioner,
@@ -115,6 +116,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       reposition(chart);
       maybeSnap(chart);
     }
+    reordered = true;
   };
 
   function whereToSnap(chart) {
@@ -188,6 +190,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   arrange.remove = function(removed, charts) {
     removed.forEach(function(id) { remove(charts[id]); });
     setMaxLevel();
+    reordered = true;
   };
 
   function setMaxLevel() {
@@ -332,9 +335,11 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     });
 
     setMaxLevel();
+    reordered = true;
   };
 
   arrange.orderedChartIds = function(chartIds, charts) {
+    if (!reordered) return null;
     var order,
         newChartIds = [];
     order = chartIds.map(function(id) { return charts[id]; });
@@ -344,6 +349,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       }
       return a.top - b.top;
     });
+    reordered = false;
     return order.map(function(chart) { return chart.id; });
   };
 

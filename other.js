@@ -157,19 +157,23 @@ binfo._register('hashRetrieval', ['core'], function(_, core) {
 
 
 
-binfo._register('hash', [], function(hash) {
+binfo._register('hash', ['arrange'], function(hash, arrange) {
 
-  var currentHash,
+  var chartIds,
+      charts,
+      hashParams = [0,0,0],
       hashUpdatedRecently = false,
       hashNeedsUpdated = false;
 
-  hash.refresh = function(dataName, chartIds, charts) {
+  hash.refresh = function(dataName, ids, c) {
     var filters = {},
         id,
         filterData,
-        chartString = 'charts=' + chartIds.join(','),
         filterString = 'filters=',
         filterArray = [];
+
+    chartIds = ids;
+    charts = c;
 
     function filterEncode(d) {
       if (typeof d === 'object') {
@@ -185,8 +189,7 @@ binfo._register('hash', [], function(hash) {
       }
     }
     filterString += filterArray.join(',');
-    var params = ['data=' + dataName, chartString, filterString].join('&');
-    currentHash = '#' + params;
+    hashParams = ['data=' + dataName, null, filterString];
     hashNeedsUpdated = true;
     if (!hashUpdatedRecently) {
       updateWindowHash();
@@ -195,13 +198,21 @@ binfo._register('hash', [], function(hash) {
 
   function updateWindowHash() {
     hashUpdatedRecently = false;
+    var ordered = arrange.orderedChartIds(chartIds, charts);
+    if (ordered) {
+      hashNeedsUpdated = true;
+    } else {
+      ordered = chartIds;
+    }
     if (hashNeedsUpdated) {
+      hashParams[1] = 'charts=' + ordered.join(',');
+      var currentHash = '#' + hashParams.join('&');
       window.history.replaceState({}, '', currentHash);
-      setTimeout(updateWindowHash, 300);
       hashUpdatedRecently = true;
       hashNeedsUpdated = false;
     }
   }
+  setInterval(updateWindowHash, 600);
 });
 
 
