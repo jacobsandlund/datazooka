@@ -38,7 +38,7 @@
   text-align: center;
 }
 
-.chart, .panel {
+.chart {
   border-style: solid;
   border-width: 5px;
   border-color: #eee;
@@ -60,93 +60,92 @@
   border-width: 0 0 0 5px;
 }
 
-.panel {
-}
-
-.control.panel {
-  right: 100px;
-  bottom: 30px;
-  width: 540px;
+.control-panel {
   position: fixed;
-  z-index: 16000000;
+  top: 0px;
+  left: 0px;
+  height: 40px;
+  width: 100%;
+  color: #eee;
+  z-index: 16000001;
+  background-color: #333;
+  background-image: -ms-linear-gradient(top, #333, #111);
+  background-image: -webkit-linear-gradient(top, #333, #111);
+  background-image: -o-linear-gradient(top, #333, #111);
+  background-image: -moz-linear-gradient(top, #333, #111);
+  background-image: linear-gradient(top, #333, #111);
 }
 
-.control.panel.docked {
-  position: relative;
-  float: right;
-  bottom: 0px;
+.control-panel .pane {
+  height: 20px;
+  padding: 10px;
 }
 
-.options.panel {
+.control-panel .title {
+  float: left;
+  font-size: 24px;
+  padding: 4px;
+  margin-left: 20px;
+}
+
+.control-panel .config {
   position: absolute;
-  bottom: -5px;
-  left: -220px;
-  width: 200px;
-  font-size: 12px;
-  padding: 5px;
+  left: 50%;
+  width: 320px;
+  margin-left: -50px;
 }
 
-.update.panel {
+.control-panel .totals {
   position: absolute;
-  right: -97px;
-  bottom: -5px;
-  width: 87px;
-}
-
-.options.panel label {
-  margin-left: 5px;
-}
-
-.panel-line {
-  position: relative;
-  padding: 5px;
-}
-
-.panel-line span {
+  left: -370px;
+  width: 350px;
+  top: 12px;
+  text-align: right;
   font-size: 14px;
 }
 
-.line-one.panel-line {
-  height: 38px;
+.data-name {
+  margin: -1px 7px;
 }
 
-.line-two.panel-line {
-  height: 22px;
+.interactions .button {
+  margin: 0 5px;
 }
 
-.clear.button {
-  margin-left: 260px;
+.control-panel .view-toggles {
+  float: right;
+  position: relative;
 }
 
-.cancel.button {
-  margin-left: 10px;
-  margin-bottom: -1px;
+.control-panel .button {
+  color: black;
+}
+
+.remove-all.button {
+  float: right;
 }
 
 .statistics {
+  color: black;
   position: absolute;
-  overflow-y: scroll;
-  bottom: 0px;
-  left: 135px;
-  border: solid 5px #eee;
+  overflow-y: auto;
+  top: 40px;
+  left: 0px;
+  border: solid 5px #aaa;
+  border-top-width: 0;
+  padding: 5px;
   background-color: white;
   width: 225px;
-  display: inline-block;
-  max-height: 64px;
+  display: none;
+  max-height: 500px;
 }
 
 .statistics.show {
-  max-height: 550px;
-}
-
-.statistics .title {
-  border-width: 0 0 2px 0;
-  font-size: 14px;
+  display: block;
 }
 
 .statistics ul {
-  border-width: 0 0 1px 0;
-  padding: 1px 5px 15px 5px;
+  padding: 5px 5px 15px 5px;
   margin: 0;
 }
 
@@ -171,19 +170,26 @@
   background-color: #ddd;
 }
 
-.totals {
-  display: inline-block;
-  width: 264px;
-  text-align: right;
+.options-panel {
+  position: absolute;
+  top: 100px;
+  right: -500px;
+  margin: -100px;
+  width: 200px;
+  font-size: 12px;
+  padding: 10px;
+  background-color: white;
+  border: solid 5px #999;
+  border-radius: 10px;
 }
 
-.data-name {
-  margin: 0 7px;
+.update.panel {
 }
 
-.dock.button {
+.cancel.button {
   float: right;
 }
+
 
 .button {
   font-size: 14px;

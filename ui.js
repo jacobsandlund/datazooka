@@ -12,40 +12,75 @@ binfo._register('ui', ['core'], function(ui, core) {
       chartMode,
       firstCompare;
 
-  ui.setup = function(_, width) {
-    holder = _;
+  ui.setup = function(h, header, width) {
+    holder = h;
     holder
         .attr('class', 'holder')
         .style('width', width);
 
-    var lineOne,
-        lineTwo,
-        statistics,
+    var config,
         totals,
+        interactions,
+        statistics,
         updatePanel,
+        viewToggles,
         optionsPanel;
 
     holder.append('div')
         .attr('class', 'charts');
 
-    panel = holder.append('div')
-        .attr('class', 'control panel');
+    panel = header.insert('div', ':first-child')
+        .attr('class', 'control-panel');
 
+    panel.append('div')
+        .attr('class', 'title')
+        .text('Binfo');
 
-    lineOne = panel.append('div')
-        .attr('class', 'line-one panel-line');
+    config = panel.append('div')
+        .attr('class', 'config pane');
 
-    lineOne.append('div')
+    totals = config.append('div')
+        .attr('class', 'totals');
+    totals.append('span')
+        .attr('class', 'active-data')
+        .text('-');
+    totals.append('span').text(' of ');
+    totals.append('span')
+        .attr('class', 'total')
+        .text('-');
+
+    totals.append('select')
+        .attr('class', 'data-name')
+        .on('change', function() {
+          changeDataName(this.value);
+          core.changeDataName(this.value);
+        });
+
+    interactions = config.append('div')
+        .attr('class', 'interactions');
+
+    interactions.append('span').text('Add');
+
+    interactions.append('div')
         .attr('class', 'bar button')
         .text('Bar')
         .on('click', function() { setChartMode('bar'); });
 
-    lineOne.append('div')
+    interactions.append('span').text('or');
+
+    interactions.append('div')
         .attr('class', 'compare button')
         .text('Compare')
         .on('click', function() { setChartMode('compare'); });
 
-    statistics = lineOne.append('div')
+    interactions.append('span').text('charts.');
+
+    interactions.append('div')
+        .attr('class', 'remove-all button')
+        .text('Remove All')
+        .on('click', core.clearCharts);
+
+    statistics = interactions.append('div')
         .attr('class', 'statistics')
         .on('mouseover', function() {
           if (disableModeTimer) {
@@ -58,60 +93,43 @@ binfo._register('ui', ['core'], function(ui, core) {
               related;
           // Taken from quirksmode
           related = e.relatedTarget;
-          while (related !== tgt && related.nodeName !== 'BODY') {
-            related = related.parentNode;
+          if (related) {
+            while (related !== tgt && related.nodeName !== 'BODY') {
+              related = related.parentNode;
+            }
+            if (related === tgt) return;
           }
-          if (related === tgt) return;
           disableModeTimer = setTimeout(setChartMode, 550);
         });
-    statistics.append('div')
-        .attr('class', 'title')
-        .text('Statistics');
     statistics.append('ul');
 
-    lineOne.append('div')
-        .attr('class', 'clear button')
-        .text('Clear')
-        .on('click', core.clearCharts);
-
-    updatePanel = panel.append('div')
+    updatePanel = statistics.append('div')
         .attr('class', 'update panel')
         .style('display', 'none');
     updatePanel.append('div')
-        .attr('class', 'line-one panel-line')
-      .append('div')
         .attr('class', 'update action button')
         .text('Update')
         .on('click', function() { core.update('force'); });
     updatePanel.append('div')
-        .attr('class', 'line-two panel-line')
-      .append('div')
         .attr('class', 'cancel button')
         .text('Cancel')
         .style('display', 'none')
         .on('click', core.cancel);
 
-    function toggleDock() {
-      var dockButton = lineOne.select('.dock.button'),
-          dock = dockButton.classed('down');
-      dockButton.classed('down', !dock);
-      panel.classed('docked', dock);
-      if (dock) {
-        dockButton.text('Undock');
-      } else {
-        dockButton.text('Dock');
-      }
-    }
-    lineOne.append('div')
-        .attr('class', 'dock button')
-        .on('click', toggleDock);
-    toggleDock();
+    viewToggles = panel.append('div')
+        .attr('class', 'view-toggles pane');
 
-    lineTwo = panel.append('div')
-        .attr('class', 'line-two panel-line');
+    viewToggles.append('div')
+        .text('Options')
+        .attr('class', 'options button')
+        .on('click', function() {
+          var disp = optionsPanel.style('display');
+          optionsPanel.style('display', disp === 'block' ? 'none' : 'block');
+          d3.select(this).classed('down', disp === 'none');
+        });
 
-    optionsPanel = lineTwo.append('div')
-        .attr('class', 'options panel')
+    optionsPanel = viewToggles.append('div')
+        .attr('class', 'options-panel')
         .style('display', 'none');
     function changeUpdateMode() {
       var updateMode = this.id.slice(7);
@@ -138,31 +156,6 @@ binfo._register('ui', ['core'], function(ui, core) {
     addUpdateStyle('update-manual', 'Manual update');
     optionsPanel.select('#update-' + core.updateMode()).property('checked', true);
 
-    lineTwo.append('div')
-        .text('Options')
-        .attr('class', 'options button')
-        .on('click', function() {
-          var disp = optionsPanel.style('display');
-          optionsPanel.style('display', disp === 'block' ? 'none' : 'block');
-          d3.select(this).classed('down', disp === 'none');
-        });
-
-    totals = lineTwo.append('div')
-        .attr('class', 'totals');
-    totals.append('span')
-        .attr('class', 'active-data')
-        .text('-');
-    totals.append('span').text(' of ');
-    totals.append('span')
-        .attr('class', 'total')
-        .text('-');
-
-    lineTwo.append('select')
-        .attr('class', 'data-name')
-        .on('change', function() {
-          changeDataName(this.value);
-          core.changeDataName(this.value);
-        });
   };
 
   function showStatistics(show) {
@@ -236,8 +229,8 @@ binfo._register('ui', ['core'], function(ui, core) {
   };
 
   function needsUpdate(needs) {
-    holder.select('.update.action.button').classed('active', needs);
-    holder.select('.cancel.button').style('display', needs ? null : 'none');
+    panel.select('.update.action.button').classed('active', needs);
+    panel.select('.cancel.button').style('display', needs ? null : 'none');
   }
   ui.needsUpdate = needsUpdate;
 

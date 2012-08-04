@@ -127,12 +127,12 @@ binfo._register('core', [], function(core) {
     };
   };
 
-  binfo.setup = function(_, width, root) {
-    holder = d3.select(_);
-    root = d3.select(root);
-    ui.setup(holder, width);
-    rendering.setup(holder);
-    arrange.setup(root, holder, width);
+  binfo.setup = function(setup) {
+    holder = d3.select(setup.holder);
+    root = d3.select(setup.root);
+    var header = d3.select(setup.header);
+    ui.setup(holder, header, setup.width);
+    arrange.setup(root, holder, setup.width);
     root.on('mousemove.core', function() {
       if (smartTimer !== null) {
         clearSmartTimer();
