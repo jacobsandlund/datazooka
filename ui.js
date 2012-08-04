@@ -38,7 +38,26 @@ binfo._register('ui', ['core'], function(ui, core) {
         .text('Binfo');
 
     config = panel.append('div')
-        .attr('class', 'config pane');
+        .attr('class', 'config pane')
+        .on('mouseover', function() {
+          if (disableModeTimer) {
+            clearTimeout(disableModeTimer);
+          }
+        })
+        .on('mouseout', function() {
+          var e = d3.event,
+              tgt = e.target,
+              related;
+          // Taken from quirksmode
+          related = e.relatedTarget;
+          if (related) {
+            while (related !== tgt && related.nodeName !== 'BODY') {
+              related = related.parentNode;
+            }
+            if (related === tgt) return;
+          }
+          disableModeTimer = setTimeout(setChartMode, 550);
+        });
 
     totals = config.append('div')
         .attr('class', 'totals');
@@ -83,26 +102,7 @@ binfo._register('ui', ['core'], function(ui, core) {
 
     statistics = interactions.append('div')
         .attr('class', 'statistics')
-        .style('display', 'none')
-        .on('mouseover', function() {
-          if (disableModeTimer) {
-            clearTimeout(disableModeTimer);
-          }
-        })
-        .on('mouseout', function() {
-          var e = d3.event,
-              tgt = e.target,
-              related;
-          // Taken from quirksmode
-          related = e.relatedTarget;
-          if (related) {
-            while (related !== tgt && related.nodeName !== 'BODY') {
-              related = related.parentNode;
-            }
-            if (related === tgt) return;
-          }
-          disableModeTimer = setTimeout(setChartMode, 550);
-        });
+        .style('display', 'none');
     statistics.append('ul');
 
     updatePanel = statistics.append('div')
