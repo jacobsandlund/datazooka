@@ -9,6 +9,7 @@ binfo._register('ui', ['core'], function(ui, core) {
       panel,
       disableModeTimer,
       dataName,
+      needsUpdate,
       chartMode,
       firstCompare;
 
@@ -82,6 +83,7 @@ binfo._register('ui', ['core'], function(ui, core) {
 
     statistics = interactions.append('div')
         .attr('class', 'statistics')
+        .style('display', 'none')
         .on('mouseover', function() {
           if (disableModeTimer) {
             clearTimeout(disableModeTimer);
@@ -173,7 +175,11 @@ binfo._register('ui', ['core'], function(ui, core) {
   }
 
   function showStatistics(show) {
-    panel.select('.statistics').classed('show', show);
+    show = show ? null : 'none';
+    if (!needsUpdate) {
+      panel.select('.statistics').style('display', show);
+    }
+    panel.select('.statistics ul').style('display', show);
   }
 
   function changeDataName(newDataName) {
@@ -242,11 +248,14 @@ binfo._register('ui', ['core'], function(ui, core) {
         .text(name);
   };
 
-  function needsUpdate(needs) {
+  ui.needsUpdate = function(needs) {
+    needsUpdate = needs;
+    if (needs) {
+      panel.select('.statistics').style('display', 'block');
+    }
     panel.select('.update.action.button').classed('active', needs);
     panel.select('.cancel.button').style('display', needs ? null : 'none');
   }
-  ui.needsUpdate = needsUpdate;
 
   ui.updating = function(updating) {
     holder.select('.charts').style('opacity', updating ? 0.3 : null);
