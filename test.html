@@ -134,6 +134,27 @@ d3.csv("flights-3m.json", function(flights) {
   if (!before) definitions();
 });
 
+binfo.definitions('compare-test', {
+  x: {label: 'x', dimension: function(d) { return d.x; }, groupBy: 1, round: 1},
+  y: {label: 'y', dimension: function(d) { return d.y; }, groupBy: 1, round: 1}
+});
+
+var data = [],
+    i,
+    j,
+    k;
+
+for (i = 0; i < binfo.compareLevels; i++) {
+  for (j = 0; j < i; j++) {
+    for (k = 0; k < binfo.compareLevels; k++) {
+      data.push({x: i, y: k});
+    }
+  }
+}
+data.push({x: 0, y: 0});
+
+binfo.data('compare-test', data);
+
 </script>
 
 </html>

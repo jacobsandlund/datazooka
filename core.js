@@ -9,6 +9,7 @@ var binfo = {
   maxLevels: 50,
   arrangeSnap: 75,
   holderMargin: 15,
+  compareLevels: 100,
   chartDimensions: {
     top: 20,
     right: 10,
@@ -83,52 +84,53 @@ binfo._register('core', [], function(core) {
       chartsApi = core.dependency('charts'),
       hash = core.dependency('hash'),
       arrange = core.dependency('arrange'),
-      dataSets = {},
-      cross,
-      crossAll,
-      updateMode = 'always',
-      smartTimer = null,
-      renderFreshLater,
-      renderFreshParams,
-      renderFresh,
-      needsToUpdate = true,
-      updating,
-      addedIds,
-      removedIds,
-      dataName,
-      chartIds = [],
-      charts,
-      nextDataName,
-      nextChartIds,
-      nextCharts;
+  stylesheet = core.dependency('stylesheet'),
+  dataSets = {},
+  cross,
+  crossAll,
+  updateMode = 'always',
+  smartTimer = null,
+  renderFreshLater,
+  renderFreshParams,
+  renderFresh,
+  needsToUpdate = true,
+  updating,
+  addedIds,
+  removedIds,
+  dataName,
+  chartIds = [],
+  charts,
+  nextDataName,
+  nextChartIds,
+  nextCharts;
 
-  core.dataSet = function(name, definitions, data) {
-    var set,
-        id;
-    if (!definitions) {
-      set = dataSets[name];
-      if (!set) {
-        return null;
-      }
-      return set;
+core.dataSet = function(name, definitions, data) {
+  var set,
+      id;
+  if (!definitions) {
+    set = dataSets[name];
+    if (!set) {
+      return null;
     }
-    dataSets[name] = set = {definitions: definitions, data: data};
-    set.definitionIds = [];
-    set.charts = {};
-    for (id in definitions) {
-      if (definitions.hasOwnProperty(id)) {
-        set.charts[id] = chartsApi.barChart(definitions[id], data)
+    return set;
+  }
+  dataSets[name] = set = {definitions: definitions, data: data};
+  set.definitionIds = [];
+  set.charts = {};
+  for (id in definitions) {
+    if (definitions.hasOwnProperty(id)) {
+      set.charts[id] = chartsApi.barChart(definitions[id], data)
         set.definitionIds.push(id);
-      }
     }
-    set.chartIds = set.definitionIds.slice();
-    ui.addDataName(name);
-    if (renderFreshLater && renderFreshLater[0] === name) {
-      core.renderFresh.apply(null, renderFreshLater);
-    };
+  }
+  set.chartIds = set.definitionIds.slice();
+  ui.addDataName(name);
+  if (renderFreshLater && renderFreshLater[0] === name) {
+    core.renderFresh.apply(null, renderFreshLater);
   };
+};
 
-  binfo.setup = function(setup) {
+binfo.setup = function(setup) {
     var outer = d3.select(setup.holder).attr('class', 'outer-holder'),
         holder = outer.append('div'),
         root = d3.select(setup.root),
@@ -136,6 +138,7 @@ binfo._register('core', [], function(core) {
         width = setup.width - 2 * binfo.holderMargin;
     ui.setup(holder, header, width);
     arrange.setup(root, outer, holder, width);
+    stylesheet.setup(holder);
     root.on('mousemove.core', function() {
       if (smartTimer !== null) {
         clearSmartTimer();

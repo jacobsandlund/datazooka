@@ -97,6 +97,8 @@
 
 .control-panel .pane {
   padding: 8px;
+  height: 20px;
+  vertical-align: bottom;
 }
 
 .tool.title {
@@ -127,10 +129,10 @@
   margin: 0 4px;
 }
 
-.data-name input {
+.data-name select {
+  vertical-align: text-top;
   position: relative;
-  top: -1px;
-  margin: 0 3px;
+  top: -3px;
 }
 
 .interactions .button {
@@ -355,168 +357,6 @@
 
 .brush rect.extent, .foreground.bar {
   fill: hsl(189, 60%, 40%);
-}
-.level-0 {
-  fill: hsl(280, 100%, 17%);
-}
-.level-1 {
-  fill: hsl(270, 100%, 18%);
-}
-.level-2 {
-  fill: hsl(260, 100%, 21%);
-}
-.level-3 {
-  fill: hsl(250, 100%, 25%);
-}
-.level-4 {
-  fill: hsl(245, 100%, 30%);
-}
-.level-5 {
-  fill: hsl(240, 100%, 33%);
-}
-.level-6 {
-  fill: hsl(235, 100%, 30%);
-}
-.level-7 {
-  fill: hsl(230, 100%, 30%);
-}
-.level-8 {
-  fill: hsl(225, 100%, 30%);
-}
-.level-9 {
-  fill: hsl(220, 100%, 30%);
-}
-.level-10 {
-  fill: hsl(215, 100%, 30%);
-}
-.level-11 {
-  fill: hsl(210, 100%, 30%);
-}
-.level-12 {
-  fill: hsl(205, 100%, 30%);
-}
-.level-13 {
-  fill: hsl(200, 100%, 30%);
-}
-.level-14 {
-  fill: hsl(195, 100%, 30%);
-}
-.level-15 {
-  fill: hsl(190, 100%, 30%);
-}
-.level-16 {
-  fill: hsl(185, 100%, 30%);
-}
-.level-17 {
-  fill: hsl(180, 100%, 30%);
-}
-.level-18 {
-  fill: hsl(175, 100%, 31%);
-}
-.level-19 {
-  fill: hsl(170, 100%, 32%);
-}
-.level-20 {
-  fill: hsl(165, 100%, 33%);
-}
-.level-21 {
-  fill: hsl(160, 100%, 34%);
-}
-.level-22 {
-  fill: hsl(155, 100%, 35%);
-}
-.level-23 {
-  fill: hsl(150, 100%, 36%);
-}
-.level-24 {
-  fill: hsl(145, 100%, 37%);
-}
-.level-25 {
-  fill: hsl(140, 100%, 38%);
-}
-.level-26 {
-  fill: hsl(135, 100%, 39%);
-}
-.level-27 {
-  fill: hsl(130, 100%, 40%);
-}
-.level-28 {
-  fill: hsl(125, 100%, 41%);
-}
-.level-29 {
-  fill: hsl(120, 100%, 42%);
-}
-.level-30 {
-  fill: hsl(115, 100%, 43%);
-}
-.level-31 {
-  fill: hsl(110, 100%, 44%);
-}
-.level-32 {
-  fill: hsl(105, 100%, 45%);
-}
-.level-33 {
-  fill: hsl(100, 100%, 46%);
-}
-.level-34 {
-  fill: hsl(95, 100%, 47%);
-}
-.level-35 {
-  fill: hsl(90, 100%, 48%);
-}
-.level-36 {
-  fill: hsl(85, 100%, 49%);
-}
-.level-37 {
-  fill: hsl(80, 100%, 50%);
-}
-.level-38 {
-  fill: hsl(75, 100%, 50%);
-}
-.level-39 {
-  fill: hsl(70, 100%, 50%);
-}
-.level-40 {
-  fill: hsl(65, 100%, 50%);
-}
-.level-41 {
-  fill: hsl(60, 100%, 50%);
-}
-.level-42 {
-  fill: hsl(55, 100%, 50%);
-}
-.level-43 {
-  fill: hsl(50, 100%, 50%);
-}
-.level-44 {
-  fill: hsl(45, 100%, 50%);
-}
-.level-45 {
-  fill: hsl(40, 100%, 50%);
-}
-.level-46 {
-  fill: hsl(35, 100%, 50%);
-}
-.level-47 {
-  fill: hsl(30, 100%, 50%);
-}
-.level-48 {
-  fill: hsl(25, 100%, 50%);
-}
-.level-49 {
-  fill: hsl(20, 100%, 50%);
-}
-.level-50 {
-  fill: hsl(15, 100%, 50%);
-}
-.level-51 {
-  fill: hsl(10, 100%, 50%);
-}
-.level-52 {
-  fill: hsl(5, 100%, 50%);
-}
-.level-53 {
-  fill: hsl(0, 100%, 50%);
 }
 
 .axis path, .axis line {

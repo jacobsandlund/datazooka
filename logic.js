@@ -35,6 +35,12 @@ binfo._register('logic', [], function(logic) {
     function groupFuncBy(groupBy) {
       return function(d) { return Math.floor(d / groupBy) * groupBy; };
     }
+    function roundBy(round) {
+      return function(d) { return Math.round(d / round) * round; };
+    }
+    if (bar.round && typeof bar.round === 'number') {
+      bar.round = roundBy(bar.round);
+    }
 
     dimensionFunc = spec.dimension || function(d) { return d[bar.api.id]; };
     if (spec.ordinal) {
@@ -68,7 +74,7 @@ binfo._register('logic', [], function(logic) {
     if (spec.group) {
       groupFunc = spec.group;
     } else if (spec.groupBy) {
-      separation = spec.separation || spec.groupBy;
+      separation = separation || spec.groupBy;
       groupFunc = groupFuncBy(separation);
     } else if (spec.groupIdentity || spec.ordinal) {
       groupFunc = function(d) { return d; };

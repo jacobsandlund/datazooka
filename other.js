@@ -11,7 +11,7 @@ binfo._register('setup', ['core'], function(setup, core) {
     /*jshint evil:true */
     var id, defn,
         evil = [],
-        evalParts = ['dimension', 'group', 'x', 'y', 'round', 'format'],
+        evalParts = ['dimension', 'group', 'round', 'x', 'y', 'format'],
         evalPartsIfFunc = ['type', 'ordinal'];
     function makeEvil(defn, id) {
       return function(part) {
@@ -104,6 +104,70 @@ binfo._register('setup', ['core'], function(setup, core) {
       core.dataSet(name, definitions[name], data[name]);
     }
   }
+
+});
+
+
+binfo._register('stylesheet', [], function(stylesheet) {
+
+  stylesheet.setup = function(holder) {
+    var css = '',
+        i,
+        lvl,
+        levels = binfo.compareLevels,
+        level = d3.scale.linear(),
+        pts = [],
+        domain,
+        blue = 222,
+        blueIndigo = 200,
+        indigo = 180,
+        indigoGreen = 158,
+        green = 120,
+        greenYellow = 80,
+        yellow = 60,
+        yellowOrange = 45,
+        orange = 30,
+        orangeRed = 15,
+        red = 0,
+        hue = d3.scale.linear(),
+        saturation = d3.scale.linear(),
+        brightness = d3.scale.linear();
+    level
+        .domain([0, levels - 1])
+        .range([0, 1]);
+
+    pts = [
+      {d: 0,      h: blue,        b: 35},
+      {d: 0.17,   h: blueIndigo,  b: 40},
+      {d: 0.22,   h: indigo,      b: 35},
+      {d: 0.3,  h: indigoGreen, b: 38},
+      {d: 0.41,   h: green,       b: 42},
+      {d: 0.5,  h: greenYellow, b: 60},
+      {d: 0.65,   h: yellow,      b: 50},
+      {d: 0.70,   h: yellowOrange,      b: 50},
+      {d: 0.80,  h: orange,      b: 50},
+      {d: 0.93,  h: orangeRed,      b: 50},
+      {d: 1,      h: red,         b: 60}
+    ];
+    domain = pts.map(function(d) { return d.d; });
+    hue.range(pts.map(function(d) { return d.h; }));
+    brightness.range(pts.map(function(d) { return d.b;}));
+    saturation
+        .domain([0, 1])
+        .range([100, 100]);
+    hue.domain(domain);
+    brightness.domain(domain);
+
+    for (i = 0; i < levels; i++) {
+      lvl = level(i);
+      css += '.level-' + i + '{fill:hsl(';
+      css += hue(lvl) + ',';
+      css += saturation(lvl) + '%,';
+      css += brightness(lvl) + '%';
+      css += ');}';
+    }
+    holder.append('style').html(css);
+  };
 
 });
 

@@ -464,7 +464,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         yc = compare.yc,
         bgPath,
         paths = [],
-        levels = 54;
+        levels = binfo.compareLevels;
 
     dim.left = yc.dim.bottom + 60;
     dim.bottom = xc.dim.bottom + 50;
