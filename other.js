@@ -132,22 +132,33 @@ binfo._register('hashRetrieval', ['core'], function(_, core) {
   }
 
   function renderFromHash() {
-    var params = getHashParams();
-    var dataName = params.data,
-        charts = params.charts && params.charts.split(','),
-        filters = params.filters && params.filters.split(',');
+    var hashParams = getHashParams();
+    var dataName = hashParams.data,
+        charts = hashParams.charts && hashParams.charts.split(','),
+        params = {};
 
-    var myFilters = {};
-    if (filters) {
-      filters.forEach(function(f) {
-        var filterMap = f.split('*');
-        myFilters[filterMap[0]] = filterMap.slice(1);
-      });
-    }
+    params.given = getParams(hashParams.given);
+    params.filter = getParams(hashParams.filter);
     if (!dataName || !charts || !charts.length) {
       return;
     }
-    core.renderFresh(dataName, charts, myFilters);
+    core.renderFresh(dataName, charts, params);
+  }
+
+  function getParams(hashParam) {
+    var paramArray = hashParam && hashParam.split(','),
+        param = {};
+    if (paramArray) {
+      paramArray.forEach(function(p) {
+        var map = p.split('*'),
+            data = map.slice(1);
+        if (data.length === 1) {
+          data = data[0];
+        }
+        param[map[0]] = data;
+      });
+    }
+    return param;
   }
 
   window.onhashchange = renderFromHash;
@@ -166,34 +177,45 @@ binfo._register('hash', ['arrange'], function(hash, arrange) {
       hashNeedsUpdated = false;
 
   hash.refresh = function(dataName, ids, c) {
-    var filters = {},
+    var params = {filter: {}, given: {}},
         id,
-        filterData,
-        filterString = 'filters=',
-        filterArray = [];
+        filterString,
+        givenString;
 
     chartIds = ids;
     charts = c;
 
+    chartIds.forEach(function(id) { charts[id].addToParams(params); });
+    filterString = paramString(params, 'filter');
+    givenString = paramString(params, 'given');
+    hashParams = ['data=' + dataName, null, givenString, filterString];
+    hashNeedsUpdated = true;
+    if (!hashUpdatedRecently) {
+      updateWindowHash();
+    }
+  }
+
+  function paramString(params, string) {
+    var param = params[string],
+        data,
+        id,
+        paramArray = [];
     function filterEncode(d) {
       if (typeof d === 'object') {
         d = d.valueOf();
       }
       return encodeURIComponent(d);
     }
-    chartIds.forEach(function(id) { charts[id].addToFilters(filters); });
-    for (id in filters) {
-      if (filters.hasOwnProperty(id) && filters[id]) {
-        filterData = filters[id].map(filterEncode).join('*');
-        filterArray.push(id + '*' + filterData);
+    for (id in param) {
+      if (param.hasOwnProperty(id) && param[id]) {
+        data = param[id];
+        if (Array.isArray(data)) {
+          data = data.map(filterEncode).join('*');
+        }
+        paramArray.push(id + '*' + data);
       }
     }
-    filterString += filterArray.join(',');
-    hashParams = ['data=' + dataName, null, filterString];
-    hashNeedsUpdated = true;
-    if (!hashUpdatedRecently) {
-      updateWindowHash();
-    }
+    return string + '=' + paramArray.join(',');
   }
 
   function updateWindowHash() {

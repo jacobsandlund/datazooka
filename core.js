@@ -89,7 +89,7 @@ binfo._register('core', [], function(core) {
       updateMode = 'always',
       smartTimer = null,
       renderFreshLater,
-      renderFreshFilters,
+      renderFreshParams,
       renderFresh,
       needsToUpdate = true,
       updating,
@@ -213,15 +213,15 @@ binfo._register('core', [], function(core) {
     }
   };
 
-  core.renderFresh = function(name, ids, filters) {
+  core.renderFresh = function(name, ids, params) {
     if (!dataSets[name]) {
-      renderFreshLater = [name, ids, filters];
+      renderFreshLater = [name, ids, params];
       return;
     }
     core.dataName(name);
     core.chartIds(ids);
     renderFresh = true;
-    renderFreshFilters = filters || {};
+    renderFreshParams = params || {filters: {}, given: {}};
     core.update('force');
   };
 
@@ -289,8 +289,7 @@ binfo._register('core', [], function(core) {
 
     rendering.render(nextChartIds, nextCharts);
     if (renderFresh) {
-      filterForRenderFresh();
-      renderFresh = false;
+      doRenderFresh();
     }
     rendering.refresh(crossAll.value(), cross.size());
 
@@ -305,14 +304,21 @@ binfo._register('core', [], function(core) {
     doneUpdating();
   };
 
-  function filterForRenderFresh() {
-    var id;
-    for (id in renderFreshFilters) {
-      if (renderFreshFilters.hasOwnProperty(id)) {
-        nextCharts[id].filter(renderFreshFilters[id]);
+  function doRenderFresh() {
+    applyParam(renderFreshParams, 'filter');
+    applyParam(renderFreshParams, 'given');
+    renderFreshParams = null;
+    renderFresh = false;
+  }
+
+  function applyParam(params, name) {
+    var id,
+        param = params[name];
+    for (id in param) {
+      if (param.hasOwnProperty(id)) {
+        nextCharts[id][name](param[id]);
       }
     }
-    renderFreshFilters = null;
   }
 
   function doneUpdating() {

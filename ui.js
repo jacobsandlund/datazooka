@@ -9,6 +9,7 @@ binfo._register('ui', ['core'], function(ui, core) {
       panel,
       disableModeTimer,
       dataName,
+      numDataSets = 0,
       needsUpdate,
       chartMode,
       firstCompare;
@@ -50,12 +51,8 @@ binfo._register('ui', ['core'], function(ui, core) {
     totals.append('span')
         .attr('class', 'total')
         .text('-');
-    totals.append('select')
-        .attr('class', 'data-name')
-        .on('change', function() {
-          changeDataName(this.value);
-          core.changeDataName(this.value);
-        });
+    totals.append('span')
+        .attr('class', 'data-name');
 
     interactions = config.append('div')
         .attr('class', 'interactions pane')
@@ -194,7 +191,9 @@ binfo._register('ui', ['core'], function(ui, core) {
         data,
         li;
     dataName = newDataName;
-    panel.select('.data-name').property('value', dataName);
+    if (numDataSets > 1) {
+      panel.select('.data-name select').property('value', dataName);
+    }
     data = ids.map(function(id) { return {id: id, label: defns[id].label}; });
 
     li = panel.select('.statistics ul').selectAll('li')
@@ -245,9 +244,29 @@ binfo._register('ui', ['core'], function(ui, core) {
   }
 
   ui.addDataName = function(name) {
-    panel.select('.data-name').append('option')
-        .attr('value', name)
-        .text(name);
+    numDataSets += 1;
+    if (numDataSets === 1) {
+      panel.select('.data-name')
+          .text(name + '.');
+    } else if (numDataSets === 2) {
+      var nameHolder = panel.select('.data-name'),
+          firstName = nameHolder.text();
+      firstName = firstName.slice(0, firstName.length - 1);
+      nameHolder.html('');
+      nameHolder.append('select')
+          .on('change', function() {
+            changeDataName(this.value);
+            core.changeDataName(this.value);
+          });
+      ui.addDataName(firstName);
+      numDataSets -= 1;
+      changeDataName(firstName);
+    }
+    if (numDataSets > 1) {
+      panel.select('.data-name select').append('option')
+          .attr('value', name)
+          .text(name);
+    }
   };
 
   ui.needsUpdate = function(needs) {

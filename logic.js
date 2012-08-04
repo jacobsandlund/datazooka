@@ -241,8 +241,8 @@ binfo._register('logic', [], function(logic) {
       bar.resetUpdateChart();
     };
 
-    bar.api.addToFilters = function(filters) {
-      filters[bar.api.id] = bar.api.filter();
+    bar.api.addToParams = function(params) {
+      params.filter[bar.api.id] = bar.api.filter();
     };
 
   };
@@ -287,10 +287,10 @@ binfo._register('logic', [], function(logic) {
       return x + y * ycScale;
     };
 
-    compare.api.addToFilters = function(filters) {
-      filters[compare.api.id] = given ? [given] : null;
-      filters[xc.id] = xc.filter();
-      filters[yc.id] = yc.filter();
+    compare.api.addToParams = function(params) {
+      params.given[compare.api.id] = given;
+      params.filter[xc.id] = xc.filter();
+      params.filter[yc.id] = yc.filter();
     };
 
     compare.api.addCross = function(cross, crossAll) {
