@@ -33,7 +33,7 @@ binfo._register('ui', ['core'], function(ui, core) {
         .attr('class', 'control-panel');
 
     panel.append('div')
-        .attr('class', 'title')
+        .attr('class', 'tool title')
         .text('Binfo');
 
     config = panel.append('div')
@@ -122,15 +122,18 @@ binfo._register('ui', ['core'], function(ui, core) {
     viewToggles.append('div')
         .text('Options')
         .attr('class', 'options button')
-        .on('click', function() {
-          var disp = optionsPanel.style('display');
-          optionsPanel.style('display', disp === 'block' ? 'none' : 'block');
-          d3.select(this).classed('down', disp === 'none');
-        });
+        .on('click', toggleOptionsPanel);
 
     optionsPanel = viewToggles.append('div')
         .attr('class', 'options-panel')
         .style('display', 'none');
+    optionsPanel.append('div')
+        .attr('class', 'title')
+        .text('Options');
+    optionsPanel.append('div')
+        .attr('class', 'remove')
+        .html('&#10006;')
+        .on('click', toggleOptionsPanel);
     function changeUpdateMode() {
       var updateMode = this.id.slice(7);
       var always = updateMode === 'always';
@@ -155,12 +158,23 @@ binfo._register('ui', ['core'], function(ui, core) {
     addUpdateStyle('update-smart', 'Smart update (on mouse still)');
     addUpdateStyle('update-manual', 'Manual update');
     optionsPanel.select('#update-' + core.updateMode()).property('checked', true);
+    optionsPanel.append('div')
+        .attr('class', 'close-options button')
+        .text('Close')
+        .on('click', toggleOptionsPanel);
 
   };
+
+  function toggleOptionsPanel() {
+    var optionsPanel = panel.select('.options-panel'),
+        disp = optionsPanel.style('display');
+    optionsPanel.style('display', disp === 'block' ? 'none' : 'block');
+    panel.select('.options.button').classed('down', disp === 'none');
+  }
 
   function showStatistics(show) {
     panel.select('.statistics').classed('show', show);
-  };
+  }
 
   function changeDataName(newDataName) {
     if (newDataName === dataName) {
