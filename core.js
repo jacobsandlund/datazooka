@@ -284,11 +284,7 @@ binfo._register('core', [], function(core) {
     removedIds.forEach(function(id) { charts[id].remove(); });
     addedIds.forEach(function(id) { nextCharts[id].add(); });
 
-    dataName = nextDataName;
-    charts = nextCharts;
-    chartIds = nextChartIds;
-
-    rendering.render(charts, chartIds);
+    rendering.render(nextChartIds, nextCharts);
     rendering.renderTotal(cross.size());
     if (renderFresh) {
       filterForRenderFresh();
@@ -297,9 +293,13 @@ binfo._register('core', [], function(core) {
     rendering.refresh(crossAll);
 
     arrange.remove(removedIds, charts);
-    arrange.add(addedIds, charts);
-    chartIds = arrange.orderedChartIds(chartIds, charts);
-    hash.refresh(dataName, charts, chartIds);
+    arrange.add(addedIds, nextCharts);
+    chartIds = arrange.orderedChartIds(nextChartIds, nextCharts);
+
+    dataName = nextDataName;
+    charts = nextCharts;
+
+    hash.refresh(dataName, chartIds, charts);
     doneUpdating();
   };
 
@@ -307,7 +307,7 @@ binfo._register('core', [], function(core) {
     var id;
     for (id in renderFreshFilters) {
       if (renderFreshFilters.hasOwnProperty(id)) {
-        charts[id].filter(renderFreshFilters[id]);
+        nextCharts[id].filter(renderFreshFilters[id]);
       }
     }
     renderFreshFilters = null;
@@ -321,7 +321,7 @@ binfo._register('core', [], function(core) {
 
   core.refresh = function() {
     rendering.refresh(crossAll);
-    hash.refresh(dataName, charts, chartIds);
+    hash.refresh(dataName, chartIds, charts);
   };
 });
 

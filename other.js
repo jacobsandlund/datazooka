@@ -163,7 +163,7 @@ binfo._register('hash', [], function(hash) {
       hashUpdatedRecently = false,
       hashNeedsUpdated = false;
 
-  hash.refresh = function(dataName, charts, chartIds) {
+  hash.refresh = function(dataName, chartIds, charts) {
     var filters = {},
         id,
         filterData,
@@ -230,7 +230,7 @@ binfo._register('rendering', ['core'], function(rendering, core) {
     d3.select('.active-data').text(formatNumber(crossAll.value()));
   }
 
-  rendering.render = function(charts, chartIds) {
+  rendering.render = function(chartIds, charts) {
     var chartsHolder = d3.select('.charts'),
         chartData;
 

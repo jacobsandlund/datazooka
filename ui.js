@@ -38,7 +38,27 @@ binfo._register('ui', ['core'], function(ui, core) {
         .text('Binfo');
 
     config = panel.append('div')
-        .attr('class', 'config pane')
+        .attr('class', 'config');
+
+    totals = config.append('div')
+        .attr('class', 'totals pane');
+    totals.append('span')
+        .attr('class', 'active-data')
+        .text('-');
+    totals.append('span').text(' of ');
+    totals.append('span')
+        .attr('class', 'total')
+        .text('-');
+
+    totals.append('select')
+        .attr('class', 'data-name')
+        .on('change', function() {
+          changeDataName(this.value);
+          core.changeDataName(this.value);
+        });
+
+    interactions = config.append('div')
+        .attr('class', 'interactions pane')
         .on('mouseover', function() {
           if (disableModeTimer) {
             clearTimeout(disableModeTimer);
@@ -59,26 +79,6 @@ binfo._register('ui', ['core'], function(ui, core) {
           disableModeTimer = setTimeout(setChartMode, 550);
         });
 
-    totals = config.append('div')
-        .attr('class', 'totals');
-    totals.append('span')
-        .attr('class', 'active-data')
-        .text('-');
-    totals.append('span').text(' of ');
-    totals.append('span')
-        .attr('class', 'total')
-        .text('-');
-
-    totals.append('select')
-        .attr('class', 'data-name')
-        .on('change', function() {
-          changeDataName(this.value);
-          core.changeDataName(this.value);
-        });
-
-    interactions = config.append('div')
-        .attr('class', 'interactions');
-
     interactions.append('span').text('Add');
 
     interactions.append('div')
@@ -90,15 +90,10 @@ binfo._register('ui', ['core'], function(ui, core) {
 
     interactions.append('div')
         .attr('class', 'compare button')
-        .text('Compare')
+        .text('Comparison')
         .on('click', function() { setChartMode('compare'); });
 
     interactions.append('span').text('charts.');
-
-    interactions.append('div')
-        .attr('class', 'remove-all button')
-        .text('Remove All')
-        .on('click', core.clearCharts);
 
     statistics = interactions.append('div')
         .attr('class', 'statistics')
@@ -117,6 +112,13 @@ binfo._register('ui', ['core'], function(ui, core) {
         .text('Cancel')
         .style('display', 'none')
         .on('click', core.cancel);
+
+    config.append('div')
+        .attr('class', 'remove-all button')
+        .text('Remove All')
+        .on('click', core.clearCharts);
+
+
 
     viewToggles = panel.append('div')
         .attr('class', 'view-toggles pane');
