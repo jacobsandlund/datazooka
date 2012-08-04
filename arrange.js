@@ -1,27 +1,28 @@
 
 binfo._register('arrange', ['core'], function(arrange, core) {
 
-  var holder,
+  var outer,
+      holder,
       maxWidth,
       maxLevel,
       arranging,
       ghost,
       positioner,
-      chartsNode,
+      holderNode,
       root,
       zIndex = 1,
       layout;
 
-  arrange.setup = function(r, h, width) {
-    holder = h;
+  arrange.setup = function(r, o, h, width) {
     root = r;
-    var charts = holder.select('.charts');
-    chartsNode = charts.node();
-    ghost = charts.append('div')
+    outer = o;
+    holder = h;
+    holderNode = holder.node();
+    ghost = holder.append('div')
         .attr('class', 'ghost')
         .style('display', 'none');
     ghost.div = ghost;
-    positioner = charts.append('div')
+    positioner = holder.append('div')
         .attr('class', 'positioner')
         .style('display', 'none');
     positioner.div = positioner;
@@ -84,9 +85,9 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   }
 
   function mouseCoords() {
-    var coords = d3.mouse(chartsNode),
-        x = coords[0] + chartsNode.scrollLeft,
-        y = coords[1] + chartsNode.scrollTop;
+    var coords = d3.mouse(holderNode),
+        x = coords[0] + holderNode.scrollLeft,
+        y = coords[1] + holderNode.scrollTop;
     return [x, y];
   }
 
@@ -198,8 +199,9 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         max = i;
       }
     }
-    var chartHolderHeight = max * binfo.chartHeight + 200;
-    holder.select('.charts').style('height', chartHolderHeight + 'px');
+    var chartHolderHeight = max * binfo.chartHeight + 220;
+    holder.style('height', chartHolderHeight + 'px');
+    outer.style('height', (chartHolderHeight + 30) + 'px');
     row = layout[max];
     maxLevel = 0;
     for (i = 1; i < row.length; i++) {

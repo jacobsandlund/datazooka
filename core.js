@@ -8,6 +8,7 @@ var binfo = {
   chartBorder: 5,
   maxLevels: 50,
   arrangeSnap: 75,
+  holderMargin: 15,
   chartDimensions: {
     top: 20,
     right: 10,
@@ -128,11 +129,13 @@ binfo._register('core', [], function(core) {
   };
 
   binfo.setup = function(setup) {
-    holder = d3.select(setup.holder);
-    root = d3.select(setup.root);
-    var header = d3.select(setup.header);
-    ui.setup(holder, header, setup.width);
-    arrange.setup(root, holder, setup.width);
+    var outer = d3.select(setup.holder).attr('class', 'outer-holder'),
+        holder = outer.append('div'),
+        root = d3.select(setup.root),
+        header = d3.select(setup.header),
+        width = setup.width - 2 * binfo.holderMargin;
+    ui.setup(holder, header, width);
+    arrange.setup(root, outer, holder, width);
     root.on('mousemove.core', function() {
       if (smartTimer !== null) {
         clearSmartTimer();

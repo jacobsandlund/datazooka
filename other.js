@@ -231,14 +231,13 @@ binfo._register('rendering', ['core'], function(rendering, core) {
   }
 
   rendering.render = function(chartIds, charts) {
-    var chartsHolder = d3.select('.charts'),
-        chartData;
+    var chartData;
 
     chartData = chartIds.map(function(id, i) {
       return {chart: charts[id]};
     });
 
-    chartSelection = chartsHolder.selectAll('.chart')
+    chartSelection = d3.select('.holder').selectAll('.chart')
         .data(chartData, function(d) { return d.chart.id; });
 
     chartSelection.enter()

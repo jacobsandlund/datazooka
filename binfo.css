@@ -1,13 +1,13 @@
 
-.holder {
+.outer-holder {
   overflow: auto;
 }
 
-.charts {
-  font-family: Arial, sans-serif;
-  padding: 10px 0;
+.holder {
   overflow: auto;
-  position: relative;
+  position: absolute;
+  left: 0px;
+  font-family: Arial, sans-serif;
 }
 
 .chart, .ghost, .positioner {
@@ -74,6 +74,19 @@
   background-image: -o-linear-gradient(top, #444, #000);
   background-image: -moz-linear-gradient(top, #444, #000);
   background-image: linear-gradient(top, #444, #000);
+}
+
+.control-panel.updating {
+  background-color: #ccc;
+  background-image: -ms-linear-gradient(top, #bbb, #aaa);
+  background-image: -webkit-linear-gradient(top, #bbb, #aaa);
+  background-image: -o-linear-gradient(top, #bbb, #aaa);
+  background-image: -moz-linear-gradient(top, #bbb, #aaa);
+  background-image: linear-gradient(top, #bbb, #aaa);
+}
+
+.control-panel.updating > div {
+  opacity: 0.3;
 }
 
 .control-panel .pane {

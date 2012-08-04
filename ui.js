@@ -17,7 +17,8 @@ binfo._register('ui', ['core'], function(ui, core) {
     holder = h;
     holder
         .attr('class', 'holder')
-        .style('width', width);
+        .style('margin', binfo.holderMargin + 'px')
+        .style('width', width + 'px');
 
     var config,
         totals,
@@ -26,9 +27,6 @@ binfo._register('ui', ['core'], function(ui, core) {
         updatePanel,
         viewToggles,
         optionsPanel;
-
-    holder.append('div')
-        .attr('class', 'charts');
 
     panel = header.insert('div', ':first-child')
         .attr('class', 'control-panel');
@@ -260,8 +258,8 @@ binfo._register('ui', ['core'], function(ui, core) {
   }
 
   ui.updating = function(updating) {
-    holder.select('.charts').style('opacity', updating ? 0.3 : null);
-    panel.style('opacity', updating ? 0.3 : null);
+    holder.style('opacity', updating ? 0.3 : null);
+    panel.classed('updating', updating);
   };
 
   ui.updated = function(name) {
