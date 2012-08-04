@@ -199,7 +199,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         max = i;
       }
     }
-    var chartHolderHeight = max * binfo.chartHeight + 220;
+    var chartHolderHeight = max * binfo.chartHeight + 820;
     holder.style('height', chartHolderHeight + 'px');
     outer.style('height', (chartHolderHeight + 30) + 'px');
     row = layout[max];

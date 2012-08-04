@@ -43,11 +43,13 @@ binfo._register('ui', ['core'], function(ui, core) {
     totals.append('span')
         .attr('class', 'active-data')
         .text('-');
+    totals.append('span')
+        .attr('class', 'percent-active')
+        .text(' (XX.X%)');
     totals.append('span').text(' of ');
     totals.append('span')
         .attr('class', 'total')
         .text('-');
-
     totals.append('select')
         .attr('class', 'data-name')
         .on('change', function() {

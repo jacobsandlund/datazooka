@@ -76,7 +76,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
   }
 
   function baseArrange(div, api) {
-    var height = div.property('offsetHeight') - binfo.chartBorder,
+    var height = div.property('offsetHeight') - binfo.chartBorder - 5,
         levels = Math.ceil(height / binfo.chartHeight);
     api.levels = levels;
     api.height = levels * binfo.chartHeight;
@@ -220,6 +220,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           axisHolder,
           gPaths;
 
+      if (typeof orientFlip === 'undefined') orientFlip = defaultOrientFlip;
 
       gPaths = g.append('g');
       if (compare) {

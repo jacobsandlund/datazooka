@@ -19,6 +19,12 @@
   padding: 5px;
   margin: 0;
   cursor: move;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .chart.unsnapped {
@@ -291,11 +297,11 @@
   top: 0px;
   width: 16px;
   height: 18px;
+  font-size: 18px;
   color: #bbb;
   cursor: pointer;
   padding: 1px 2px;
   text-align: center;
-  font-size: 15px;
 }
 
 .remove:hover {

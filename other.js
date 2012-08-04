@@ -210,7 +210,8 @@ binfo._register('rendering', ['core'], function(rendering, core) {
   "use strict";
 
   var chartSelection,
-      formatNumber = d3.format(',d');
+      formatNumber = d3.format(',d'),
+      formatPercent = d3.format('.3p');
 
   function callCharts(name) {
     return function(chartData) {
@@ -223,11 +224,13 @@ binfo._register('rendering', ['core'], function(rendering, core) {
       renderCharts = callCharts('render'),
       cleanUpCharts = callCharts('resetUpdate');
 
-  rendering.refresh = function(crossAll) {
+  rendering.refresh = function(active, total) {
     chartSelection.each(updateCharts);
     chartSelection.each(renderCharts);
     chartSelection.each(cleanUpCharts);
-    d3.select('.active-data').text(formatNumber(crossAll.value()));
+    d3.select('.active-data').text(formatNumber(active));
+    d3.select('.total').text(formatNumber(total));
+    d3.select('.percent-active').text(' (' + formatPercent(active / total) + ')');
   }
 
   rendering.render = function(chartIds, charts) {
@@ -251,8 +254,5 @@ binfo._register('rendering', ['core'], function(rendering, core) {
     chartSelection.order();
   };
 
-  rendering.renderTotal = function(total) {
-    d3.select('.total').text(formatNumber(total));
-  };
 });
 

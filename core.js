@@ -288,12 +288,11 @@ binfo._register('core', [], function(core) {
     addedIds.forEach(function(id) { nextCharts[id].add(); });
 
     rendering.render(nextChartIds, nextCharts);
-    rendering.renderTotal(cross.size());
     if (renderFresh) {
       filterForRenderFresh();
       renderFresh = false;
     }
-    rendering.refresh(crossAll);
+    rendering.refresh(crossAll.value(), cross.size());
 
     arrange.remove(removedIds, charts);
     arrange.add(addedIds, nextCharts);
@@ -323,7 +322,7 @@ binfo._register('core', [], function(core) {
   };
 
   core.refresh = function() {
-    rendering.refresh(crossAll);
+    rendering.refresh(crossAll.value(), cross.size());
     hash.refresh(dataName, chartIds, charts);
   };
 });
