@@ -26,7 +26,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         .text(text);
     var width = span.property('offsetWidth');
     span.remove();
-    return width;
+    return Math.ceil(width);
   }
 
   function findDim(spec) {
@@ -476,8 +476,8 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         tix.forEach(function(t) {
           maxTickWidth = Math.max(maxTickWidth, findTextWidth(fmt(t)));
         });
-        dim.left = baseDim.left + lowestWidth / 2;
-        dim.right = baseDim.right + highestWidth / 2;
+        dim.left = baseDim.left + Math.ceil(lowestWidth / 2);
+        dim.right = baseDim.right + Math.ceil(highestWidth / 2);
         dim.maxTickWidth = maxTickWidth;
       }
 
@@ -623,12 +623,21 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     function setupChartPeripherals(div) {
       var givenBar = div.append('div')
           .attr('class', 'peripherals given-bar')
+          .style('width', dim.width + 'px')
           .style('margin-left', (dim.left + dim.xLeft) + 'px');
+      givenBar.append('div')
+          .attr('class', 'words')
+          .text('Given');
+      givenBar.append('div')
+          .attr('class', 'xc given button');
+      givenBar.append('div')
+          .attr('class', 'words')
+          .text('or');
+      givenBar.append('div')
+          .attr('class', 'yc given button');
       givenBar.selectAll('.given.button')
           .data(['xc', 'yc'])
-        .enter().append('div')
-          .text(function(d) { return 'Given ' + compare[d].label; })
-          .attr('class', function(d) { return d + ' given button'; })
+          .text(function(d) { return compare[d].label; })
           .classed('down', function(d) { return compare.api.given() === d; })
           .on('click', function(d) {
             var el = d3.select(this);
@@ -657,12 +666,12 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       dim.yHeight = yc.dim.compareHeight;
       dim.xWidth = xc.dim.width;
       dim.yWidth = yc.dim.width;
-      over = (xc.dim.labelWidth - xc.dim.width) / 2;
+      over = Math.ceil((xc.dim.labelWidth - xc.dim.width) / 2);
       if (over > 0) {
         dim.right = Math.max(dim.right, over);
         dim.left = Math.max(dim.left, over - dim.yHeight);
       }
-      over = (yc.dim.labelWidth - yc.dim.width) / 2;
+      over = Math.ceil((yc.dim.labelWidth - yc.dim.width) / 2);
       if (over > 0) {
         dim.top = Math.max(dim.top, over);
         dim.bottom = Math.max(dim.bottom, over - dim.xHeight);
