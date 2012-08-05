@@ -510,9 +510,15 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         yc = compare.yc,
         bgPath,
         paths = [],
-        levels = binfo.compareLevels;
+        levels = binfo.compareLevels,
+        i,
+        levelNums = [];
 
     compare.api.label = xc.label + ' vs. ' + yc.label;
+
+    for (i = 0; i < levels; i++) {
+      levelNums.push(i);
+    }
 
     function given(what) {
       compare.api.given(what);
@@ -559,6 +565,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       if (g.empty()) {
         baseSetupChart(div, compare.api);
         g = baseSetupSvg(div, dim, false);
+        div.select('svg').attr('class', 'compare');
         setupChart(g);
         setupChartPeripherals(div);
         baseArrange(div, compare.api);
@@ -568,14 +575,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     }
 
     function setupChart(g) {
-      var levelNums = [],
-          gCompare,
-          rectWidth,
-          rectHeight,
-          i;
-      for (i = 0; i < levels; i++) {
-        levelNums.push(i);
-      }
+      var gCompare;
       g.classed('compare', true);
       g.append('g')
           .attr('class', 'yc inner-chart')
@@ -604,24 +604,52 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           .attr('y', dim.height + dim.bottom - 8)
           .attr('class', 'axis-label')
           .text(xc.label);
-
-      rectWidth = 5;
-      rectHeight = 3;
-      g.selectAll('rect.level')
-          .data(levelNums)
-        .enter().append('rect')
-          .attr('class', function(d) { return 'level level-' + d; })
-          .attr('x', dim.width + 5)
-          .attr('y', function(d, i) {
-            return dim.xTop - 4 - i * rectHeight;
-          })
-          .attr('width', rectWidth)
-          .attr('height', rectHeight);
       return g;
     }
 
     function setupChartPeripherals(div) {
-      var givenBar = div.append('div')
+      var legend,
+          legendPad,
+          rectWidth,
+          rectHeight,
+          axisWidth,
+          legendAxis,
+          legendScale,
+          givenBar;
+
+      rectWidth = 16,
+      rectHeight = 2;
+      axisWidth = 30;
+      legendPad = 10;
+      legendScale = d3.scale.linear()
+          .domain([0, 100])
+          .range([(levels - 0.5) * rectHeight, 0]);
+      legendAxis = d3.svg.axis()
+          .scale(legendScale)
+          .orient('right');
+      legend = div.append('svg')
+          .attr('class', 'legend')
+          .style('margin-top', dim.top - legendPad)
+          .attr('height', levels * rectHeight + 2 * legendPad)
+          .attr('width', rectWidth + axisWidth)
+        .append('g')
+          .attr('transform', 'translate(0,' + legendPad + ')');
+      legend.append('g')
+          .attr('transform', 'translate(' + rectWidth + ',0)')
+          .attr('class', 'axis')
+          .call(legendAxis);
+      legend.selectAll('rect.level')
+          .data(levelNums)
+        .enter().append('rect')
+          .attr('class', function(d) { return 'level level-' + d; })
+          .attr('x', 0)
+          .attr('y', function(d, i) {
+            return (levels - i - 1) * rectHeight;
+          })
+          .attr('width', rectWidth)
+          .attr('height', rectHeight);
+
+      givenBar = div.append('div')
           .attr('class', 'peripherals given-bar')
           .style('width', dim.width + 'px')
           .style('margin-left', (dim.left + dim.xLeft) + 'px');

@@ -326,6 +326,10 @@
   font-size: 12px;
 }
 
+.peripherals.given-bar {
+  clear: both;
+}
+
 .peripherals.given-bar div {
   float: left;
 }
@@ -333,6 +337,15 @@
   font-size: 15px;
   margin: 2px;
   float: left;
+}
+
+svg.compare {
+  float: left;
+}
+
+.legend {
+  float: left;
+  margin-left: 15px;
 }
 
 .filter-bar {
