@@ -4,10 +4,10 @@
 }
 
 .holder {
-  overflow: auto;
   position: absolute;
   left: 0px;
   font-family: Arial, sans-serif;
+  width: 100%;
 }
 
 .chart, .ghost, .positioner {

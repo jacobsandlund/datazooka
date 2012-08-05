@@ -3,7 +3,6 @@ binfo._register('arrange', ['core'], function(arrange, core) {
 
   var outer,
       holder,
-      maxWidth,
       maxLevel,
       reordered,
       arranging,
@@ -14,7 +13,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       zIndex = 1,
       layout;
 
-  arrange.setup = function(r, o, h, width) {
+  arrange.setup = function(r, o, h) {
     root = r;
     outer = o;
     holder = h;
@@ -27,10 +26,9 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         .attr('class', 'positioner')
         .style('display', 'none');
     positioner.div = positioner;
-    maxWidth = width - 10;
     maxLevel = 0;
     layout = [];
-    var dummyChart = {left: 0, width: 0, levels: 0},
+    var dummyChart = {left: binfo.holderMargin, width: 0, levels: 0},
         i;
     for (i = 0; i < binfo.maxLevels; i++) {
       layout[i] = [dummyChart];
@@ -202,9 +200,6 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         max = i;
       }
     }
-    var chartHolderHeight = max * binfo.chartHeight + 820;
-    holder.style('height', chartHolderHeight + 'px');
-    outer.style('height', (chartHolderHeight + 30) + 'px');
     row = layout[max];
     maxLevel = 0;
     for (i = 1; i < row.length; i++) {
@@ -287,6 +282,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   }
 
   arrange.add = function(added, charts) {
+    var maxWidth = window.innerWidth - binfo.holderMargin - binfo.chartBorder;
     added.forEach(function(id) {
       var chart = charts[id],
           levels = chart.levels,
@@ -348,6 +344,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     reordered = true;
   };
 
+  // Also adds height to holder
   arrange.orderedChartIds = function(chartIds, charts) {
     if (!reordered) return null;
     var order,
@@ -359,6 +356,11 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       }
       return a.top - b.top;
     });
+    var last = order[order.length - 1],
+        max = last.top + last.height,
+        holderHeight = max + 820;
+    holder.style('height', holderHeight + 'px');
+    outer.style('height', (holderHeight + 30) + 'px');
     reordered = false;
     return order.map(function(chart) { return chart.id; });
   };

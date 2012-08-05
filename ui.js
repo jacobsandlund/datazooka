@@ -14,12 +14,9 @@ binfo._register('ui', ['core'], function(ui, core) {
       chartMode,
       firstCompare;
 
-  ui.setup = function(h, header, width) {
+  ui.setup = function(h, header) {
     holder = h;
-    holder
-        .attr('class', 'holder')
-        .style('margin', binfo.holderMargin + 'px')
-        .style('width', width + 'px');
+    holder.attr('class', 'holder');
 
     var config,
         totals,
