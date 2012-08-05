@@ -107,6 +107,23 @@ binfo._register('core', [], function(core) {
       nextChartIds,
       nextCharts;
 
+  core.isMouseOut = function() {
+    var e = d3.event,
+        tgt = e.currentTarget,
+        related;
+    // Taken from quirksmode
+    related = e.relatedTarget;
+    if (related) {
+      while (related !== tgt && related.nodeName !== 'BODY') {
+        related = related.parentNode;
+      }
+      if (related === tgt) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   core.dataSet = function(name, definitions, data) {
     var set,
         id;

@@ -59,18 +59,9 @@ binfo._register('ui', ['core'], function(ui, core) {
           }
         })
         .on('mouseout', function() {
-          var e = d3.event,
-              tgt = e.target,
-              related;
-          // Taken from quirksmode
-          related = e.relatedTarget;
-          if (related) {
-            while (related !== tgt && related.nodeName !== 'BODY') {
-              related = related.parentNode;
-            }
-            if (related === tgt) return;
+          if (core.isMouseOut()) {
+            disableModeTimer = setTimeout(setChartMode, 550);
           }
-          disableModeTimer = setTimeout(setChartMode, 550);
         });
 
     interactions.append('span').text('Add');

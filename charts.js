@@ -130,6 +130,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
   }
 
 
+  var percentFmt = d3.format('.3p');
 
   var clipId = 0;
 
@@ -145,7 +146,6 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         ticks = spec.ticks,
         axis = d3.svg.axis(),
         brush = d3.svg.brush(),
-        percentFmt = d3.format('.3p'),
         path,
         brushDirty;
 
@@ -522,6 +522,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         bgPath,
         paths = [],
         levels = binfo.compareLevels,
+        mouseDownBox,
         i,
         filteredLevels,
         levelNums = [];
@@ -599,11 +600,28 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           .attr('transform', 'translate(' + dim.xLeft + ',' + dim.xTop + ')')
           .datum({compare: true, orientFlip: false});
       gCompare = g.append('g')
-          .attr('transform', 'translate(' + dim.xLeft + ',' + dim.yTop + ')');
+          .attr('class', 'compare')
+          .attr('transform', 'translate(' + dim.xLeft + ',' + dim.yTop + ')')
+          .on('mousemove', function() { mouseMove(gCompare); })
+          .on('mouseout', function() {
+            if (core.isMouseOut()) {
+              mouseOut(gCompare);
+            }
+          })
+          .on('mouseup', function() { mouseUp(); })
+          .on('mousedown', function() { mouseDown(gCompare); })
       gCompare.selectAll('.compare.level')
           .data(levelNums)
         .enter().append('path')
           .attr('class', function(d) { return 'level-' + d + ' compare level'; });
+
+      gCompare.append('text')
+          .attr('class', 'compare percent')
+          .attr('transform', 'translate(' + (dim.xWidth / 2) + ',-5)');
+
+      gCompare.append('rect')
+          .attr('class', 'hover')
+          .style('display', 'none');
 
       g.append('g')
           .attr('transform', 'translate(' + (-dim.left + 7) + ',' +
@@ -616,7 +634,84 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           .attr('y', dim.height + dim.bottom - 8)
           .attr('class', 'axis-label')
           .text(xc.label);
+
       return g;
+    }
+
+    function boxFromCoords(gCompare) {
+      var coords = d3.mouse(gCompare.node()),
+          xi = coords[0] - 1,
+          yi = coords[1] - 1,
+          values = compare.values();
+      if (xi < 0 || yi < 0) {
+        return null;
+      }
+      xi = Math.floor(xi / dim.binWidth);
+      yi = Math.floor(yi / dim.binWidth);
+      if (xi >= values.length || yi >= values[0].length) {
+        return null;
+      }
+      return {xi: xi, yi: yi};
+    }
+
+    function mouseMove(gCompare) {
+      drawHover(gCompare, boxFromCoords(gCompare));
+    }
+
+    function mouseDown(gCompare) {
+      mouseDownBox = boxFromCoords(gCompare);
+    }
+
+    function mouseOut(gCompare) {
+      mouseUp();
+      drawHover(gCompare, null);
+    }
+
+    function mouseUp() {
+      mouseDownBox = null;
+    }
+
+    function drawHover(gCompare, hoverBox) {
+      var hover = gCompare.select('rect.hover'),
+          mouseBox = mouseDownBox || hoverBox,
+          bWidth = dim.binWidth,
+          values = compare.values(),
+          xi,
+          yi,
+          sum,
+          num,
+          percent,
+          level,
+          minXi,
+          maxXi,
+          minYi,
+          maxYi;
+      hover.style('display', hoverBox ? null : 'none');
+      if (!hoverBox) {
+        gCompare.select('text.percent')
+            .text('');
+        return;
+      }
+      minXi = Math.min(mouseBox.xi, hoverBox.xi);
+      maxXi = Math.max(mouseBox.xi, hoverBox.xi);
+      minYi = Math.min(mouseBox.yi, hoverBox.yi);
+      maxYi = Math.max(mouseBox.yi, hoverBox.yi);
+      hover
+          .attr('x', minXi * bWidth)
+          .attr('y', minYi * bWidth)
+          .attr('width', (maxXi - minXi + 1) * bWidth)
+          .attr('height', (maxYi - minYi + 1) * bWidth);
+
+      sum = 0;
+      for (xi = minXi; xi <= maxXi; xi++) {
+        for (yi = minYi; yi <= maxYi; yi++) {
+          sum += values[xi][yi];
+        }
+      }
+      num = (maxXi - minXi + 1) * (maxYi - minYi + 1);
+      level = Math.round(sum / num * binfo.compareLevels);
+      gCompare.select('text.percent')
+          .text(percentFmt(sum) + ' (Lvl: ' + level + ')');
     }
 
     function setupChartPeripherals(div) {
@@ -767,15 +862,11 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       dim.xWidth = xc.dim.width;
       dim.yWidth = yc.dim.width;
       over = Math.ceil((xc.dim.labelWidth - xc.dim.width) / 2);
-      if (over > 0) {
-        dim.right = Math.max(dim.right, over);
-        dim.left = Math.max(dim.left, over - dim.yHeight);
-      }
+      dim.right = Math.max(dim.right, over);
+      dim.left = Math.max(dim.left, over - dim.yHeight);
       over = Math.ceil((yc.dim.labelWidth - yc.dim.width) / 2);
-      if (over > 0) {
-        dim.top = Math.max(dim.top, over);
-        dim.bottom = Math.max(dim.bottom, over - dim.xHeight);
-      }
+      dim.top = Math.max(dim.top, over);
+      dim.bottom = Math.max(dim.bottom, over - dim.xHeight);
       dim.xTop = dim.yWidth + 4;
       dim.xLeft = dim.yHeight + 2;
       dim.yTop = 2;
