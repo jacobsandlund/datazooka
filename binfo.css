@@ -376,7 +376,11 @@ svg.compare {
   fill: #ccc;
 }
 
-.compare.bar.level-0 {
+.level.fade {
+  opacity: 0.15;
+}
+
+.compare.level-0 {
   stroke: black;
   shape-rendering: crispEdges;
 }

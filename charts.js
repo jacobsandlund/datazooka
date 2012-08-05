@@ -103,6 +103,23 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     div.style('height', height + 'px');
   }
 
+  function resizePath(d, height) {
+    var e = +(d === 'e'),
+        x = e ? 1 : -1,
+        h = Math.min(height, 30),
+        y = height / 2 - h / 2;
+    return 'M' + (0.5 * x) + ',' + y +
+            'A6,6 0 0 ' + e + ' ' + (6.5 * x) + ',' + (y + 6) +
+            'V' + (y + h - 6) +
+            'A6,6 0 0 ' + e + ' ' + (0.5 * x) + ',' + (y + h) +
+            'Z' +
+            'M' + (2.5 * x) + ',' + (y + h / 4) +
+            'V' + (y + h - h / 4) +
+            'M' + (4.5 * x) + ',' + (y + h / 4) +
+            'V' + (y + h - h / 4);
+  }
+
+
 
   var clipId = 0;
 
@@ -142,7 +159,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       core.refresh();
     }
 
-    brush.on('brush.chart', function() {
+    brush.on('brush.bar', function() {
       var g = d3.select(this.parentNode),
           extent = brush.extent();
       if (bar.round) {
@@ -154,7 +171,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       }
     });
 
-    brush.on('brushend.chart', function() {
+    brush.on('brushend.bar', function() {
       if (brush.empty()) {
         filter(null);
       }
@@ -412,22 +429,6 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           .attr('d', path);
     }
 
-    function resizePath(d, height) {
-      var e = +(d === 'e'),
-          x = e ? 1 : -1,
-          h = Math.min(height, 30),
-          y = height / 2 - h / 2;
-      return 'M' + (0.5 * x) + ',' + y +
-              'A6,6 0 0 ' + e + ' ' + (6.5 * x) + ',' + (y + 6) +
-              'V' + (y + h - 6) +
-              'A6,6 0 0 ' + e + ' ' + (0.5 * x) + ',' + (y + h) +
-              'Z' +
-              'M' + (2.5 * x) + ',' + (y + h / 4) +
-              'V' + (y + h - h / 4) +
-              'M' + (4.5 * x) + ',' + (y + h / 4) +
-              'V' + (y + h - h / 4);
-    }
-
     bar.addChart = function() {
       var minX = bar.minX(),
           maxX = bar.maxX(),
@@ -588,10 +589,10 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           .datum({compare: true, orientFlip: false});
       gCompare = g.append('g')
           .attr('transform', 'translate(' + dim.xLeft + ',' + dim.yTop + ')');
-      gCompare.selectAll('.compare.bar')
+      gCompare.selectAll('.compare.level')
           .data(levelNums)
         .enter().append('path')
-          .attr('class', function(d) { return 'level-' + d + ' compare bar'; });
+          .attr('class', function(d) { return 'level-' + d + ' compare level'; });
 
       g.append('g')
           .attr('transform', 'translate(' + (-dim.left + 7) + ',' +
@@ -612,25 +613,48 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           legendPad,
           rectWidth,
           rectHeight,
+          legendHeight,
           axisWidth,
           legendAxis,
           legendScale,
-          givenBar;
+          givenBar,
+          legendBrush;
 
       rectWidth = 16,
       rectHeight = 2;
       axisWidth = 30;
       legendPad = 10;
+      legendHeight = levels * rectHeight;
+
       legendScale = d3.scale.linear()
           .domain([0, 100])
-          .range([(levels - 0.5) * rectHeight, 0]);
+          .range([legendHeight - 1, 0]);
       legendAxis = d3.svg.axis()
           .scale(legendScale)
           .orient('right');
+
+      legendBrush = d3.svg.brush()
+          .x(legendScale);
+
+      legendBrush.on('brush.legend', function() {
+        var extent = legendBrush.extent();
+        legend.select('.brush')
+            .call(legendBrush.extent(extent = extent.map(Math.round)));
+        if (!legendBrush.empty()) {
+          filter(extent);
+        }
+      });
+
+      legendBrush.on('brushend.legend', function() {
+        if (legendBrush.empty()) {
+          filter(null);
+        }
+      });
+
       legend = div.append('svg')
           .attr('class', 'legend')
           .style('margin-top', dim.top - legendPad)
-          .attr('height', levels * rectHeight + 2 * legendPad)
+          .attr('height', legendHeight + 2 * legendPad)
           .attr('width', rectWidth + axisWidth)
         .append('g')
           .attr('transform', 'translate(0,' + legendPad + ')');
@@ -644,10 +668,23 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           .attr('class', function(d) { return 'level level-' + d; })
           .attr('x', 0)
           .attr('y', function(d, i) {
-            return (levels - i - 1) * rectHeight;
+            return legendHeight - (i + 1) * rectHeight;
           })
           .attr('width', rectWidth)
           .attr('height', rectHeight);
+
+      // Initialize the brush component with pretty resize handles.
+      var gBrush = legend.append('g')
+          .attr('class', 'brush')
+          .attr('transform', 'rotate(90) translate(0,' + -rectWidth + ')')
+          .call(legendBrush);
+      gBrush.selectAll('rect').attr('height', rectWidth)
+      gBrush.selectAll('.resize').append('path').attr('d', function(d) {
+        return resizePath(d, rectWidth);
+      });
+      gBrush.selectAll('.resize')
+          .style('cursor', 'ns-resize');
+
 
       givenBar = div.append('div')
           .attr('class', 'peripherals given-bar')
@@ -677,10 +714,20 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           });
     }
 
+    function filter(range) {
+      compare.api.div.selectAll('.level')
+          .classed('fade', false);
+      if (range) {
+        compare.api.div.selectAll('.level')
+          .filter(function(d) { return d < range[0] || d >= range[1]; })
+            .classed('fade', true);
+      }
+    }
+
     function renderUpdate(div, g) {
       g.selectAll('.yc.inner-chart').each(yc.render);
       g.selectAll('.xc.inner-chart').each(xc.render);
-      g.selectAll('.compare.bar')
+      g.selectAll('.compare.level')
           .attr('d', function(d) { return paths[d]; });
       div.selectAll('.given.button')
           .classed('down', function(d) { return compare.api.given() === d; });
