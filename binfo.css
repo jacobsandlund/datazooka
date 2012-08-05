@@ -372,10 +372,6 @@ svg.compare {
   fill: #ccc;
 }
 
-.level.fade {
-  opacity: 0.15;
-}
-
 .compare.level-0 {
   stroke: black;
   shape-rendering: crispEdges;

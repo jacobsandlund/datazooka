@@ -700,15 +700,13 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           legendBrush.extent(range);
         } else {
           legendBrush.clear();
+          range = [0, 100];
         }
         gBrush.call(legendBrush);
-        compare.api.div.selectAll('.level')
-            .classed('fade', false);
-        if (range) {
-          compare.api.div.selectAll('.level')
-            .filter(function(d) { return d < range[0] || d >= range[1]; })
-              .classed('fade', true);
-        }
+        compare.api.div.selectAll('.level').each(function(d) {
+          d3.select(this)
+              .classed('level-fade-' + d, d < range[0] || d >= range[1]);
+        });
       };
       compare.updateLegend(filteredLevels);
 

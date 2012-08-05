@@ -131,7 +131,10 @@ binfo._register('stylesheet', [], function(stylesheet) {
         red = 0,
         hue = d3.scale.linear(),
         saturation = d3.scale.linear(),
-        brightness = d3.scale.linear();
+        fadeSaturation = d3.scale.linear(),
+        brightness = d3.scale.linear(),
+        fadeScale = d3.scale.linear(),
+        fullScale = d3.scale.identity();
     level
         .domain([0, levels - 1])
         .range([0, 1]);
@@ -155,19 +158,32 @@ binfo._register('stylesheet', [], function(stylesheet) {
     saturation
         .domain([0, 1])
         .range([100, 100]);
+    fadeSaturation
+        .domain([0, 1])
+        .range([40, 40]);
     hue.domain(domain);
     brightness.domain(domain);
+    fadeScale
+        .domain([35, 60])
+        .range([78, 92]);
 
-    for (i = 0; i < levels; i++) {
-      lvl = level(i);
-      css += '.level-' + i + '{fill:hsl(';
-      css += hue(lvl) + ',';
-      css += saturation(lvl) + '%,';
-      css += brightness(lvl) + '%';
-      css += ');}';
-    }
+    function addCss(prefix, sat, brightScale) {
+      for (i = 0; i < levels; i++) {
+        lvl = level(i);
+        css += '.' + prefix + '-' + i + '{fill:hsl(';
+        css += hue(lvl) + ',';
+        css += sat(lvl) + '%,';
+        css += brightScale(brightness(lvl)) + '%';
+        css += ');}';
+      }
+    };
+
+    addCss('level', saturation, fullScale);
+    addCss('level-fade', fadeSaturation, fadeScale);
+
     holder.append('style').html(css);
   };
+
 
 });
 
