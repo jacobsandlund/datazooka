@@ -608,8 +608,10 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
               mouseOut(gCompare);
             }
           })
-          .on('mouseup', function() { mouseUp(); })
           .on('mousedown', function() { mouseDown(gCompare); })
+
+      compare.api.div.on('mouseup.hover', function() { mouseUp(); });
+
       gCompare.selectAll('.compare.level')
           .data(levelNums)
         .enter().append('path')
@@ -663,7 +665,6 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     }
 
     function mouseOut(gCompare) {
-      mouseUp();
       drawHover(gCompare, null);
     }
 
@@ -676,16 +677,11 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           mouseBox = mouseDownBox || hoverBox,
           bWidth = dim.binWidth,
           values = compare.values(),
-          xi,
-          yi,
-          sum,
-          num,
-          percent,
-          level,
           minXi,
           maxXi,
           minYi,
-          maxYi;
+          maxYi,
+          stats;
       hover.style('display', hoverBox ? null : 'none');
       if (!hoverBox) {
         gCompare.select('text.percent')
@@ -696,27 +692,21 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       maxXi = Math.max(mouseBox.xi, hoverBox.xi);
       minYi = Math.min(mouseBox.yi, hoverBox.yi);
       maxYi = Math.max(mouseBox.yi, hoverBox.yi);
+      stats = compare.stats([minXi, maxXi], [minYi, maxYi]);
       hover
           .attr('x', minXi * bWidth)
           .attr('y', minYi * bWidth)
           .attr('width', (maxXi - minXi + 1) * bWidth)
           .attr('height', (maxYi - minYi + 1) * bWidth);
 
-      sum = 0;
-      for (xi = minXi; xi <= maxXi; xi++) {
-        for (yi = minYi; yi <= maxYi; yi++) {
-          sum += values[xi][yi];
-        }
-      }
-      num = (maxXi - minXi + 1) * (maxYi - minYi + 1);
-      level = Math.round(sum / num * binfo.compareLevels);
       gCompare.select('text.percent')
-          .text(percentFmt(sum) + ' (Lvl: ' + level + ')');
+          .text(percentFmt(stats.percent) + ' (Lvl: ' + stats.level + ')');
     }
 
     function setupChartPeripherals(div) {
       var legend,
           legendPad,
+          leftPad,
           rectWidth,
           rectHeight,
           legendHeight,
@@ -729,7 +719,8 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       rectWidth = 16,
       rectHeight = 2;
       axisWidth = 30;
-      legendPad = 10;
+      legendPad = 16;
+      leftPad = 10;
       legendHeight = levels * rectHeight;
 
       legendScale = d3.scale.linear()
@@ -758,11 +749,15 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
 
       legend = div.append('svg')
           .attr('class', 'legend')
-          .style('margin-top', dim.top - legendPad)
           .attr('height', legendHeight + 2 * legendPad)
-          .attr('width', rectWidth + axisWidth)
+          .attr('width', rectWidth + axisWidth + leftPad)
         .append('g')
-          .attr('transform', 'translate(0,' + legendPad + ')');
+          .attr('transform', 'translate(' + leftPad + ',' + legendPad + ')');
+      legend.append('text')
+          .attr('class', 'axis-label')
+          .attr('x', rectWidth / 2)
+          .attr('y', -6)
+          .text('Level');
       legend.append('g')
           .attr('transform', 'translate(' + rectWidth + ',0)')
           .attr('class', 'axis')
