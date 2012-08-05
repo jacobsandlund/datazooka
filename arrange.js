@@ -296,6 +296,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
           otherChart,
           fitting = 0,
           fitWidth,
+          fitWidthDiff,
           startLevel,
           direction = -1,
           i = maxLevel,
@@ -305,12 +306,21 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         left = otherChart.left + otherChart.width;
         remaining = maxWidth - left;
         if (remaining >= width || remaining === maxWidth) {
-          if (fitting && remaining === fitWidth) {
-            fitting += 1;
+          if (fitting) {
+            fitWidthDiff = Math.abs(remaining - fitWidth);
+            if (fitWidthDiff <= binfo.fitWidthMaxDiff) {
+              fitting += 1;
+              fitWidth = Math.min(remaining, fitWidth);
+            } else {
+              fitWidth = remaining;
+              fitting = 1;
+            }
           } else {
             fitWidth = remaining;
             fitting = 1;
           }
+        } else {
+          fitting = 0;
         }
         if (fitting === levels) {
           break;

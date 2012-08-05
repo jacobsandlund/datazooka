@@ -12,6 +12,7 @@ var binfo = {
   compareLevels: 100,
   axisTickSize: 12,
   axisLabelSize: 14,
+  fitWidthMaxDiff: 190,
   chartDimensions: {
     top: 16,
     right: 10,
