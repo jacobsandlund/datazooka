@@ -54,7 +54,9 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
 
 
   function baseSetupChart(div, api) {
-    var title = div.select('.title').text(api.label);
+    var title = div.select('.title')
+        .text(api.label)
+        .style('display', 'none');  // hide title until width is figured out
     div.append('div')
         .attr('class', 'remove')
         .html('&#10006;')
@@ -92,13 +94,21 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
   }
 
   function baseArrange(div, api) {
-    var height = div.property('offsetHeight') - binfo.chartBorder - 5,
-        levels = Math.ceil(height / binfo.chartHeight);
+    var width = div.property('offsetWidth') - binfo.chartBorder,
+        innerWidth = width - binfo.chartPadding * 2 - binfo.chartBorder,
+        height,
+        levels;
+    api.div = div;
+    api.width = width;
+    div.style('width', innerWidth + 'px');
+    div.select('.title')
+        .style('width', (innerWidth - 15) + 'px')   // 15 for Remove 'x'
+        .style('display', null);
+    height = div.property('offsetHeight') - binfo.chartBorder - 5;
+    levels = Math.ceil(height / binfo.chartHeight);
     api.levels = levels;
     api.height = levels * binfo.chartHeight;
     height = api.height - (binfo.chartBorder + 2 * binfo.chartPadding);
-    api.width = div.property('offsetWidth') - binfo.chartBorder;
-    api.div = div;
     api.snapped = false;
     div.style('height', height + 'px');
   }
