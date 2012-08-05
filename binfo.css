@@ -16,7 +16,7 @@
 
 .chart {
   display: inline-block;
-  padding: 5px;
+  padding: 5px;               /* Padding is duplicated in code */
   margin: 0;
   cursor: move;
   -webkit-touch-callout: none;
@@ -44,9 +44,13 @@
   text-align: center;
 }
 
+.chart .title {
+  margin-right: 20px;
+}
+
 .chart {
   border-style: solid;
-  border-width: 5px;
+  border-width: 5px;        /* border is duplicated in code */
   border-color: #eee;
   background-color: white;
 }
@@ -366,7 +370,7 @@
 }
 
 .axis text {
-  font: 12px sans-serif;
+  font: 12px sans-serif;  /* Font size is duplicated in code */
 }
 
 .axis.ordinal {
@@ -375,7 +379,7 @@
 
 .axis-label {
   text-anchor: middle;
-  font-size: 14px;
+  font-size: 14px;    /* Font size in duplicated in code */
 }
 
 .brush rect.extent {

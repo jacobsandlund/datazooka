@@ -19,12 +19,20 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
   };
 
 
-  function findDim(spec) {
+  function findTextWidth(text, size) {
+    if (typeof size === 'number') size += 'px';
+    var span = d3.select('.holder').append('span')
+        .style('font-size', size)
+        .text(text);
+    var width = span.property('offsetWidth');
+    span.remove();
+    return width;
+  }
 
+  function findDim(spec) {
     var dim = spec.dimensions || {},
         defaultDim = binfo.chartDimensions,
         dimName;
-
     for (dimName in defaultDim) {
       if (defaultDim.hasOwnProperty(dimName)) {
         if (!dim[dimName]) {
@@ -32,8 +40,16 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         }
       }
     }
-
     return dim;
+  }
+
+  function findBaseDim(dim) {
+    var base = {};
+    base.left = dim.left;
+    base.right = dim.right;
+    base.bottom = dim.bottom;
+    base.top = dim.top;
+    return base;
   }
 
 
@@ -88,12 +104,12 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
   }
 
 
-
   var clipId = 0;
 
   function barChart(bar, spec) {
 
     var dim = findDim(spec),
+        baseDim = findBaseDim(dim),
         defaultOrientFlip = false,
         compareHeightScale = spec.compareHeightScale || binfo.compareHeightScale,
         x = spec.x,
@@ -115,9 +131,11 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       defaultOrientFlip = true;
     }
 
-    if (bar.ordinal) {
-      dim.bottom += 120;
-    }
+    bar.api.label = spec.label;
+    bar.api.defaultOrientFlip = defaultOrientFlip;
+    bar.api.dim = dim;
+
+    dim.labelWidth = findTextWidth(bar.api.label, binfo.axisLabelSize);
 
     function filter(range) {
       bar.api.filter(range);
@@ -164,7 +182,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       var root = d3.select(this),
           g,
           div,
-          setupDim = dim,
+          setupDim,
           data = root.datum(),
           orientFlip = data.orientFlip,
           compare = data.compare,
@@ -186,15 +204,20 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         if (orientFlip) {
           setupDim = {
             top: dim.left,
-            right: dim.top + 25,
+            right: dim.top,
             bottom: dim.right,
-            left: dim.bottom + 40,
+            left: dim.bottom,
           };
-          for (i in dim) {
-            if (dim.hasOwnProperty(i) && typeof setupDim[i] === 'undefined') {
-              setupDim[i] = dim[i];
-            }
+        } else {
+          setupDim = {};
+        }
+        for (i in dim) {
+          if (dim.hasOwnProperty(i) && typeof setupDim[i] === 'undefined') {
+            setupDim[i] = dim[i];
           }
+        }
+        if (orientFlip && !bar.ordinal) {
+          setupDim.left = baseDim.left + dim.maxTickWidth;
         }
         setupDim.actualHeight = compare ? setupDim.compareHeight : setupDim.height;
 
@@ -432,6 +455,32 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         tix = bar.ticks || Math.round(dim.width / tickSpacing);
         axis.ticks(tix);
       }
+
+      // Update margin to fit everything
+      var maxOrd = 0,
+          fmt,
+          lowestWidth,
+          highestWidth,
+          maxTickWidth = 0;
+      if (bar.ordinal) {
+        bar.ordinal().forEach(function(ord) {
+          maxOrd = Math.max(maxOrd, findTextWidth(ord, binfo.axisTickSize));
+        });
+        dim.bottom = baseDim.bottom + maxOrd;
+        dim.maxTickWidth = 0;
+      } else {
+        fmt = axis.tickFormat() || x.tickFormat();
+        tix = axis.tickValues() || x.ticks(tix || binfo.numGroups);
+        lowestWidth = findTextWidth(fmt(tix[0]));
+        highestWidth = findTextWidth(fmt(tix[tix.length - 1]));
+        tix.forEach(function(t) {
+          maxTickWidth = Math.max(maxTickWidth, findTextWidth(fmt(t)));
+        });
+        dim.left = baseDim.left + lowestWidth / 2;
+        dim.right = baseDim.right + highestWidth / 2;
+        dim.maxTickWidth = maxTickWidth;
+      }
+
     };
 
     bar.chartFilter = function() {
@@ -445,10 +494,6 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     };
 
 
-    bar.api.label = spec.label;
-    bar.api.defaultOrientFlip = defaultOrientFlip;
-    bar.api.dim = dim;
-
     bar.resetUpdateChart = function() {
       brushDirty = false;
     };
@@ -460,14 +505,13 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
   function compareChart(compare, spec) {
 
     var dim = findDim(spec),
+        baseDim = findBaseDim(dim),
         xc = compare.xc,
         yc = compare.yc,
         bgPath,
         paths = [],
         levels = binfo.compareLevels;
 
-    dim.left = yc.dim.bottom + 60;
-    dim.bottom = xc.dim.bottom + 50;
     compare.api.label = xc.label + ' vs. ' + yc.label;
 
     function given(what) {
@@ -550,14 +594,14 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           .attr('class', function(d) { return 'level-' + d + ' compare bar'; });
 
       g.append('g')
-          .attr('transform', 'translate(' + (-dim.left + 10) + ',' +
+          .attr('transform', 'translate(' + (-dim.left + 7) + ',' +
                               (dim.yWidth / 2) + ') rotate(90)')
         .append('text')
           .attr('class', 'axis-label')
           .text(yc.label);
       g.append('text')
           .attr('x', dim.xLeft + dim.xWidth / 2)
-          .attr('y', dim.height + dim.bottom - 20)
+          .attr('y', dim.height + dim.bottom - 8)
           .attr('class', 'axis-label')
           .text(xc.label);
 
@@ -606,10 +650,23 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     }
 
     compare.addChart = function() {
+      var over;
+      dim.left = yc.dim.bottom + yc.dim.maxTickWidth + 14;
+      dim.bottom = xc.dim.bottom + 14 + (xc.ordinal ? 0 : 10);
       dim.xHeight = xc.dim.compareHeight;
       dim.yHeight = yc.dim.compareHeight;
       dim.xWidth = xc.dim.width;
       dim.yWidth = yc.dim.width;
+      over = (xc.dim.labelWidth - xc.dim.width) / 2;
+      if (over > 0) {
+        dim.right = Math.max(dim.right, over);
+        dim.left = Math.max(dim.left, over - dim.yHeight);
+      }
+      over = (yc.dim.labelWidth - yc.dim.width) / 2;
+      if (over > 0) {
+        dim.top = Math.max(dim.top, over);
+        dim.bottom = Math.max(dim.bottom, over - dim.xHeight);
+      }
       dim.xTop = dim.yWidth + 4;
       dim.xLeft = dim.yHeight + 2;
       dim.yTop = 2;

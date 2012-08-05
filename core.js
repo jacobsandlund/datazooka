@@ -10,8 +10,10 @@ var binfo = {
   arrangeSnap: 75,
   holderMargin: 15,
   compareLevels: 100,
+  axisTickSize: 12,
+  axisLabelSize: 14,
   chartDimensions: {
-    top: 20,
+    top: 16,
     right: 10,
     bottom: 20,
     left: 10,
@@ -84,53 +86,53 @@ binfo._register('core', [], function(core) {
       chartsApi = core.dependency('charts'),
       hash = core.dependency('hash'),
       arrange = core.dependency('arrange'),
-  stylesheet = core.dependency('stylesheet'),
-  dataSets = {},
-  cross,
-  crossAll,
-  updateMode = 'always',
-  smartTimer = null,
-  renderFreshLater,
-  renderFreshParams,
-  renderFresh,
-  needsToUpdate = true,
-  updating,
-  addedIds,
-  removedIds,
-  dataName,
-  chartIds = [],
-  charts,
-  nextDataName,
-  nextChartIds,
-  nextCharts;
+      stylesheet = core.dependency('stylesheet'),
+      dataSets = {},
+      cross,
+      crossAll,
+      updateMode = 'always',
+      smartTimer = null,
+      renderFreshLater,
+      renderFreshParams,
+      renderFresh,
+      needsToUpdate = true,
+      updating,
+      addedIds,
+      removedIds,
+      dataName,
+      chartIds = [],
+      charts,
+      nextDataName,
+      nextChartIds,
+      nextCharts;
 
-core.dataSet = function(name, definitions, data) {
-  var set,
-      id;
-  if (!definitions) {
-    set = dataSets[name];
-    if (!set) {
-      return null;
+  core.dataSet = function(name, definitions, data) {
+    var set,
+        id;
+    if (!definitions) {
+      set = dataSets[name];
+      if (!set) {
+        return null;
+      }
+      return set;
     }
-    return set;
-  }
-  dataSets[name] = set = {definitions: definitions, data: data};
-  set.definitionIds = [];
-  set.charts = {};
-  for (id in definitions) {
-    if (definitions.hasOwnProperty(id)) {
-      set.charts[id] = chartsApi.barChart(definitions[id], data)
-        set.definitionIds.push(id);
+    dataSets[name] = set = {definitions: definitions, data: data};
+    set.definitionIds = [];
+    set.charts = {};
+    for (id in definitions) {
+      if (definitions.hasOwnProperty(id)) {
+        set.charts[id] = chartsApi.barChart(definitions[id], data)
+          set.definitionIds.push(id);
+      }
     }
-  }
-  set.chartIds = set.definitionIds.slice();
-  ui.addDataName(name);
-  if (renderFreshLater && renderFreshLater[0] === name) {
-    core.renderFresh.apply(null, renderFreshLater);
+    set.chartIds = set.definitionIds.slice();
+    ui.addDataName(name);
+    if (renderFreshLater && renderFreshLater[0] === name) {
+      core.renderFresh.apply(null, renderFreshLater);
+    };
   };
-};
 
-binfo.setup = function(setup) {
+  binfo.setup = function(setup) {
     var outer = d3.select(setup.holder).attr('class', 'outer-holder'),
         holder = outer.append('div'),
         root = d3.select(setup.root),

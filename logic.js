@@ -82,6 +82,7 @@ binfo._register('logic', [], function(logic) {
 
     if (spec.ordinal) {
       bar.ordinal = function() { return ordinal; };
+      bar.api.ordinal = true;
     }
 
     bar.api.dimensionFunc = function() { return dimensionFunc; };

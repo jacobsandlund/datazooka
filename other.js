@@ -140,13 +140,13 @@ binfo._register('stylesheet', [], function(stylesheet) {
       {d: 0,      h: blue,        b: 35},
       {d: 0.17,   h: blueIndigo,  b: 40},
       {d: 0.22,   h: indigo,      b: 35},
-      {d: 0.3,  h: indigoGreen, b: 38},
+      {d: 0.3,    h: indigoGreen, b: 38},
       {d: 0.41,   h: green,       b: 42},
-      {d: 0.5,  h: greenYellow, b: 60},
+      {d: 0.54,   h: greenYellow, b: 60},
       {d: 0.65,   h: yellow,      b: 50},
-      {d: 0.70,   h: yellowOrange,      b: 50},
-      {d: 0.80,  h: orange,      b: 50},
-      {d: 0.93,  h: orangeRed,      b: 50},
+      {d: 0.725,  h: yellowOrange,b: 50},
+      {d: 0.83,   h: orange,      b: 50},
+      {d: 0.95,   h: orangeRed,   b: 50},
       {d: 1,      h: red,         b: 60}
     ];
     domain = pts.map(function(d) { return d.d; });
