@@ -203,6 +203,7 @@ binfo._register('hashRetrieval', ['core'], function(_, core) {
 
     params.given = getParams(hashParams.given);
     params.filter = getParams(hashParams.filter);
+    params.filterLevels = getParams(hashParams.filterLevels);
     if (!dataName || !charts || !charts.length) {
       return;
     }
@@ -236,28 +237,42 @@ binfo._register('hash', ['arrange'], function(hash, arrange) {
 
   var chartIds,
       charts,
+      dataName,
       hashParams = [0,0,0],
+      isEnable = true,
       hashUpdatedRecently = false,
       hashNeedsUpdated = false;
 
-  hash.refresh = function(dataName, ids, c) {
-    var params = {filter: {}, given: {}},
-        id,
-        filterString,
-        givenString;
+  hash.disable = function() {
+    isEnable = false;
+  };
 
+  hash.refresh = function(name, ids, c) {
+    dataName = name;
     chartIds = ids;
     charts = c;
+    isEnable = true;
+    hash.refreshParams();
+  };
 
+  hash.refreshParams = function() {
+    if (!isEnable) {
+      return;
+    }
+    var params = {filter: {}, given: {}, filterLevels: {}};
     chartIds.forEach(function(id) { charts[id].addToParams(params); });
-    filterString = paramString(params, 'filter');
-    givenString = paramString(params, 'given');
-    hashParams = ['data=' + dataName, null, givenString, filterString];
+    hashParams = [
+      'data=' + dataName,
+      null,   // Reserved for chart ids
+      paramString(params, 'given'),
+      paramString(params, 'filterLevels'),
+      paramString(params, 'filter')
+    ];
     hashNeedsUpdated = true;
     if (!hashUpdatedRecently) {
       updateWindowHash();
     }
-  }
+  };
 
   function paramString(params, string) {
     var param = params[string],

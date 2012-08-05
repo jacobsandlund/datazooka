@@ -226,7 +226,7 @@ binfo._register('core', [], function(core) {
     core.dataName(name);
     core.chartIds(ids);
     renderFresh = true;
-    renderFreshParams = params || {filters: {}, given: {}};
+    renderFreshParams = params || {filters: {}, given: {}, filterLevels: {}};
     core.update('force');
   };
 
@@ -270,6 +270,7 @@ binfo._register('core', [], function(core) {
         return;
       }
     }
+    hash.disable();
     var data = dataSets[nextDataName].data,
         addedCross = addedIds,
         removedCross = removedIds;
@@ -312,6 +313,7 @@ binfo._register('core', [], function(core) {
   function doRenderFresh() {
     applyParam(renderFreshParams, 'filter');
     applyParam(renderFreshParams, 'given');
+    applyParam(renderFreshParams, 'filterLevels');
     renderFreshParams = null;
     renderFresh = false;
   }

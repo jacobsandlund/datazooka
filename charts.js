@@ -54,6 +54,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
 
 
   function baseSetupChart(div, api) {
+    api.div = div;
     var title = div.select('.title')
         .text(api.label)
         .style('display', 'none');  // hide title until width is figured out
@@ -98,7 +99,6 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         innerWidth = width - binfo.chartPadding * 2 - binfo.chartBorder,
         height,
         levels;
-    api.div = div;
     api.width = width;
     div.style('width', innerWidth + 'px');
     div.select('.title')
@@ -523,6 +523,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         paths = [],
         levels = binfo.compareLevels,
         i,
+        filteredLevels,
         levelNums = [];
 
     compare.api.label = xc.label + ' vs. ' + yc.label;
@@ -627,8 +628,8 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           axisWidth,
           legendAxis,
           legendScale,
-          givenBar,
-          legendBrush;
+          legendBrush = d3.svg.brush(),
+          givenBar;
 
       rectWidth = 16,
       rectHeight = 2;
@@ -643,21 +644,20 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           .scale(legendScale)
           .orient('right');
 
-      legendBrush = d3.svg.brush()
-          .x(legendScale);
+      legendBrush.x(legendScale);
 
       legendBrush.on('brush.legend', function() {
         var extent = legendBrush.extent();
         legend.select('.brush')
             .call(legendBrush.extent(extent = extent.map(Math.round)));
         if (!legendBrush.empty()) {
-          filter(extent);
+          filterLevels(extent);
         }
       });
 
       legendBrush.on('brushend.legend', function() {
         if (legendBrush.empty()) {
-          filter(null);
+          filterLevels(null);
         }
       });
 
@@ -695,6 +695,26 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       gBrush.selectAll('.resize')
           .style('cursor', 'ns-resize');
 
+      compare.updateLegend = function(range) {
+        if (range) {
+          legendBrush.extent(range);
+        } else {
+          legendBrush.clear();
+        }
+        gBrush.call(legendBrush);
+        compare.api.div.selectAll('.level')
+            .classed('fade', false);
+        if (range) {
+          compare.api.div.selectAll('.level')
+            .filter(function(d) { return d < range[0] || d >= range[1]; })
+              .classed('fade', true);
+        }
+      };
+      compare.updateLegend(filteredLevels);
+
+      function filterLevels(range) {
+        compare.api.filterLevels(range);
+      }
 
       givenBar = div.append('div')
           .attr('class', 'peripherals given-bar')
@@ -724,15 +744,12 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           });
     }
 
-    function filter(range) {
-      compare.api.div.selectAll('.level')
-          .classed('fade', false);
-      if (range) {
-        compare.api.div.selectAll('.level')
-          .filter(function(d) { return d < range[0] || d >= range[1]; })
-            .classed('fade', true);
+    compare.chartLevels = function(range) {
+      filteredLevels = range;
+      if (compare.updateLegend) {
+        compare.updateLegend(range);
       }
-    }
+    };
 
     function renderUpdate(div, g) {
       g.selectAll('.yc.inner-chart').each(yc.render);

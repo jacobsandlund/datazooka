@@ -1,5 +1,5 @@
 
-binfo._register('logic', [], function(logic) {
+binfo._register('logic', ['hash'], function(logic, hash) {
 
   "use strict";
 
@@ -269,6 +269,7 @@ binfo._register('logic', [], function(logic) {
         ycNumGroups,
         ycScale = Math.pow(2, 20),  // About a million
         dimensionFunc,
+        filteredLevels,
         group,
         groups,
         values;
@@ -284,8 +285,11 @@ binfo._register('logic', [], function(logic) {
       given = _;
     };
 
-    compare.api.filter = function(_) {
-      compare.api.given(_ ? _[0] : null);
+    compare.api.filterLevels = function(_) {
+      if (!arguments.length) return filteredLevels;
+      filteredLevels = _;
+      hash.refreshParams();
+      compare.chartLevels(_);
     };
 
     dimensionFunc = function(d) {
@@ -295,6 +299,7 @@ binfo._register('logic', [], function(logic) {
     };
 
     compare.api.addToParams = function(params) {
+      params.filterLevels[compare.api.id] = filteredLevels;
       params.given[compare.api.id] = given;
       params.filter[xc.id] = xc.filter();
       params.filter[yc.id] = yc.filter();
