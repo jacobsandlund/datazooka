@@ -263,7 +263,6 @@ binfo._register('logic', ['hash'], function(logic, hash) {
         given = null,
         crossAll,
         maxAll,
-        maxes,
         xcDimensionFunc,
         ycDimensionFunc,
         xcGroupFunc,
@@ -337,36 +336,72 @@ binfo._register('logic', ['hash'], function(logic, hash) {
     compare.stats = function(xs, ys) {
       var xi,
           yi,
+          numXs,
+          numYs,
           val,
-          sum = 0,
-          valueSum = 0,
-          num,
+          sum,
+          rowTotal,
+          rowHovered,
+          valueSum,
+          hoveredArea,
           max,
           percent,
           level,
           stats = {};
+      sum = 0;
+      valueSum = 0;
+      numXs = xs[1] - xs[0] + 1;
+      numYs = ys[1] - ys[0] + 1;
+      hoveredArea = numXs * numYs;
       for (xi = xs[0]; xi <= xs[1]; xi++) {
         for (yi = ys[0]; yi <= ys[1]; yi++) {
           val = values[xi][yi];
           valueSum += val;
-          sum += val * findMax(xi, yi);
+          sum += val * maxAll;
         }
       }
-      num = (xs[1] - xs[0] + 1) * (ys[1] - ys[0] + 1);
-      level = Math.round(valueSum / num * binfo.compareLevels);
-      return {level: level, percent: sum / crossAll.value()};
-    };
-
-    function findMax(xi, yi) {
+      level = Math.round(valueSum / hoveredArea * binfo.compareLevels);
       if (!given) {
-        return maxAll;
-      }
-      if (given === 'yc') {
-        return maxes[yi];
+        percent = sum / crossAll.value();
+      } else if (given === 'yc') {
+        sum = 0;
+        for (yi = ys[0]; yi <= ys[1]; yi++) {
+          rowTotal = 0;
+          rowHovered = 0;
+          for (xi = 0; xi < xcNumGroups; xi++) {
+            rowTotal += values[xi][yi];
+          }
+          if (rowTotal) {
+            for (xi = xs[0]; xi <= xs[1]; xi++) {
+              rowHovered += values[xi][yi] / rowTotal;
+            }
+          } else {
+            rowHovered = numXs / xcNumGroups;
+          }
+          sum += rowHovered;
+        }
+        percent = sum / numYs;
       } else {
-        return maxes[xi];
+        sum = 0;
+        for (xi = xs[0]; xi <= xs[1]; xi++) {
+          rowTotal = 0;
+          rowHovered = 0;
+          for (yi = 0; yi < ycNumGroups; yi++) {
+            rowTotal += values[xi][yi];
+          }
+          if (rowTotal) {
+            for (yi = ys[0]; yi <= ys[1]; yi++) {
+              rowHovered += values[xi][yi] / rowTotal;
+            }
+          } else {
+            rowHovered = numYs / ycNumGroups;
+          }
+          sum += rowHovered;
+        }
+        percent = sum / numXs;
       }
-    }
+      return {level: level, percent: percent};
+    };
 
     function passToXcYc(method) {
       compare.api[method] = function() {
@@ -399,7 +434,6 @@ binfo._register('logic', ['hash'], function(logic, hash) {
         yi = Math.round(d.key / ycScale);
         values[xi][yi] = d.value;
       }
-      maxes = [];
       if (!given) {
         maxAll = max = group.top(1)[0].value + 1e-300;
         for (xi = 0; xi < xcNumGroups; xi++) {
@@ -413,7 +447,6 @@ binfo._register('logic', ['hash'], function(logic, hash) {
           for (xi = 0; xi < xcNumGroups; xi++) {
             max = Math.max(max, values[xi][yi]);
           }
-          maxes[yi] = max;
           for (xi = 0; xi < xcNumGroups; xi++) {
             values[xi][yi] = values[xi][yi] / max;
           }
@@ -424,7 +457,6 @@ binfo._register('logic', ['hash'], function(logic, hash) {
           for (yi = 0; yi < ycNumGroups; yi++) {
             max = Math.max(max, values[xi][yi]);
           }
-          maxes[xi] = max;
           for (yi = 0; yi < ycNumGroups; yi++) {
             values[xi][yi] = values[xi][yi] / max;
           }
