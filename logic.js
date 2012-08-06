@@ -371,16 +371,13 @@ binfo._register('logic', ['hash'], function(logic, hash) {
           yi,
           numXs,
           numYs,
-          val,
           sum,
           rowTotal,
           rowHovered,
           levelsSum,
           hoveredArea,
-          max,
           percent,
-          level,
-          stats = {};
+          level;
       sum = 0;
       levelsSum = 0;
       numXs = xs[1] - xs[0] + 1;
@@ -398,12 +395,9 @@ binfo._register('logic', ['hash'], function(logic, hash) {
       } else if (given === 'yc') {
         sum = 0;
         for (yi = ys[0]; yi <= ys[1]; yi++) {
-          rowTotal = 0;
-          rowHovered = 0;
-          for (xi = 0; xi < xcNumGroups; xi++) {
-            rowTotal += values[xi][yi];
-          }
+          rowTotal = ycGroups[yi].value;
           if (rowTotal) {
+            rowHovered = 0;
             for (xi = xs[0]; xi <= xs[1]; xi++) {
               rowHovered += values[xi][yi] / rowTotal;
             }
@@ -416,11 +410,8 @@ binfo._register('logic', ['hash'], function(logic, hash) {
       } else {
         sum = 0;
         for (xi = xs[0]; xi <= xs[1]; xi++) {
-          rowTotal = 0;
+          rowTotal = xcGroups[xi].value;
           rowHovered = 0;
-          for (yi = 0; yi < ycNumGroups; yi++) {
-            rowTotal += values[xi][yi];
-          }
           if (rowTotal) {
             for (yi = ys[0]; yi <= ys[1]; yi++) {
               rowHovered += values[xi][yi] / rowTotal;
@@ -454,6 +445,10 @@ binfo._register('logic', ['hash'], function(logic, hash) {
           n = rawGroups.length,
           d,
           normalizeLevels = levels - 1e-9,
+          normalizeLog = normalizeLevels / 3,   // TODO, come up with a better way to get this
+          val,
+          log,
+          level,
           normalize;
       for (xi = 0; xi < xcNumGroups; xi++) {
         for (yi = 0; yi < ycNumGroups; yi++) {
@@ -477,16 +472,22 @@ binfo._register('logic', ['hash'], function(logic, hash) {
         }
       } else if (given === 'yc') {
         for (yi = 0; yi < ycNumGroups; yi++) {
-          normalize = normalizeLevels / (ycGroups[yi].value + 1e-300);
+          normalize = xcNumGroups / (ycGroups[yi].value + 1e-300);
           for (xi = 0; xi < xcNumGroups; xi++) {
-            levelsMatrix[xi][yi] = Math.floor(values[xi][yi] * normalize);
+            val = values[xi][yi] * normalize;
+            log = Math.log(1 + val) * normalizeLog;
+            level = Math.min(levels - 1, Math.floor(log));
+            levelsMatrix[xi][yi] = level;
           }
         }
       } else {
         for (xi = 0; xi < xcNumGroups; xi++) {
-          normalize = normalizeLevels / (xcGroups[xi].value + 1e-300);
+          normalize = ycNumGroups / (xcGroups[xi].value + 1e-300);
           for (yi = 0; yi < ycNumGroups; yi++) {
-            levelsMatrix[xi][yi] = Math.floor(values[xi][yi] * normalize);
+            val = values[xi][yi] * normalize;
+            log = Math.log(1 + val) * normalizeLog;
+            level = Math.min(levels - 1, Math.floor(log));
+            levelsMatrix[xi][yi] = level;
           }
         }
       }
