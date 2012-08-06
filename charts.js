@@ -188,7 +188,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     });
 
     bar.updateChart = function() {
-      var groups = bar.groups(),
+      var groups = bar.rawGroups(),
           pathParts = [],
           i = -1,
           n = groups.length,
@@ -539,9 +539,9 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     }
 
     compare.updateChart = function() {
-      var values = compare.values(),
-          xn = values.length,
-          yn = values[0].length,
+      var levelsMatrix = compare.levelsMatrix(),
+          xn = levelsMatrix.length,
+          yn = levelsMatrix[0].length,
           pathParts = [],
           xi,
           yi,
@@ -560,7 +560,8 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         x = xi * bWidth;
         for (yi = 0; yi < yn; yi++) {
           y = yi * bWidth;
-          level = Math.floor(values[xi][yi] * levels - 1e-6);
+          level = levelsMatrix[xi][yi];
+          console.log(level);
           pathParts[level].push('M', x, ',', y, 'v', bWidth,
                                 'h', bWidth, 'v', -bWidth);
         }
@@ -643,14 +644,13 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     function boxFromCoords(gCompare) {
       var coords = d3.mouse(gCompare.node()),
           xi = coords[0] - 1,
-          yi = coords[1] - 1,
-          values = compare.values();
+          yi = coords[1] - 1;
       if (xi < 0 || yi < 0) {
         return null;
       }
       xi = Math.floor(xi / dim.binWidth);
       yi = Math.floor(yi / dim.binWidth);
-      if (xi >= values.length || yi >= values[0].length) {
+      if (xi >= compare.xcNumGroups() || yi >= compare.ycNumGroups()) {
         return null;
       }
       return {xi: xi, yi: yi};
@@ -676,7 +676,6 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       var hover = gCompare.select('rect.hover'),
           mouseBox = mouseDownBox || hoverBox,
           bWidth = dim.binWidth,
-          values = compare.values(),
           minXi,
           maxXi,
           minYi,

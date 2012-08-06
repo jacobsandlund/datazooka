@@ -16,6 +16,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
         internalDimensionFunc,
         group,
         groups,
+        rawGroups,
         groupFunc,
         groupAll,
         ordinal = [],
@@ -87,8 +88,9 @@ binfo._register('logic', ['hash'], function(logic, hash) {
 
     bar.api.dimensionFunc = function() { return dimensionFunc; };
     bar.api.groupFunc = function() { return groupFunc; };
+    bar.api.groups = function() { return groups; };
 
-    bar.groups = function() { return groups; };
+    bar.rawGroups = function() { return rawGroups; };
     bar.minX = function() { return minX; };
     bar.maxX = function() { return maxX; };
     bar.maxY = function() { return maxY; };
@@ -100,7 +102,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
     };
 
     bar.api.numGroups = function() {
-      return Math.round((maxX - minX) / separation);
+      return groups.length;
     };
 
     bar.api.groupIndex = function(val) {
@@ -192,14 +194,35 @@ binfo._register('logic', ['hash'], function(logic, hash) {
         groupFunc = groupFuncBy(separation);
       }
       group = dimension.group(groupFunc);
-      groups = group.all();
+      rawGroups = group.all();
       groupAll = dimension.groupAll();
       if (!spec.minX) {
-        minX = +groups[0].key;
+        minX = +rawGroups[0].key;
       }
       if (!spec.maxX) {
-        maxX = +groups[groups.length - 1].key + separation;
+        maxX = +rawGroups[rawGroups.length - 1].key + separation;
       }
+
+      // Fill in groups with empty groups when there is none
+      var emptyGroup = {value: 0},
+          r,
+          g = 0,
+          index,
+          numGroups;
+      groups = [];
+      for (r = 0; r < rawGroups.length; r++) {
+        index = bar.api.groupIndex(rawGroups[r].key);
+        for (; g < index; g++) {
+          groups.push(emptyGroup);
+        }
+        groups.push(rawGroups[r]);
+        g += 1;
+      }
+      numGroups = Math.round((maxX - minX) / separation);
+      for (; g < numGroups; g++) {
+        groups.push(emptyGroup);
+      }
+
       bar.api.filter(filterActive);
     };
 
@@ -269,18 +292,24 @@ binfo._register('logic', ['hash'], function(logic, hash) {
         ycGroupFunc,
         xcNumGroups,
         ycNumGroups,
+        xcGroups,
+        ycGroups,
+        levelsMatrix,
+        levels = binfo.compareLevels,
         ycScale = Math.pow(2, 20),  // About a million
         dimensionFunc,
         filteredLevels,
         group,
-        groups,
+        rawGroups,
         values;
 
     compare.api.id = spec.id;
 
     compare.xc = xc;
     compare.yc = yc;
-    compare.values = function() { return values; };
+    compare.levelsMatrix = function() { return levelsMatrix; };
+    compare.xcNumGroups = function() { return xcNumGroups; };
+    compare.ycNumGroups = function() { return ycNumGroups; };
 
     compare.api.given = function(_) {
       if (!arguments.length) return given;
@@ -315,15 +344,19 @@ binfo._register('logic', ['hash'], function(logic, hash) {
       ycDimensionFunc = yc.dimensionFunc();
       xcGroupFunc = xc.groupFunc();
       ycGroupFunc = yc.groupFunc();
+      xcGroups = xc.groups();
+      ycGroups = yc.groups();
       xcNumGroups = xc.numGroups();
       ycNumGroups = yc.numGroups();
       var dimension = cross.dimension(dimensionFunc);
       group = dimension.group();
-      groups = group.all();
+      rawGroups = group.all();
       var i;
       values = [];
+      levelsMatrix = [];
       for (i = 0; i < xcNumGroups; i++) {
         values[i] = [];
+        levelsMatrix[i] = [];
       }
     };
 
@@ -342,25 +375,24 @@ binfo._register('logic', ['hash'], function(logic, hash) {
           sum,
           rowTotal,
           rowHovered,
-          valueSum,
+          levelsSum,
           hoveredArea,
           max,
           percent,
           level,
           stats = {};
       sum = 0;
-      valueSum = 0;
+      levelsSum = 0;
       numXs = xs[1] - xs[0] + 1;
       numYs = ys[1] - ys[0] + 1;
       hoveredArea = numXs * numYs;
       for (xi = xs[0]; xi <= xs[1]; xi++) {
         for (yi = ys[0]; yi <= ys[1]; yi++) {
-          val = values[xi][yi];
-          valueSum += val;
-          sum += val * maxAll;
+          sum += values[xi][yi];
+          levelsSum += levelsMatrix[xi][yi];
         }
       }
-      level = Math.round(valueSum / hoveredArea * binfo.compareLevels);
+      level = Math.round(levelsSum / hoveredArea);
       if (!given) {
         percent = sum / crossAll.value();
       } else if (given === 'yc') {
@@ -419,46 +451,42 @@ binfo._register('logic', ['hash'], function(logic, hash) {
       var xi,
           yi,
           i,
-          n = groups.length,
+          n = rawGroups.length,
           d,
-          max;
+          normalizeLevels = levels - 1e-9,
+          normalize;
       for (xi = 0; xi < xcNumGroups; xi++) {
         for (yi = 0; yi < ycNumGroups; yi++) {
           values[xi][yi] = 0;
+          levelsMatrix[xi][yi] = 0;
         }
       }
       i = -1;
       while (++i < n) {
-        d = groups[i];
+        d = rawGroups[i];
         xi = d.key % ycScale;
         yi = Math.round(d.key / ycScale);
         values[xi][yi] = d.value;
       }
       if (!given) {
-        maxAll = max = group.top(1)[0].value + 1e-300;
+        normalize = normalizeLevels / (group.top(1)[0].value + 1e-300);
         for (xi = 0; xi < xcNumGroups; xi++) {
           for (yi = 0; yi < ycNumGroups; yi++) {
-            values[xi][yi] = values[xi][yi] / max;
+            levelsMatrix[xi][yi] = Math.floor(values[xi][yi] * normalize);
           }
         }
       } else if (given === 'yc') {
         for (yi = 0; yi < ycNumGroups; yi++) {
-          max = 1e-300;
+          normalize = normalizeLevels / (ycGroups[yi].value + 1e-300);
           for (xi = 0; xi < xcNumGroups; xi++) {
-            max = Math.max(max, values[xi][yi]);
-          }
-          for (xi = 0; xi < xcNumGroups; xi++) {
-            values[xi][yi] = values[xi][yi] / max;
+            levelsMatrix[xi][yi] = Math.floor(values[xi][yi] * normalize);
           }
         }
       } else {
         for (xi = 0; xi < xcNumGroups; xi++) {
-          max = 1e-300;
+          normalize = normalizeLevels / (xcGroups[xi].value + 1e-300);
           for (yi = 0; yi < ycNumGroups; yi++) {
-            max = Math.max(max, values[xi][yi]);
-          }
-          for (yi = 0; yi < ycNumGroups; yi++) {
-            values[xi][yi] = values[xi][yi] / max;
+            levelsMatrix[xi][yi] = Math.floor(values[xi][yi] * normalize);
           }
         }
       }
