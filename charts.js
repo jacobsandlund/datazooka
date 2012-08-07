@@ -540,7 +540,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         bgPath,
         paths = [],
         levels = binfo.compareLevels,
-        mouseDownBox,
+        hoverEnabled = true,
         i,
         filteredLevels,
         levelNums = [];
@@ -554,7 +554,18 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     function filter(range) {
     }
 
+    function hoverEnable(enable) {
+      var gCompare = compare.api.div.select('g.compare');
+      hoverEnabled = enable;
+      if (enable) {
+        mouseHover(gCompare);
+      } else {
+        mouseOut(gCompare);
+      }
+    }
     activateBrush(brush, filter, compare.round);
+    brush.on('brushstart.compare', function() { hoverEnable(false); });
+    brush.on('brushend.compare', function() { hoverEnable(true); });
 
     function given(what) {
       compare.api.given(what);
@@ -625,15 +636,12 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       gCompare = g.append('g')
           .attr('class', 'compare')
           .attr('transform', 'translate(' + dim.xLeft + ',' + dim.yTop + ')')
-          .on('mousemove', function() { mouseMove(gCompare); })
+          .on('mousemove', function() { mouseHover(gCompare); })
           .on('mouseout', function() {
             if (core.isMouseOut()) {
               mouseOut(gCompare);
             }
-          })
-          .on('mousedown', function() { mouseDown(gCompare); });
-
-      compare.api.div.on('mouseup.hover', function() { mouseUp(); });
+          });
 
       gCompare.selectAll('.compare.level')
           .data(levelNums)
@@ -680,30 +688,21 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       return {xi: xi, yi: yi};
     }
 
-    function mouseMove(gCompare) {
-      drawHover(gCompare, boxFromCoords(gCompare));
-    }
-
-    function mouseDown(gCompare) {
-      mouseDownBox = boxFromCoords(gCompare);
+    function mouseHover(gCompare) {
+      if (hoverEnabled) {
+        drawHover(gCompare, boxFromCoords(gCompare));
+      }
     }
 
     function mouseOut(gCompare) {
       drawHover(gCompare, null);
     }
 
-    function mouseUp() {
-      mouseDownBox = null;
-    }
-
     function drawHover(gCompare, hoverBox) {
       var hover = gCompare.select('rect.hover'),
-          mouseBox = mouseDownBox || hoverBox,
           bWidth = dim.binWidth,
-          minXi,
-          maxXi,
-          minYi,
-          maxYi,
+          xi,
+          yi,
           stats;
       hover.style('display', hoverBox ? null : 'none');
       if (!hoverBox) {
@@ -711,16 +710,14 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
             .text('');
         return;
       }
-      minXi = Math.min(mouseBox.xi, hoverBox.xi);
-      maxXi = Math.max(mouseBox.xi, hoverBox.xi);
-      minYi = Math.min(mouseBox.yi, hoverBox.yi);
-      maxYi = Math.max(mouseBox.yi, hoverBox.yi);
-      stats = compare.stats([minXi, maxXi], [minYi, maxYi]);
+      xi = hoverBox.xi;
+      yi = hoverBox.yi;
+      stats = compare.stats([[xi, yi], [xi + 1, yi + 1]]);
       hover
-          .attr('x', minXi * bWidth)
-          .attr('y', minYi * bWidth)
-          .attr('width', (maxXi - minXi + 1) * bWidth)
-          .attr('height', (maxYi - minYi + 1) * bWidth);
+          .attr('x', xi * bWidth)
+          .attr('y', yi * bWidth)
+          .attr('width', bWidth)
+          .attr('height', bWidth);
 
       gCompare.select('text.percent')
           .text(percentFmt(stats.percent) + ' (Lvl: ' + stats.level + ')');

@@ -367,8 +367,12 @@ binfo._register('logic', ['hash'], function(logic, hash) {
       compare.addChart();
     };
 
-    compare.stats = function(xs, ys) {
-      var xi,
+    compare.stats = function(extent) {
+      var minXi = extent[0][0],
+          minYi = extent[0][1],
+          maxXi = extent[1][0],
+          maxYi = extent[1][1],
+          xi,
           yi,
           numXs,
           numYs,
@@ -381,11 +385,11 @@ binfo._register('logic', ['hash'], function(logic, hash) {
           level;
       sum = 0;
       levelsSum = 0;
-      numXs = xs[1] - xs[0] + 1;
-      numYs = ys[1] - ys[0] + 1;
+      numXs = maxXi - minXi + 1;
+      numYs = maxYi - minYi + 1;
       hoveredArea = numXs * numYs;
-      for (xi = xs[0]; xi <= xs[1]; xi++) {
-        for (yi = ys[0]; yi <= ys[1]; yi++) {
+      for (xi = minXi; xi < maxXi; xi++) {
+        for (yi = minYi; yi < maxYi; yi++) {
           sum += values[xi][yi];
           levelsSum += levelsMatrix[xi][yi];
         }
@@ -395,11 +399,11 @@ binfo._register('logic', ['hash'], function(logic, hash) {
         percent = sum / crossAll.value();
       } else if (given === 'yc') {
         sum = 0;
-        for (yi = ys[0]; yi <= ys[1]; yi++) {
+        for (yi = minYi; yi < maxYi; yi++) {
           rowTotal = ycGroups[yi].value;
           if (rowTotal) {
             rowHovered = 0;
-            for (xi = xs[0]; xi <= xs[1]; xi++) {
+            for (xi = minXi; xi < maxXi; xi++) {
               rowHovered += values[xi][yi] / rowTotal;
             }
           } else {
@@ -410,11 +414,11 @@ binfo._register('logic', ['hash'], function(logic, hash) {
         percent = sum / numYs;
       } else {
         sum = 0;
-        for (xi = xs[0]; xi <= xs[1]; xi++) {
+        for (xi = minXi; xi < maxXi; xi++) {
           rowTotal = xcGroups[xi].value;
           rowHovered = 0;
           if (rowTotal) {
-            for (yi = ys[0]; yi <= ys[1]; yi++) {
+            for (yi = minYi; yi < maxYi; yi++) {
               rowHovered += values[xi][yi] / rowTotal;
             }
           } else {
