@@ -413,6 +413,12 @@ rect.hover {
   fill-opacity: .125;
 }
 
+g.compare .brush rect.extent {
+  fill: white;
+  stroke: black;
+  fill-opacity: .5;
+}
+
 .brush .resize path {
   fill: #eee;
   stroke: #666;

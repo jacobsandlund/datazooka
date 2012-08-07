@@ -310,6 +310,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
     compare.levelsMatrix = function() { return levelsMatrix; };
     compare.xcNumGroups = function() { return xcNumGroups; };
     compare.ycNumGroups = function() { return ycNumGroups; };
+    compare.round = Math.round;
 
     compare.api.given = function(_) {
       if (!arguments.length) return given;
@@ -445,7 +446,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
           n = rawGroups.length,
           d,
           normalizeLevels = levels - 1e-9,
-          normalizeLog = normalizeLevels / 3,   // TODO, come up with a better way to get this
+          normalizeLog = normalizeLevels / 3,   // Three is the magic number
           val,
           log,
           level,

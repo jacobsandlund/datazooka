@@ -113,7 +113,33 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     div.style('height', height + 'px');
   }
 
+  function activateBrush(brush, filter, round) {
+    brush.on('brush', function() {
+      var g = d3.select(this.parentNode),
+          extent = brush.extent();
+      if (round) {
+        if (extent && Array.isArray(extent[0])) {
+          extent = extent.map(function(e) { return e.map(round); });
+        } else {
+          extent = extent.map(round);
+        }
+        g.select('.brush')
+            .call(brush.extent(extent));
+      }
+      if (!brush.empty()) {
+        filter(extent);
+      }
+    });
+
+    brush.on('brushend', function() {
+      if (brush.empty()) {
+        filter(null);
+      }
+    });
+  }
+
   function resizePath(d, height) {
+    height = height || 30;
     var e = +(d === 'e'),
         x = e ? 1 : -1,
         h = Math.min(height, 30),
@@ -127,6 +153,18 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
             'V' + (y + h - h / 4) +
             'M' + (4.5 * x) + ',' + (y + h / 4) +
             'V' + (y + h - h / 4);
+  }
+
+  function addBrush(parent, brush, height) {
+    var gBrush = parent.append('g').attr('class', 'brush').call(brush);
+    if (height) {
+      gBrush.selectAll('rect').attr('height', height);
+    }
+    var resize = height ? resizePath : function() { return 'M0,0'; };
+    gBrush.selectAll('.resize').append('path').attr('d', function(d) {
+      return resize(d, height);
+    });
+    return gBrush;
   }
 
 
@@ -169,23 +207,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       core.refresh();
     }
 
-    brush.on('brush.bar', function() {
-      var g = d3.select(this.parentNode),
-          extent = brush.extent();
-      if (bar.round) {
-        g.select('.brush')
-            .call(brush.extent(extent = extent.map(bar.round)));
-      }
-      if (!brush.empty()) {
-        filter(extent);
-      }
-    });
-
-    brush.on('brushend.bar', function() {
-      if (brush.empty()) {
-        filter(null);
-      }
-    });
+    activateBrush(brush, filter, bar.round);
 
     bar.updateChart = function() {
       var groups = bar.rawGroups(),
@@ -326,12 +348,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         }
       }
 
-      // Initialize the brush component with pretty resize handles.
-      var gBrush = g.append('g').attr('class', 'brush').call(brush);
-      gBrush.selectAll('rect').attr('height', setupDim.actualHeight);
-      gBrush.selectAll('.resize').append('path').attr('d', function(d) {
-        return resizePath(d, setupDim.actualHeight);
-      });
+      var gBrush = addBrush(g, brush, setupDim.actualHeight);
       if (orientFlip) {
         gBrush.selectAll('.resize')
             .style('cursor', 'ns-resize');
@@ -519,6 +536,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         baseDim = findBaseDim(dim),
         xc = compare.xc,
         yc = compare.yc,
+        brush = d3.svg.brush(),
         bgPath,
         paths = [],
         levels = binfo.compareLevels,
@@ -532,6 +550,11 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     for (i = 0; i < levels; i++) {
       levelNums.push(i);
     }
+
+    function filter(range) {
+    }
+
+    activateBrush(brush, filter, compare.round);
 
     function given(what) {
       compare.api.given(what);
@@ -561,7 +584,6 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         for (yi = 0; yi < yn; yi++) {
           y = yi * bWidth;
           level = levelsMatrix[xi][yi];
-          console.log(level);
           pathParts[level].push('M', x, ',', y, 'v', bWidth,
                                 'h', bWidth, 'v', -bWidth);
         }
@@ -595,7 +617,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           .attr('class', 'yc inner-chart')
           .datum({compare: true, orientFlip: true})
           .attr('transform', 'matrix(0,1,-1,0,' + dim.yHeight +
-                              ',' + dim.yTop + ')');
+                             ',' + dim.yTop + ')');
       g.append('g')
           .attr('class', 'xc inner-chart')
           .attr('transform', 'translate(' + dim.xLeft + ',' + dim.xTop + ')')
@@ -609,7 +631,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
               mouseOut(gCompare);
             }
           })
-          .on('mousedown', function() { mouseDown(gCompare); })
+          .on('mousedown', function() { mouseDown(gCompare); });
 
       compare.api.div.on('mouseup.hover', function() { mouseUp(); });
 
@@ -625,6 +647,8 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       gCompare.append('rect')
           .attr('class', 'hover')
           .style('display', 'none');
+
+      addBrush(gCompare, brush);
 
       g.append('g')
           .attr('transform', 'translate(' + (-dim.left + 7) + ',' +
@@ -731,20 +755,11 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
 
       legendBrush.x(legendScale);
 
-      legendBrush.on('brush.legend', function() {
-        var extent = legendBrush.extent();
-        legend.select('.brush')
-            .call(legendBrush.extent(extent = extent.map(Math.round)));
-        if (!legendBrush.empty()) {
-          filterLevels(extent);
-        }
-      });
+      function filterLevels(range) {
+        compare.api.filterLevels(range);
+      }
 
-      legendBrush.on('brushend.legend', function() {
-        if (legendBrush.empty()) {
-          filterLevels(null);
-        }
-      });
+      activateBrush(legendBrush, filterLevels, Math.round);
 
       legend = div.append('svg')
           .attr('class', 'legend')
@@ -772,15 +787,8 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           .attr('width', rectWidth)
           .attr('height', rectHeight);
 
-      // Initialize the brush component with pretty resize handles.
-      var gBrush = legend.append('g')
-          .attr('class', 'brush')
-          .attr('transform', 'rotate(90) translate(0,' + -rectWidth + ')')
-          .call(legendBrush);
-      gBrush.selectAll('rect').attr('height', rectWidth)
-      gBrush.selectAll('.resize').append('path').attr('d', function(d) {
-        return resizePath(d, rectWidth);
-      });
+      var gBrush = addBrush(legend, legendBrush, rectWidth)
+          .attr('transform', 'rotate(90) translate(0,' + -rectWidth + ')');
       gBrush.selectAll('.resize')
           .style('cursor', 'ns-resize');
 
@@ -798,10 +806,6 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         });
       };
       compare.updateLegend(filteredLevels);
-
-      function filterLevels(range) {
-        compare.api.filterLevels(range);
-      }
 
       givenBar = div.append('div')
           .attr('class', 'peripherals given-bar')
@@ -869,6 +873,14 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       dim.actualHeight = dim.height;
       bgPath = 'M-1,-1V' + (dim.xTop - dim.yTop - 2) +
                'H' + (dim.width - dim.xLeft - 2) + 'V-1H-1';
+
+      var xScale = d3.scale.linear()
+          .domain([0, compare.xcNumGroups()])
+          .range([0, compare.xcNumGroups() * dim.binWidth]);
+      var yScale = d3.scale.linear()
+          .domain([0, compare.ycNumGroups()])
+          .range([0, compare.ycNumGroups() * dim.binWidth]);
+      brush.x(xScale).y(yScale);
     };
 
     compare.api.cleanUp = function() {
