@@ -552,6 +552,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     }
 
     function filter(range) {
+      compare.api.filter(range);
     }
 
     function hoverEnable(enable) {
@@ -623,7 +624,6 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
 
     function setupChart(g) {
       var gCompare;
-      g.classed('compare', true);
       g.append('g')
           .attr('class', 'yc inner-chart')
           .datum({compare: true, orientFlip: true})
@@ -702,25 +702,20 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       var hover = gCompare.select('rect.hover'),
           bWidth = dim.binWidth,
           xi,
-          yi,
-          stats;
+          yi;
       hover.style('display', hoverBox ? null : 'none');
       if (!hoverBox) {
-        gCompare.select('text.percent')
-            .text('');
+        updateFilter();
         return;
       }
       xi = hoverBox.xi;
       yi = hoverBox.yi;
-      stats = compare.stats([[xi, yi], [xi + 1, yi + 1]]);
       hover
           .attr('x', xi * bWidth)
           .attr('y', yi * bWidth)
           .attr('width', bWidth)
           .attr('height', bWidth);
-
-      gCompare.select('text.percent')
-          .text(percentFmt(stats.percent) + ' (Lvl: ' + stats.level + ')');
+      updateFilter(compare.stats([[xi, yi], [xi + 1, yi + 1]]));
     }
 
     function setupChartPeripherals(div) {
@@ -846,6 +841,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           .attr('d', function(d) { return paths[d]; });
       div.selectAll('.given.button')
           .classed('down', function(d) { return compare.api.given() === d; });
+      updateFilter();
     }
 
     compare.addChart = function() {
@@ -882,6 +878,28 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
 
     compare.api.cleanUp = function() {
     };
+
+    compare.chartFilter = function(range) {
+      if (range) {
+        brush.extent(range);
+      } else {
+        brush.clear();
+      }
+      if (compare.api.div) {
+        compare.api.div.selectAll('g.compare .brush').call(brush);
+        updateFilter();
+      }
+    };
+
+    function updateFilter(stats) {
+      var gCompare = compare.api.div.select('g.compare'),
+          stats = stats || compare.filterStats(),
+          text = '';
+      if (stats) {
+        text = percentFmt(stats.percent) + ' (Lvl: ' + stats.level + ')';
+      }
+      gCompare.select('text.percent').text(text);
+    }
 
   };
 });

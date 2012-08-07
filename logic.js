@@ -298,6 +298,8 @@ binfo._register('logic', ['hash'], function(logic, hash) {
         levels = binfo.compareLevels,
         ycScale = Math.pow(2, 20),  // About a million
         dimensionFunc,
+        filterRange,
+        filterStats,
         filteredLevels,
         group,
         rawGroups,
@@ -310,11 +312,20 @@ binfo._register('logic', ['hash'], function(logic, hash) {
     compare.levelsMatrix = function() { return levelsMatrix; };
     compare.xcNumGroups = function() { return xcNumGroups; };
     compare.ycNumGroups = function() { return ycNumGroups; };
+    compare.filterStats = function() { return filterStats; };
     compare.round = Math.round;
 
     compare.api.given = function(_) {
       if (!arguments.length) return given;
       given = _;
+    };
+
+    compare.api.filter = function(_) {
+      if (!arguments.length) return filterRange;
+      filterRange = _;
+      filterStats = compare.stats(filterRange);
+      hash.refreshParams();
+      compare.chartFilter(filterRange);
     };
 
     compare.api.filterLevels = function(_) {
@@ -368,6 +379,9 @@ binfo._register('logic', ['hash'], function(logic, hash) {
     };
 
     compare.stats = function(extent) {
+      if (!extent) {
+        return null;
+      }
       var minXi = extent[0][0],
           minYi = extent[0][1],
           maxXi = extent[1][0],
@@ -497,6 +511,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
         }
       }
 
+      filterStats = compare.stats(filterRange);
       compare.updateChart();
     };
 
