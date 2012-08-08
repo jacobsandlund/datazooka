@@ -332,6 +332,7 @@
 .peripherals.given-bar div.words {
   font-size: 15px;
   margin: 2px;
+  height: 19px;
   float: left;
 }
 
