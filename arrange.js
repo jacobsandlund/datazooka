@@ -357,7 +357,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       return a.top - b.top;
     });
     var last = order[order.length - 1],
-        max = last.top + last.height,
+        max = last ? last.top + last.height : 0,
         holderHeight = max + 820;
     holder.style('height', holderHeight + 'px');
     outer.style('height', (holderHeight + 30) + 'px');

@@ -14,7 +14,7 @@ binfo._register('ui', ['core'], function(ui, core) {
       chartMode,
       firstCompare;
 
-  ui.setup = function(h, header) {
+  ui.setup = function(h) {
     holder = h;
     holder.attr('class', 'holder');
 
@@ -26,7 +26,7 @@ binfo._register('ui', ['core'], function(ui, core) {
         viewToggles,
         optionsPanel;
 
-    panel = header.insert('div', ':first-child')
+    panel = holder.insert('div', ':first-child')
         .attr('class', 'control-panel');
 
     panel.append('div')

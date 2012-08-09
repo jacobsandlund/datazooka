@@ -57,7 +57,7 @@ h1, h2 {
 
   <body>
   <div class="main">
-    <a href="https://github.com/jakesandlund/binfo"><img style="position: absolute; right: 0px; top: 40px; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
+    <a href="https://github.com/jakesandlund/binfo"><img style="position: absolute; right: 0px; top: 0px; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
 
     <h1>Binfo</h1>
 
@@ -107,8 +107,7 @@ h1, h2 {
 
 binfo.setup({
   root: document,
-  holder: '#charts',
-  header: 'body',
+  holder: '#charts'
 });
 binfo.defaultRender('flights', ['time-delay', 'distance'], {
   filter: {distance: [200, 600]},

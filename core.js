@@ -153,9 +153,8 @@ binfo._register('core', [], function(core) {
   binfo.setup = function(setup) {
     var outer = d3.select(setup.holder).attr('class', 'outer-holder'),
         holder = outer.append('div'),
-        root = d3.select(setup.root),
-        header = d3.select(setup.header);
-    ui.setup(holder, header);
+        root = d3.select(setup.root);
+    ui.setup(holder);
     arrange.setup(root, outer, holder);
     stylesheet.setup(holder);
     root.on('mousemove.core', function() {

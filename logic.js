@@ -399,8 +399,8 @@ binfo._register('logic', ['hash'], function(logic, hash) {
           level;
       sum = 0;
       levelsSum = 0;
-      numXs = maxXi - minXi + 1;
-      numYs = maxYi - minYi + 1;
+      numXs = maxXi - minXi;
+      numYs = maxYi - minYi;
       hoveredArea = numXs * numYs;
       for (xi = minXi; xi < maxXi; xi++) {
         for (yi = minYi; yi < maxYi; yi++) {
