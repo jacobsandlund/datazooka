@@ -153,9 +153,8 @@ binfo._register('core', [], function(core) {
   binfo.setup = function(setup) {
     var outer = d3.select(setup.holder).attr('class', 'outer-holder'),
         holder = outer.append('div'),
-        root = d3.select(setup.root),
-        header = d3.select(setup.header);
-    ui.setup(holder, header);
+        root = d3.select(setup.root);
+    ui.setup(holder);
     arrange.setup(root, outer, holder);
     stylesheet.setup(holder);
     root.on('mousemove.core', function() {
@@ -716,7 +715,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       return a.top - b.top;
     });
     var last = order[order.length - 1],
-        max = last.top + last.height,
+        max = last ? last.top + last.height : 0,
         holderHeight = max + 820;
     holder.style('height', holderHeight + 'px');
     outer.style('height', (holderHeight + 30) + 'px');
@@ -2034,8 +2033,8 @@ binfo._register('logic', ['hash'], function(logic, hash) {
           level;
       sum = 0;
       levelsSum = 0;
-      numXs = maxXi - minXi + 1;
-      numYs = maxYi - minYi + 1;
+      numXs = maxXi - minXi;
+      numYs = maxYi - minYi;
       hoveredArea = numXs * numYs;
       for (xi = minXi; xi < maxXi; xi++) {
         for (yi = minYi; yi < maxYi; yi++) {
@@ -2555,7 +2554,7 @@ binfo._register('ui', ['core'], function(ui, core) {
       chartMode,
       firstCompare;
 
-  ui.setup = function(h, header) {
+  ui.setup = function(h) {
     holder = h;
     holder.attr('class', 'holder');
 
@@ -2567,7 +2566,7 @@ binfo._register('ui', ['core'], function(ui, core) {
         viewToggles,
         optionsPanel;
 
-    panel = header.insert('div', ':first-child')
+    panel = holder.insert('div', ':first-child')
         .attr('class', 'control-panel');
 
     panel.append('div')
