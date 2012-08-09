@@ -345,24 +345,29 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   };
 
   // Also adds height to holder
-  arrange.orderedChartIds = function(chartIds, charts) {
+  arrange.orderedChartIds = function() {
     if (!reordered) return null;
-    var order,
+    var chartIds = core.chartIds(),
+        charts = core.charts(),
+        ordered,
+        orderedIds,
         newChartIds = [];
-    order = chartIds.map(function(id) { return charts[id]; });
-    order.sort(function(a, b) {
+    ordered = chartIds.map(function(id) { return charts[id]; });
+    ordered.sort(function(a, b) {
       if (a.top === b.top) {
         return a.left - b.left;
       }
       return a.top - b.top;
     });
-    var last = order[order.length - 1],
+    var last = ordered[ordered.length - 1],
         max = last ? last.top + last.height : 0,
         holderHeight = max + 820;
     holder.style('height', holderHeight + 'px');
     outer.style('height', (holderHeight + 30) + 'px');
     reordered = false;
-    return order.map(function(chart) { return chart.id; });
+    orderedIds = ordered.map(function(chart) { return chart.id; });
+    core.reorder(orderedIds);
+    return orderedIds;
   };
 
 });

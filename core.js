@@ -206,11 +206,17 @@ binfo._register('core', [], function(core) {
     doneUpdating();
   };
 
+  core.reorder = function(reorder) {
+    chartIds = reorder;
+  };
+
   function arrayDiff(one, two) {
     return one.filter(function(id) {
       return two.indexOf(id) < 0;
     });
   }
+
+  core.charts = function() { return charts; };
 
   core.chartIds = function(_) {
     if (!arguments.length) return chartIds;

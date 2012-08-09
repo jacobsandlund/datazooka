@@ -318,6 +318,7 @@ binfo._register('hash', ['arrange'], function(hash, arrange) {
     var ordered = arrange.orderedChartIds(chartIds, charts);
     if (ordered) {
       hashNeedsUpdated = true;
+      chartIds = ordered;
     } else {
       ordered = chartIds;
     }

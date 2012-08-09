@@ -378,6 +378,83 @@ binfo._register('logic', ['hash'], function(logic, hash) {
       compare.addChart();
     };
 
+    compare.api.remove = function() {
+      xc.remove();
+      yc.remove();
+      compare.api.given(null);
+      compare.api.filterLevels(null);
+    };
+
+    function passToXcYc(method) {
+      compare.api[method] = function() {
+        xc[method]();
+        yc[method]();
+      };
+    }
+    ['removeCross', 'resetUpdate'].forEach(function(pass) {
+      passToXcYc(pass);
+    });
+
+    compare.api.update = function() {
+      xc.update();
+      yc.update();
+      var xi,
+          yi,
+          i,
+          n = rawGroups.length,
+          d,
+          normalizeLevels = levels - 1e-9,
+          normalizeLog = normalizeLevels / 3,   // Three is the magic number
+          val,
+          log,
+          level,
+          normalize;
+      for (xi = 0; xi < xcNumGroups; xi++) {
+        for (yi = 0; yi < ycNumGroups; yi++) {
+          values[xi][yi] = 0;
+          levelsMatrix[xi][yi] = 0;
+        }
+      }
+      i = -1;
+      while (++i < n) {
+        d = rawGroups[i];
+        xi = d.key % ycScale;
+        yi = Math.round(d.key / ycScale);
+        values[xi][yi] = d.value;
+      }
+      if (!given) {
+        normalize = normalizeLevels / (group.top(1)[0].value + 1e-300);
+        for (xi = 0; xi < xcNumGroups; xi++) {
+          for (yi = 0; yi < ycNumGroups; yi++) {
+            levelsMatrix[xi][yi] = Math.floor(values[xi][yi] * normalize);
+          }
+        }
+      } else if (given === 'yc') {
+        for (yi = 0; yi < ycNumGroups; yi++) {
+          normalize = xcNumGroups / (ycGroups[yi].value + 1e-300);
+          for (xi = 0; xi < xcNumGroups; xi++) {
+            val = values[xi][yi] * normalize;
+            log = Math.log(1 + val) * normalizeLog;
+            level = Math.min(levels - 1, Math.floor(log));
+            levelsMatrix[xi][yi] = level;
+          }
+        }
+      } else {
+        for (xi = 0; xi < xcNumGroups; xi++) {
+          normalize = ycNumGroups / (xcGroups[xi].value + 1e-300);
+          for (yi = 0; yi < ycNumGroups; yi++) {
+            val = values[xi][yi] * normalize;
+            log = Math.log(1 + val) * normalizeLog;
+            level = Math.min(levels - 1, Math.floor(log));
+            levelsMatrix[xi][yi] = level;
+          }
+        }
+      }
+
+      filterStats = compare.stats(filterRange);
+      compare.updateChart();
+    };
+
     compare.stats = function(extent) {
       if (!extent) {
         return null;
@@ -443,76 +520,6 @@ binfo._register('logic', ['hash'], function(logic, hash) {
         percent = sum / numXs;
       }
       return {level: level, percent: percent};
-    };
-
-    function passToXcYc(method) {
-      compare.api[method] = function() {
-        xc[method]();
-        yc[method]();
-      };
-    }
-    ['remove', 'removeCross', 'resetUpdate'].forEach(function(pass) {
-      passToXcYc(pass);
-    });
-
-    compare.api.update = function() {
-      xc.update();
-      yc.update();
-      var xi,
-          yi,
-          i,
-          n = rawGroups.length,
-          d,
-          normalizeLevels = levels - 1e-9,
-          normalizeLog = normalizeLevels / 3,   // Three is the magic number
-          val,
-          log,
-          level,
-          normalize;
-      for (xi = 0; xi < xcNumGroups; xi++) {
-        for (yi = 0; yi < ycNumGroups; yi++) {
-          values[xi][yi] = 0;
-          levelsMatrix[xi][yi] = 0;
-        }
-      }
-      i = -1;
-      while (++i < n) {
-        d = rawGroups[i];
-        xi = d.key % ycScale;
-        yi = Math.round(d.key / ycScale);
-        values[xi][yi] = d.value;
-      }
-      if (!given) {
-        normalize = normalizeLevels / (group.top(1)[0].value + 1e-300);
-        for (xi = 0; xi < xcNumGroups; xi++) {
-          for (yi = 0; yi < ycNumGroups; yi++) {
-            levelsMatrix[xi][yi] = Math.floor(values[xi][yi] * normalize);
-          }
-        }
-      } else if (given === 'yc') {
-        for (yi = 0; yi < ycNumGroups; yi++) {
-          normalize = xcNumGroups / (ycGroups[yi].value + 1e-300);
-          for (xi = 0; xi < xcNumGroups; xi++) {
-            val = values[xi][yi] * normalize;
-            log = Math.log(1 + val) * normalizeLog;
-            level = Math.min(levels - 1, Math.floor(log));
-            levelsMatrix[xi][yi] = level;
-          }
-        }
-      } else {
-        for (xi = 0; xi < xcNumGroups; xi++) {
-          normalize = ycNumGroups / (xcGroups[xi].value + 1e-300);
-          for (yi = 0; yi < ycNumGroups; yi++) {
-            val = values[xi][yi] * normalize;
-            log = Math.log(1 + val) * normalizeLog;
-            level = Math.min(levels - 1, Math.floor(log));
-            levelsMatrix[xi][yi] = level;
-          }
-        }
-      }
-
-      filterStats = compare.stats(filterRange);
-      compare.updateChart();
     };
 
   };

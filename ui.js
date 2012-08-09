@@ -26,7 +26,7 @@ binfo._register('ui', ['core'], function(ui, core) {
         viewToggles,
         optionsPanel;
 
-    panel = holder.insert('div', ':first-child')
+    panel = holder.append('div')
         .attr('class', 'control-panel');
 
     panel.append('div')
