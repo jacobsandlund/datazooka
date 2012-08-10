@@ -322,7 +322,11 @@ binfo._register('logic', ['hash'], function(logic, hash) {
 
     compare.api.filter = function(_) {
       if (!arguments.length) return filterRange;
-      filterRange = _;
+      if (_ && _.length === 4) {  // filter comes from hash
+        filterRange = [[+_[0], +_[1]], [+_[2], +_[3]]];
+      } else {
+        filterRange = _;
+      }
       filterStats = compare.stats(filterRange);
       hash.refreshParams();
       compare.chartFilter(filterRange);
@@ -344,6 +348,9 @@ binfo._register('logic', ['hash'], function(logic, hash) {
     compare.api.addToParams = function(params) {
       params.filterLevels[compare.api.id] = filteredLevels;
       params.given[compare.api.id] = given;
+      var r = filterRange;
+      // Convert from extent format to hash format.
+      params.filter[compare.api.id] = r ? [r[0][0], r[0][1], r[1][0], r[1][1]] : null;
       params.filter[xc.id] = xc.filter();
       params.filter[yc.id] = yc.filter();
     };
@@ -383,6 +390,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
       yc.remove();
       compare.api.given(null);
       compare.api.filterLevels(null);
+      compare.api.filter(null);
     };
 
     function passToXcYc(method) {
