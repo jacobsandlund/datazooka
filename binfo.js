@@ -651,6 +651,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       var chart = charts[id],
           levels = chart.levels,
           width = chart.width,
+          row,
           left,
           remaining,
           otherChart,
@@ -662,10 +663,11 @@ binfo._register('arrange', ['core'], function(arrange, core) {
           i = maxLevel,
           j;
       while (i < layout.length) {
-        otherChart = layout[i][layout[i].length - 1];
+        row = layout[i];
+        otherChart = row[row.length - 1];
         left = otherChart.left + otherChart.width;
         remaining = maxWidth - left;
-        if (remaining >= width || remaining === maxWidth) {
+        if (remaining >= width || row.length === 1) {
           if (fitting) {
             fitWidthDiff = Math.abs(remaining - fitWidth);
             if (fitWidthDiff <= binfo.fitWidthMaxDiff) {
