@@ -106,7 +106,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
     };
 
     bar.api.groupIndex = function(val) {
-      return Math.floor((val - minX) / separation);
+      return Math.round((val - minX) / separation);
     };
 
     function setData(data) {

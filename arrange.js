@@ -76,6 +76,9 @@ binfo._register('arrange', ['core'], function(arrange, core) {
 
   function arrangeEnd() {
     var chart = arranging.chart;
+    if (!chart.snapped) {
+      doSnap(chart);
+    }
     ghost.style('display', 'none');
     positioner.style('display', 'none');
     chart.div.classed('arranging', false);
@@ -140,17 +143,21 @@ binfo._register('arrange', ['core'], function(arrange, core) {
 
   function maybeSnap(chart) {
     var snap = whereToSnap(chart),
-        level = snap.level,
-        left = snap.left,
-        diff = snap.diff;
-    if (Math.abs(level * binfo.chartHeight - ghost.top) >= binfo.arrangeSnap) {
+        topDiff = Math.abs(snap.level * binfo.chartHeight - ghost.top);
+    if (topDiff >= binfo.arrangeSnap) {
       return;
     }
-    if (diff >= binfo.arrangeSnap) {
+    if (snap.diff >= binfo.arrangeSnap) {
       return;
     }
+    doSnap(chart, snap);
+  }
 
-    var addAt = null;
+  function doSnap(chart, snap) {
+    snap = snap || whereToSnap(chart);
+    var addAt = null,
+        level = snap.level,
+        left = snap.left;
     forEdgesAtLevels(level, chart.levels, function(edge, i) {
       if (edge > left && addAt === null) {
         addAt = i;
