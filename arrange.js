@@ -265,19 +265,28 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     });
     setSnapped(chart, false);
     checkAllMove(check);
-    removeRows.forEach(function(removeI) {
-      var removed = layout.splice(removeI, 1),
-          updated = {};
-      layout.push(removed[0]);
-      forChartAt(removeI, maxBottomLevel, function(chart) {
-        if (updated[chart.id]) {
-          return;
-        }
-        snapPosition(chart, chart.left, chart.startLevel - 1);
-        updated[chart.id] = true;
-      });
-      maxLevel -= 1;
-      maxBottomLevel -= 1;
+    removeRows.forEach(function(removeI, i) {
+      moveCharts(removeI - i, -1);  // minus i cause removeRows are moving down
+    });
+  }
+
+  function moveCharts(start, amount) {
+    var added,
+        removed,
+        updated = {};
+    if (amount > 0) {
+    } else {
+      removed = layout.splice(start, -amount);
+      layout = layout.concat(removed);
+    }
+    maxLevel += amount;
+    maxBottomLevel += amount;
+    forChartAt(start, maxBottomLevel + 1, function(chart) {
+      if (updated[chart.id]) {
+        return;
+      }
+      snapPosition(chart, chart.left, chart.startLevel + amount);
+      updated[chart.id] = true;
     });
   }
 
