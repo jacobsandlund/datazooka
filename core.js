@@ -8,6 +8,9 @@ var binfo = {
   chartBorder: 5,
   maxLevels: 50,
   arrangeSnap: 40,
+  arrangeInsertDiff: 75,
+  arrangeInsertIgnoreDiff: 100,   // If bestDiff closer than this, don't insert
+  arrangeInsertDiffFarLeft: 20,   // If bestEdge is far left, insert if closer
   holderMargin: 15,
   compareLevels: 100,
   axisTickSize: 12,

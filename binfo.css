@@ -31,8 +31,16 @@
 }
 
 .chart.unsnapped.arranging {
-  border-left-color: red;
   opacity: 0.8;
+}
+
+.unsnapped.arranging {
+  border-left-color: red;
+}
+
+.unsnapped.insert.arranging {
+  border-top-color: red;
+  border-left-color: transparent;
 }
 
 .chart svg {
@@ -63,7 +71,9 @@
 .positioner {
   z-index: 15999999;
   border-style: solid;
-  border-width: 0 0 0 5px;
+  border-width: 5px 0 0 5px;
+  background-color: transparent;
+  border-color: transparent;
 }
 
 .control-panel {
