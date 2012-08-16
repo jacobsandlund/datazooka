@@ -4,6 +4,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   var outer,
       holder,
       maxLevel,
+      maxBottomLevel,
       reordered,
       arranging,
       ghost,
@@ -27,9 +28,12 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         .style('display', 'none');
     positioner.div = positioner;
     maxLevel = 0;
+    maxBottomLevel = 0;
     layout = [];
-    var dummyChart = {left: binfo.holderMargin, width: 0, levels: 0},
+    var dummyChart,
         i;
+    dummyChart = {left: binfo.holderMargin, width: 0,
+                  id: 'dummy', levels: 0, startLevel: 0};
     for (i = 0; i < binfo.maxLevels; i++) {
       layout[i] = [dummyChart];
     }
@@ -199,34 +203,42 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   };
 
   function setMaxLevel() {
-    var i,
-        row,
-        max = 0;
-    for (i = 0; i < layout.length; i++) {
-      if (layout[i].length > 1) {
+    var max = 0;
+    layout.forEach(function(row, i) {
+      if (row.length > 1) {
         max = i;
       }
-    }
-    row = layout[max];
+    });
+    maxBottomLevel = max;
     maxLevel = 0;
-    for (i = 1; i < row.length; i++) {
-      maxLevel = Math.max(maxLevel, row[i].startLevel);
+    layout[max].forEach(function(chart) {
+      maxLevel = Math.max(maxLevel, chart.startLevel);
+    });
+  }
+
+  function forRowAt(start, end, callback) {
+    var i;
+    for (i = start; i < end; i++) {
+      callback(layout[i], i);
     }
   }
 
-  function forRowAtChart(chart, callback) {
-    var row,
-        i,
-        j;
-    for (i = chart.startLevel; i < chart.startLevel + chart.levels; i++) {
-      row = layout[i];
+  function forChartAt(start, end, callback) {
+    forRowAt(start, end, function(row, i) {
+      var j;
       for (j = 1; j < row.length; j++) {
-        if (row[j] === chart) {
-          callback(row, j);
-          break;
-        }
+        callback(row[j], j, i);
       }
-    }
+    });
+  }
+
+  function forRowAtChart(chart, callback) {
+    forChartAt(chart.startLevel,
+               chart.startLevel + chart.levels, function(ch, j, i) {
+      if (ch === chart) {
+        callback(layout[i], j, i);
+      }
+    });
   }
 
   function checkAtChart(chart) {
@@ -243,10 +255,30 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   }
 
   function remove(chart) {
-    var check = checkAtChart(chart);
-    forRowAtChart(chart, function(row, i) { row.splice(i, 1); });
+    var check = checkAtChart(chart),
+        removeRows = [];
+    forRowAtChart(chart, function(row, i, layoutI) {
+      row.splice(i, 1);
+      if (row.length === 1) {
+        removeRows.push(layoutI);
+      }
+    });
     setSnapped(chart, false);
     checkAllMove(check);
+    removeRows.forEach(function(removeI) {
+      var removed = layout.splice(removeI, 1),
+          updated = {};
+      layout.push(removed[0]);
+      forChartAt(removeI, maxBottomLevel, function(chart) {
+        if (updated[chart.id]) {
+          return;
+        }
+        snapPosition(chart, chart.left, chart.startLevel - 1);
+        updated[chart.id] = true;
+      });
+      maxLevel -= 1;
+      maxBottomLevel -= 1;
+    });
   }
 
   function checkAllMove(check) {
@@ -341,9 +373,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         i += direction;
       }
       startLevel = (direction === 1) ? i - levels + 1 : i;
-      for (j = startLevel; j < startLevel + levels; j++) {
-        layout[j].push(chart);
-      }
+      forRowAt(startLevel, startLevel + levels, function(row) { row.push(chart); });
       maxLevel = Math.max(startLevel, maxLevel);
       setSnapped(chart, true);
       snapPosition(chart, maxWidth - fitWidth, startLevel);

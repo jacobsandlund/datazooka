@@ -7,7 +7,7 @@ var binfo = {
   chartPadding: 5,
   chartBorder: 5,
   maxLevels: 50,
-  arrangeSnap: 75,
+  arrangeSnap: 40,
   holderMargin: 15,
   compareLevels: 100,
   axisTickSize: 12,
@@ -114,7 +114,7 @@ binfo._register('core', [], function(core) {
     // Taken from quirksmode
     related = e.relatedTarget;
     if (related) {
-      while (related !== tgt && related.nodeName !== 'BODY') {
+      while (related !== tgt && related.nodeName !== 'BODY' && related.parentNode) {
         related = related.parentNode;
       }
       if (related === tgt) {
