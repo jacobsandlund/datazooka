@@ -128,6 +128,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
 
   function whereToSnap(chart) {
     var level = Math.round(ghost.top / binfo.chartHeight),
+        scale,
         bestEdge,
         bestDiff = 1e10,
         insert = false,
@@ -146,15 +147,11 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       }
     });
     topDiff = Math.abs(ghost.top - level * binfo.chartHeight);
-    if (topDiff < binfo.arrangeInsertDiff) {
-      if (bestDiff > binfo.arrangeInsertIgnoreDiff) {
-        insert = true;
-      } else if (bestEdge === dummyChart.left &&
-                 topDiff < binfo.arrangeInsertDiffFarLeft) {
-        insert = true;
-      }
-    }
-    if (insert) {
+    scale = 0.5 * binfo.chartHeight;
+    scale *= 1 / (binfo.arrangeInsertFocalDiff * binfo.arrangeInsertFocalDiff);
+    // y < scale * x ^ 2
+    if (topDiff < scale * bestDiff * bestDiff) {
+      insert = true;
       forChartAt(level, level + 1, function(chart) {
         if (chart.startLevel < level) {
           insert = false;
