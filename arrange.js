@@ -150,7 +150,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     scale = 0.5 * binfo.chartHeight;
     scale *= 1 / (binfo.arrangeInsertFocalDiff * binfo.arrangeInsertFocalDiff);
     // y < scale * x ^ 2
-    if (topDiff < scale * bestDiff * bestDiff) {
+    if (topDiff < binfo.arrangeInsertMaxDiff && topDiff < scale * bestDiff * bestDiff) {
       insert = true;
       forChartAt(level, level + 1, function(chart) {
         if (chart.startLevel < level) {

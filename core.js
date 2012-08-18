@@ -9,6 +9,7 @@ var binfo = {
   maxLevels: 50,
   arrangeSnap: 40,
   arrangeInsertFocalDiff: 550,
+  arrangeInsertMaxDiff: 50,
   holderMargin: 15,
   compareLevels: 100,
   axisTickSize: 12,
