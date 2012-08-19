@@ -114,7 +114,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
   }
 
   function activateBrush(brush, filter, clips) {
-    brush.on('brush', function(a, b) {
+    brush.onbrush = function(a, b) {
       var g = d3.select(this.parentNode),
           extent = brush.extent(),
           move = d3.event.mode === 'move',
@@ -127,18 +127,20 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           extent = [floor(extent[0]), ceil(extent[1])];
         }
         g.select('.brush')
-            .call(brush.extent(extent));
+            .call(brushUpdate, brush.extent(extent));
       }
       if (!brush.empty()) {
         filter(extent);
       }
-    });
+    };
+    brush.on('brush', brush.onbrush);
 
-    brush.on('brushend', function() {
+    brush.onbrushend = function() {
       if (brush.empty()) {
         filter(null);
       }
-    });
+    };
+    brush.on('brushend', brush.onbrushend);
   }
 
   function resizePath(d, height) {
@@ -159,7 +161,17 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
   }
 
   function addBrush(parent, brush, height) {
-    var gBrush = parent.append('g').attr('class', 'brush').call(brush);
+    var gBrush = parent.append('g')
+        .attr('class', 'brush');
+    gBrush.append('text')
+        .attr('class', 'remove')
+        .on('mousedown', function() {
+          brush.clear();
+          brush.onbrushend();
+          return false;
+        })
+        .text('✖');
+    gBrush.call(brushUpdate, brush);
     if (height) {
       gBrush.selectAll('rect').attr('height', height);
     }
@@ -168,6 +180,26 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       return resize(d, height);
     });
     return gBrush;
+  }
+
+  function brushUpdate(gBrush, brush) {
+    var extent = brush.extent(),
+        topRight,
+        removeText;
+    if (Array.isArray(extent[0])) {
+      topRight = [extent[1][0], extent[0][1]];
+      topRight[1] = brush.y()(topRight[1]);
+    } else {
+      topRight = [extent[1], 0];
+    }
+    topRight[0] = brush.x()(topRight[0]);
+    removeText = gBrush.select('.remove').remove();
+    gBrush.call(brush);
+    gBrush.node().appendChild(removeText.node());
+    removeText
+        .attr('x', topRight[0] - 6)
+        .attr('y', topRight[1] + 11)
+        .style('display', brush.empty() ? 'none' : null);
   }
 
 
@@ -424,7 +456,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
 
       // Only redraw the brush if set externally.
       if (brushDirty) {
-        g.selectAll('.brush').call(brush);
+        g.selectAll('.brush').call(brushUpdate, brush);
         if (!compare) {
           filterButtonDown(div);
           div.selectAll('.range')
@@ -786,6 +818,8 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           .attr('transform', 'rotate(90) translate(0,' + -rectWidth + ')');
       gBrush.selectAll('.resize')
           .style('cursor', 'ns-resize');
+      gBrush.select('text.remove')
+          .attr('transform', 'translate(12,-1)');
 
       compare.updateLegend = function(range) {
         if (range) {
@@ -794,7 +828,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           legendBrush.clear();
           range = [0, 100];
         }
-        gBrush.call(legendBrush);
+        gBrush.call(brushUpdate, legendBrush);
         compare.api.div.selectAll('.level').each(function(d) {
           d3.select(this)
               .classed('level-fade-' + d, d < range[0] || d >= range[1]);
@@ -889,7 +923,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         brush.clear();
       }
       if (compare.api.div) {
-        compare.api.div.selectAll('g.compare .brush').call(brush);
+        compare.api.div.selectAll('g.compare .brush').call(brushUpdate, brush);
         updateFilter();
       }
     };

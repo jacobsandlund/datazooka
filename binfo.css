@@ -329,6 +329,12 @@
   color: #777;
 }
 
+.brush .remove {
+  font-size: 12px;
+  text-anchor: middle;
+  fill: #333;
+}
+
 .peripherals {
   font-size: 12px;
 }
