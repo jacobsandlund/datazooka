@@ -3,6 +3,24 @@ binfo._register('logic', ['hash'], function(logic, hash) {
 
   "use strict";
 
+  function floorBy(number) {
+    return function(d) { return Math.floor((d / number) + 1e-7) * number; };
+  }
+
+  function ceilBy(number) {
+    return function(d) { return Math.ceil((d / number) - 1e-7) * number; };
+  }
+
+  function roundBy(number) {
+    return function(d) { return Math.round(d / number) * number; };
+  }
+
+  function setClips(chart, number) {
+    chart.round = roundBy(number);
+    chart.floor = floorBy(number);
+    chart.ceil = ceilBy(number);
+  }
+
   logic.barLogic = function(bar, spec, data) {
 
     var added = 0,
@@ -32,21 +50,18 @@ binfo._register('logic', ['hash'], function(logic, hash) {
 
     bar.api.id = spec.id;
     bar.round = spec.round;
+    bar.floor = spec.floor || spec.round;
+    bar.ceil = spec.ceil || spec.ceil;
 
-    function groupFuncBy(groupBy) {
-      return function(d) { return Math.floor(d / groupBy) * groupBy; };
-    }
-    function roundBy(round) {
-      return function(d) { return Math.round(d / round) * round; };
-    }
+
     if (bar.round && typeof bar.round === 'number') {
-      bar.round = roundBy(bar.round);
+      setClips(bar, bar.round);
     }
 
     dimensionFunc = spec.dimension || function(d) { return d[bar.api.id]; };
     if (spec.ordinal) {
       separation = 1;
-      bar.round = Math.round;
+      setClips(bar, 1);
       if (Array.isArray(spec.ordinal)) {
         spec.ordinal.forEach(function(o, i) { ordinalHash[o] = i; });
       } else {
@@ -76,7 +91,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
       groupFunc = spec.group;
     } else if (spec.groupBy) {
       separation = separation || spec.groupBy;
-      groupFunc = groupFuncBy(separation);
+      groupFunc = floorBy(separation);
     } else if (spec.groupIdentity || spec.ordinal) {
       groupFunc = function(d) { return d; };
     }
@@ -191,7 +206,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
             ticks = scale.ticks(spec.numGroups || binfo.numGroups);
 
         separation = ticks[1] - ticks[0];
-        groupFunc = groupFuncBy(separation);
+        groupFunc = floorBy(separation);
       }
       group = dimension.group(groupFunc);
       rawGroups = group.all();
@@ -313,7 +328,8 @@ binfo._register('logic', ['hash'], function(logic, hash) {
     compare.xcNumGroups = function() { return xcNumGroups; };
     compare.ycNumGroups = function() { return ycNumGroups; };
     compare.filterStats = function() { return filterStats; };
-    compare.round = Math.round;
+
+    setClips(compare, 1);
 
     compare.api.given = function(_) {
       if (!arguments.length) return given;

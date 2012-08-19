@@ -113,15 +113,18 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     div.style('height', height + 'px');
   }
 
-  function activateBrush(brush, filter, round) {
-    brush.on('brush', function() {
+  function activateBrush(brush, filter, clips) {
+    brush.on('brush', function(a, b) {
       var g = d3.select(this.parentNode),
-          extent = brush.extent();
-      if (round) {
+          extent = brush.extent(),
+          move = d3.event.mode === 'move',
+          floor = move ? clips.round : clips.floor,
+          ceil = move ? clips.round : clips.ceil;
+      if (clips.round) {
         if (extent && Array.isArray(extent[0])) {
-          extent = extent.map(function(e) { return e.map(round); });
+          extent = [extent[0].map(floor), extent[1].map(ceil)];
         } else {
-          extent = extent.map(round);
+          extent = [floor(extent[0]), ceil(extent[1])];
         }
         g.select('.brush')
             .call(brush.extent(extent));
@@ -207,7 +210,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       core.refresh();
     }
 
-    activateBrush(brush, filter, bar.round);
+    activateBrush(brush, filter, bar);
 
     bar.updateChart = function() {
       var groups = bar.rawGroups(),
@@ -564,7 +567,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         mouseOut(gCompare);
       }
     }
-    activateBrush(brush, filter, compare.round);
+    activateBrush(brush, filter, compare);
     brush.on('brushstart.compare', function() { hoverEnable(false); });
     brush.on('brushend.compare', function() { hoverEnable(true); });
 
@@ -751,7 +754,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         compare.api.filterLevels(range);
       }
 
-      activateBrush(legendBrush, filterLevels, Math.round);
+      activateBrush(legendBrush, filterLevels, compare);
 
       legend = div.append('svg')
           .attr('class', 'legend')
@@ -869,10 +872,10 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
 
       var xScale = d3.scale.linear()
           .domain([0, compare.xcNumGroups()])
-          .range([0, compare.xcNumGroups() * dim.binWidth]);
+          .rangeRound([0, compare.xcNumGroups() * dim.binWidth]);
       var yScale = d3.scale.linear()
           .domain([0, compare.ycNumGroups()])
-          .range([0, compare.ycNumGroups() * dim.binWidth]);
+          .rangeRound([0, compare.ycNumGroups() * dim.binWidth]);
       brush.x(xScale).y(yScale);
     };
 
