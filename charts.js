@@ -763,6 +763,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           axisWidth,
           legendAxis,
           legendScale,
+          legendClips,
           legendBrush = d3.svg.brush(),
           givenBar;
 
@@ -782,11 +783,14 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
 
       legendBrush.x(legendScale);
 
+      legendClips = {round: compare.round, ceil: compare.round,
+                     floor: compare.round};
+
       function filterLevels(range) {
         compare.api.filterLevels(range);
       }
 
-      activateBrush(legendBrush, filterLevels, compare);
+      activateBrush(legendBrush, filterLevels, legendClips);
 
       legend = div.append('svg')
           .attr('class', 'legend')

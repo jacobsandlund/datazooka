@@ -300,10 +300,8 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     var added,
         removed,
         updated = {};
-    console.log('moved ' + amount);
     if (amount > 0) {
       added = layout.splice(layout.length - amount - 1, amount);
-      console.log('added length: ' + added.length);
       layout.splice.apply(layout, [start, 0].concat(added));
     } else {
       removed = layout.splice(start, -amount);
@@ -315,7 +313,6 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       if (updated[chart.id]) {
         return;
       }
-      console.log('moved chart: ' + chart.id);
       snapPosition(chart, chart.left, chart.startLevel + amount);
       updated[chart.id] = true;
     });
