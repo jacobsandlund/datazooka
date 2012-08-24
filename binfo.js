@@ -7,7 +7,9 @@ var binfo = {
   chartPadding: 5,
   chartBorder: 5,
   maxLevels: 50,
-  arrangeSnap: 75,
+  arrangeSnap: 40,
+  arrangeInsertFocalDiff: 550,
+  arrangeInsertMaxDiff: 50,
   holderMargin: 15,
   compareLevels: 100,
   axisTickSize: 12,
@@ -114,7 +116,7 @@ binfo._register('core', [], function(core) {
     // Taken from quirksmode
     related = e.relatedTarget;
     if (related) {
-      while (related !== tgt && related.nodeName !== 'BODY') {
+      while (related !== tgt && related.nodeName !== 'BODY' && related.parentNode) {
         related = related.parentNode;
       }
       if (related === tgt) {
@@ -368,10 +370,12 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   var outer,
       holder,
       maxLevel,
+      maxBottomLevel,
       reordered,
       arranging,
       ghost,
       positioner,
+      dummyChart,
       holderNode,
       root,
       zIndex = 1,
@@ -387,13 +391,15 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         .style('display', 'none');
     ghost.div = ghost;
     positioner = holder.append('div')
-        .attr('class', 'positioner')
+        .attr('class', 'positioner arranging')
         .style('display', 'none');
     positioner.div = positioner;
     maxLevel = 0;
+    maxBottomLevel = 0;
     layout = [];
-    var dummyChart = {left: binfo.holderMargin, width: 0, levels: 0},
-        i;
+    dummyChart = {left: binfo.holderMargin, width: 0,
+                  id: 'dummy', levels: 0, startLevel: 0};
+    var i;
     for (i = 0; i < binfo.maxLevels; i++) {
       layout[i] = [dummyChart];
     }
@@ -420,6 +426,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     ghost.left = chart.left;
     ghost.top = chart.top;
     positioner.height = chart.height + binfo.chartBorder;
+    positioner.width = chart.width + binfo.chartBorder;
     ghost.levels = chart.levels;
     ghost
         .style('display', 'block')
@@ -428,6 +435,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     reposition(ghost);
     positioner
         .style('display', 'block')
+        .style('width', positioner.width + 'px')
         .style('height', positioner.height + 'px');
     whereToSnap(chart);
     chart.div.classed('arranging', true);
@@ -440,6 +448,9 @@ binfo._register('arrange', ['core'], function(arrange, core) {
 
   function arrangeEnd() {
     var chart = arranging.chart;
+    if (!chart.snapped) {
+      doSnap(chart);
+    }
     ghost.style('display', 'none');
     positioner.style('display', 'none');
     chart.div.classed('arranging', false);
@@ -483,8 +494,11 @@ binfo._register('arrange', ['core'], function(arrange, core) {
 
   function whereToSnap(chart) {
     var level = Math.round(ghost.top / binfo.chartHeight),
+        scale,
         bestEdge,
-        bestDiff = 1e10;
+        bestDiff = 1e10,
+        insert = false,
+        topDiff;
     if (level < 0) {
       level = 0;
     }
@@ -498,23 +512,48 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         bestEdge = edge;
       }
     });
+    topDiff = Math.abs(ghost.top - level * binfo.chartHeight);
+    scale = 0.5 * binfo.chartHeight;
+    scale *= 1 / (binfo.arrangeInsertFocalDiff * binfo.arrangeInsertFocalDiff);
+    // y < scale * x ^ 2
+    if (topDiff < binfo.arrangeInsertMaxDiff && topDiff < scale * bestDiff * bestDiff) {
+      insert = true;
+      forChartAt(level, level + 1, function(chart) {
+        if (chart.startLevel < level) {
+          insert = false;
+        }
+      });
+    }
+    if (insert) {
+      bestEdge = dummyChart.left;
+      bestDiff = Math.abs(bestEdge - ghost.left);
+    }
     snapPosition(positioner, bestEdge, level);
-    return {level: level, left: bestEdge, diff: bestDiff};
+    chart.div.classed('insert', insert);
+    positioner.classed('insert', insert);
+    return {level: level, left: bestEdge, insert: insert,
+            diff: bestDiff, topDiff: topDiff};
   }
 
   function maybeSnap(chart) {
-    var snap = whereToSnap(chart),
-        level = snap.level,
-        left = snap.left,
-        diff = snap.diff;
-    if (Math.abs(level * binfo.chartHeight - ghost.top) >= binfo.arrangeSnap) {
+    var snap = whereToSnap(chart);
+    if (Math.abs(snap.topDiff) >= binfo.arrangeSnap) {
       return;
     }
-    if (diff >= binfo.arrangeSnap) {
+    if (snap.diff >= binfo.arrangeSnap) {
       return;
     }
+    doSnap(chart, snap);
+  }
 
-    var addAt = null;
+  function doSnap(chart, snap) {
+    snap = snap || whereToSnap(chart);
+    var addAt = null,
+        level = snap.level,
+        left = snap.left;
+    if (snap.insert) {
+      moveCharts(level, chart.levels);
+    }
     forEdgesAtLevels(level, chart.levels, function(edge, i) {
       if (edge > left && addAt === null) {
         addAt = i;
@@ -527,7 +566,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       addAt = null;
     });
     setMaxLevel();
-    setSnapped(chart, true);
+    setSnapped(chart, true, snap.insert);
     snapPosition(chart, left, level);
     checkAllMoveAtChart(chart);
   }
@@ -556,34 +595,42 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   };
 
   function setMaxLevel() {
-    var i,
-        row,
-        max = 0;
-    for (i = 0; i < layout.length; i++) {
-      if (layout[i].length > 1) {
+    var max = 0;
+    layout.forEach(function(row, i) {
+      if (row.length > 1) {
         max = i;
       }
-    }
-    row = layout[max];
+    });
+    maxBottomLevel = max;
     maxLevel = 0;
-    for (i = 1; i < row.length; i++) {
-      maxLevel = Math.max(maxLevel, row[i].startLevel);
+    layout[max].forEach(function(chart) {
+      maxLevel = Math.max(maxLevel, chart.startLevel);
+    });
+  }
+
+  function forRowAt(start, end, callback) {
+    var i;
+    for (i = start; i < end; i++) {
+      callback(layout[i], i);
     }
   }
 
-  function forRowAtChart(chart, callback) {
-    var row,
-        i,
-        j;
-    for (i = chart.startLevel; i < chart.startLevel + chart.levels; i++) {
-      row = layout[i];
+  function forChartAt(start, end, callback) {
+    forRowAt(start, end, function(row, i) {
+      var j;
       for (j = 1; j < row.length; j++) {
-        if (row[j] === chart) {
-          callback(row, j);
-          break;
-        }
+        callback(row[j], j, i);
       }
-    }
+    });
+  }
+
+  function forRowAtChart(chart, callback) {
+    forChartAt(chart.startLevel,
+               chart.startLevel + chart.levels, function(ch, j, i) {
+      if (ch === chart) {
+        callback(layout[i], j, i);
+      }
+    });
   }
 
   function checkAtChart(chart) {
@@ -600,10 +647,41 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   }
 
   function remove(chart) {
-    var check = checkAtChart(chart);
-    forRowAtChart(chart, function(row, i) { row.splice(i, 1); });
+    var check = checkAtChart(chart),
+        removeRows = [];
+    forRowAtChart(chart, function(row, i, layoutI) {
+      row.splice(i, 1);
+      if (row.length === 1) {
+        removeRows.push(layoutI);
+      }
+    });
     setSnapped(chart, false);
     checkAllMove(check);
+    removeRows.forEach(function(removeI, i) {
+      moveCharts(removeI - i, -1);  // minus i cause removeRows are moving down
+    });
+  }
+
+  function moveCharts(start, amount) {
+    var added,
+        removed,
+        updated = {};
+    if (amount > 0) {
+      added = layout.splice(layout.length - amount - 1, amount);
+      layout.splice.apply(layout, [start, 0].concat(added));
+    } else {
+      removed = layout.splice(start, -amount);
+      layout = layout.concat(removed);
+    }
+    maxLevel += amount;
+    maxBottomLevel += amount;
+    forChartAt(start, maxBottomLevel + 1, function(chart) {
+      if (updated[chart.id]) {
+        return;
+      }
+      snapPosition(chart, chart.left, chart.startLevel + amount);
+      updated[chart.id] = true;
+    });
   }
 
   function checkAllMove(check) {
@@ -634,9 +712,9 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   }
 
   function setSnapped(chart, snap) {
-    chart.snapped = snap
+    chart.snapped = snap;
     chart.div.classed('unsnapped', !snap);
-    positioner.style('border-color', snap ? '#eee' : 'red');
+    positioner.classed('unsnapped', !snap);
   }
 
   function reposition(chart) {
@@ -698,9 +776,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         i += direction;
       }
       startLevel = (direction === 1) ? i - levels + 1 : i;
-      for (j = startLevel; j < startLevel + levels; j++) {
-        layout[j].push(chart);
-      }
+      forRowAt(startLevel, startLevel + levels, function(row) { row.push(chart); });
       maxLevel = Math.max(startLevel, maxLevel);
       setSnapped(chart, true);
       snapPosition(chart, maxWidth - fitWidth, startLevel);
@@ -854,29 +930,34 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     div.style('height', height + 'px');
   }
 
-  function activateBrush(brush, filter, round) {
-    brush.on('brush', function() {
+  function activateBrush(brush, filter, clips) {
+    brush.onbrush = function(a, b) {
       var g = d3.select(this.parentNode),
-          extent = brush.extent();
-      if (round) {
+          extent = brush.extent(),
+          move = d3.event.mode === 'move',
+          floor = move ? clips.round : clips.floor,
+          ceil = move ? clips.round : clips.ceil;
+      if (clips.round) {
         if (extent && Array.isArray(extent[0])) {
-          extent = extent.map(function(e) { return e.map(round); });
+          extent = [extent[0].map(floor), extent[1].map(ceil)];
         } else {
-          extent = extent.map(round);
+          extent = [floor(extent[0]), ceil(extent[1])];
         }
         g.select('.brush')
-            .call(brush.extent(extent));
+            .call(brushUpdate, brush.extent(extent));
       }
       if (!brush.empty()) {
         filter(extent);
       }
-    });
+    };
+    brush.on('brush', brush.onbrush);
 
-    brush.on('brushend', function() {
+    brush.onbrushend = function() {
       if (brush.empty()) {
         filter(null);
       }
-    });
+    };
+    brush.on('brushend', brush.onbrushend);
   }
 
   function resizePath(d, height) {
@@ -897,7 +978,17 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
   }
 
   function addBrush(parent, brush, height) {
-    var gBrush = parent.append('g').attr('class', 'brush').call(brush);
+    var gBrush = parent.append('g')
+        .attr('class', 'brush');
+    gBrush.append('text')
+        .attr('class', 'remove')
+        .on('mousedown', function() {
+          brush.clear();
+          brush.onbrushend();
+          return false;
+        })
+        .text('✖');
+    gBrush.call(brushUpdate, brush);
     if (height) {
       gBrush.selectAll('rect').attr('height', height);
     }
@@ -906,6 +997,26 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       return resize(d, height);
     });
     return gBrush;
+  }
+
+  function brushUpdate(gBrush, brush) {
+    var extent = brush.extent(),
+        topRight,
+        removeText;
+    if (Array.isArray(extent[0])) {
+      topRight = [extent[1][0], extent[0][1]];
+      topRight[1] = brush.y()(topRight[1]);
+    } else {
+      topRight = [extent[1], 0];
+    }
+    topRight[0] = brush.x()(topRight[0]);
+    removeText = gBrush.select('.remove').remove();
+    gBrush.call(brush);
+    gBrush.node().appendChild(removeText.node());
+    removeText
+        .attr('x', topRight[0] - 6)
+        .attr('y', topRight[1] + 11)
+        .style('display', brush.empty() ? 'none' : null);
   }
 
 
@@ -948,7 +1059,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
       core.refresh();
     }
 
-    activateBrush(brush, filter, bar.round);
+    activateBrush(brush, filter, bar);
 
     bar.updateChart = function() {
       var groups = bar.rawGroups(),
@@ -1162,7 +1273,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
 
       // Only redraw the brush if set externally.
       if (brushDirty) {
-        g.selectAll('.brush').call(brush);
+        g.selectAll('.brush').call(brushUpdate, brush);
         if (!compare) {
           filterButtonDown(div);
           div.selectAll('.range')
@@ -1305,7 +1416,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         mouseOut(gCompare);
       }
     }
-    activateBrush(brush, filter, compare.round);
+    activateBrush(brush, filter, compare);
     brush.on('brushstart.compare', function() { hoverEnable(false); });
     brush.on('brushend.compare', function() { hoverEnable(true); });
 
@@ -1469,6 +1580,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           axisWidth,
           legendAxis,
           legendScale,
+          legendClips,
           legendBrush = d3.svg.brush(),
           givenBar;
 
@@ -1488,11 +1600,14 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
 
       legendBrush.x(legendScale);
 
+      legendClips = {round: compare.round, ceil: compare.round,
+                     floor: compare.round};
+
       function filterLevels(range) {
         compare.api.filterLevels(range);
       }
 
-      activateBrush(legendBrush, filterLevels, Math.round);
+      activateBrush(legendBrush, filterLevels, legendClips);
 
       legend = div.append('svg')
           .attr('class', 'legend')
@@ -1524,6 +1639,8 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           .attr('transform', 'rotate(90) translate(0,' + -rectWidth + ')');
       gBrush.selectAll('.resize')
           .style('cursor', 'ns-resize');
+      gBrush.select('text.remove')
+          .attr('transform', 'translate(12,-1)');
 
       compare.updateLegend = function(range) {
         if (range) {
@@ -1532,7 +1649,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           legendBrush.clear();
           range = [0, 100];
         }
-        gBrush.call(legendBrush);
+        gBrush.call(brushUpdate, legendBrush);
         compare.api.div.selectAll('.level').each(function(d) {
           d3.select(this)
               .classed('level-fade-' + d, d < range[0] || d >= range[1]);
@@ -1610,10 +1727,10 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
 
       var xScale = d3.scale.linear()
           .domain([0, compare.xcNumGroups()])
-          .range([0, compare.xcNumGroups() * dim.binWidth]);
+          .rangeRound([0, compare.xcNumGroups() * dim.binWidth]);
       var yScale = d3.scale.linear()
           .domain([0, compare.ycNumGroups()])
-          .range([0, compare.ycNumGroups() * dim.binWidth]);
+          .rangeRound([0, compare.ycNumGroups() * dim.binWidth]);
       brush.x(xScale).y(yScale);
     };
 
@@ -1627,7 +1744,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         brush.clear();
       }
       if (compare.api.div) {
-        compare.api.div.selectAll('g.compare .brush').call(brush);
+        compare.api.div.selectAll('g.compare .brush').call(brushUpdate, brush);
         updateFilter();
       }
     };
@@ -1649,6 +1766,24 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
 binfo._register('logic', ['hash'], function(logic, hash) {
 
   "use strict";
+
+  function floorBy(number) {
+    return function(d) { return Math.floor((d / number) + 1e-7) * number; };
+  }
+
+  function ceilBy(number) {
+    return function(d) { return Math.ceil((d / number) - 1e-7) * number; };
+  }
+
+  function roundBy(number) {
+    return function(d) { return Math.round(d / number) * number; };
+  }
+
+  function setClips(chart, number) {
+    chart.round = roundBy(number);
+    chart.floor = floorBy(number);
+    chart.ceil = ceilBy(number);
+  }
 
   logic.barLogic = function(bar, spec, data) {
 
@@ -1679,21 +1814,18 @@ binfo._register('logic', ['hash'], function(logic, hash) {
 
     bar.api.id = spec.id;
     bar.round = spec.round;
+    bar.floor = spec.floor || spec.round;
+    bar.ceil = spec.ceil || spec.ceil;
 
-    function groupFuncBy(groupBy) {
-      return function(d) { return Math.floor(d / groupBy) * groupBy; };
-    }
-    function roundBy(round) {
-      return function(d) { return Math.round(d / round) * round; };
-    }
+
     if (bar.round && typeof bar.round === 'number') {
-      bar.round = roundBy(bar.round);
+      setClips(bar, bar.round);
     }
 
     dimensionFunc = spec.dimension || function(d) { return d[bar.api.id]; };
     if (spec.ordinal) {
       separation = 1;
-      bar.round = Math.round;
+      setClips(bar, 1);
       if (Array.isArray(spec.ordinal)) {
         spec.ordinal.forEach(function(o, i) { ordinalHash[o] = i; });
       } else {
@@ -1723,7 +1855,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
       groupFunc = spec.group;
     } else if (spec.groupBy) {
       separation = separation || spec.groupBy;
-      groupFunc = groupFuncBy(separation);
+      groupFunc = floorBy(separation);
     } else if (spec.groupIdentity || spec.ordinal) {
       groupFunc = function(d) { return d; };
     }
@@ -1753,7 +1885,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
     };
 
     bar.api.groupIndex = function(val) {
-      return Math.floor((val - minX) / separation);
+      return Math.round((val - minX) / separation);
     };
 
     function setData(data) {
@@ -1838,7 +1970,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
             ticks = scale.ticks(spec.numGroups || binfo.numGroups);
 
         separation = ticks[1] - ticks[0];
-        groupFunc = groupFuncBy(separation);
+        groupFunc = floorBy(separation);
       }
       group = dimension.group(groupFunc);
       rawGroups = group.all();
@@ -1960,7 +2092,8 @@ binfo._register('logic', ['hash'], function(logic, hash) {
     compare.xcNumGroups = function() { return xcNumGroups; };
     compare.ycNumGroups = function() { return ycNumGroups; };
     compare.filterStats = function() { return filterStats; };
-    compare.round = Math.round;
+
+    setClips(compare, 1);
 
     compare.api.given = function(_) {
       if (!arguments.length) return given;
