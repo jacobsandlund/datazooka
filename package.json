@@ -1,0 +1,22 @@
+{
+  "name": "binfo",
+  "description": "Visually find correlations in your data",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+  },
+  "devDependencies": {
+    "uglify-js": "1.3.x",
+    "yuicompressor": "2.4.x"
+  },
+  "homepage": "http://jakesandlund.com/binfo",
+  "author": {
+    "name": "Jake Sandlund",
+    "url": "http://jakesandlund.com/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/jakesandlund/binfo.git"
+  }
+}
+
