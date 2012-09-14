@@ -1,95 +1,158 @@
 
-var binfo = {
-  numGroups: 35,
-  tickSpacing: 46,
-  compareHeightScale: 0.20,
-  chartHeight: 200,
-  chartPadding: 5,
-  chartBorder: 5,
-  maxLevels: 50,
-  arrangeSnap: 40,
-  arrangeInsertFocalDiff: 550,
-  arrangeInsertMaxDiff: 50,
-  holderMargin: 15,
-  compareLevels: 100,
-  axisTickSize: 12,
-  axisLabelSize: 14,
-  fitWidthMaxDiff: 220,
-  chartDimensions: {
-    top: 16,
-    right: 10,
-    bottom: 20,
-    left: 10,
-    height: 100,
-    width: 100,
-    binWidth: 11
-  }
-};
+define('binfo/config', function() {
+  return {
+    numGroups: 35,
+    tickSpacing: 46,
+    compareHeightScale: 0.20,
+    chartHeight: 200,
+    chartPadding: 5,
+    chartBorder: 5,
+    maxLevels: 50,
+    arrangeSnap: 40,
+    arrangeInsertFocalDiff: 550,
+    arrangeInsertMaxDiff: 50,
+    holderMargin: 15,
+    compareLevels: 100,
+    axisTickSize: 12,
+    axisLabelSize: 14,
+    fitWidthMaxDiff: 220,
+    chartDimensions: {
+      top: 16,
+      right: 10,
+      bottom: 20,
+      left: 10,
+      height: 100,
+      width: 100,
+      binWidth: 11
+    }
+  };
+});
 
 
-binfo._register = (function() {
+define('binfo', function(require) {
 
-  "use strict";
+  var core = require('binfo/core'),
+      definitions = {},
+      data = {},
+      untypedData = {},
+      binfo = {};
 
-  var componentNames = [],
-      modules = {},
-      dependencies = {},
-      compFuncs = {},
-      completed = {};
+  binfo.setup = core.setup;
+  binfo.defaultRender = core.defaultRender;
 
-  function ensureExistence(dep) {
-    return modules[dep] = modules[dep] || module();
-  }
-
-  function module() {
-    return {
-      dependency: ensureExistence
-    };
-  }
-
-  return function(name, deps, component) {
-    var names = componentNames,
-        completedOne = true;
-    names.push(name);
-    ensureExistence(name);
-    deps.forEach(function(d) { ensureExistence(d); });
-    dependencies[name] = deps;
-    compFuncs[name] = component;
-    completed[name] = false;
-
-    function notCompleted(c) {
-      return !completed[c];
+  binfo.definitionsFromJSON = function(dataName, defns) {
+    /*jshint evil:true */
+    var id, defn,
+        evil = [],
+        evalParts = ['dimension', 'group', 'round', 'x', 'y', 'format'],
+        evalPartsIfFunc = ['type', 'ordinal'];
+    function makeEvil(defn, id) {
+      return function(part) {
+        if (!defn[part]) {
+          return;
+        }
+        evil.push('defns["', id, '"].', part, ' = ', defn[part], ';');
+      };
+    }
+    function maybeMakeEvil(defn, id) {
+      var evalPart = makeEvil(defn, id);
+      return function(part) {
+        if (typeof defn[part] === 'string' &&
+            defn[part].slice(0, 8) === 'function') {
+          evalPart(part);
+        }
+      };
     }
 
-    function completeLoop(name) {
-      var func = compFuncs[name],
-          deps = dependencies[name],
-          compArgs;
-      if (completed[name]) return;
-      if (deps.some(notCompleted)) return;
-      compArgs = [name].concat(deps).map(function(d) { return modules[d]; });
-      compFuncs[name].apply(null, compArgs);
-      completed[name] = true;
-      completedOne = true;
+    for (id in defns) {
+      if (defns.hasOwnProperty(id)) {
+        defn = defns[id];
+        evalParts.forEach(makeEvil(defn, id));
+        evalPartsIfFunc.forEach(maybeMakeEvil(defn, id));
+      }
     }
+    eval(evil.join(''));
+    binfo.definitions(dataName, defns);
+  };
 
-    while (names.some(notCompleted) && completedOne) {
-      completedOne = false;
-      names.forEach(completeLoop);
+  binfo.definitions = function(dataName, defns) {
+    var id;
+    for (id in defns) {
+      if (defns.hasOwnProperty(id)) {
+        defns[id].id = id;
+        defns[id].type = defns[id].type || 'number';
+      }
+    }
+    definitions[dataName] = defns;
+    if (untypedData[dataName]) {
+      binfo.dataFromUntyped(dataName, untypedData[dataName]);
+    } else {
+      checkLoaded(dataName);
     }
   };
 
-}());
+  binfo.dataFromUntyped = function(dataName, data) {
+    if (!definitions[dataName]) {
+      untypedData[dataName] = data;
+      return;
+    }
+    var defns = definitions[dataName],
+        id,
+        defn;
+    data.forEach(function(d) {
+      for (id in defns) {
+        if (!defns.hasOwnProperty(id)) {
+          continue;
+        }
+        defn = defns[id];
+        if (defn.derived) {
+          continue;
+        }
+        if (typeof defn.type === 'function') {
+          d[id] = defn.type(d[id]);
+          return;
+        }
+        switch (defn.type) {
+        case 'number':
+          d[id] = +d[id];
+          break;
+        case 'date':
+          d[id] = new Date(d[id]);
+          break;
+        default:
+          // string, so no modification needed
+        }
+      }
+    });
+    binfo.data(dataName, data);
+  };
+
+  binfo.data = function(dataName, _) {
+    data[dataName] = _;
+    checkLoaded(dataName);
+  };
+
+  function checkLoaded(name) {
+    if (definitions[name] && data[name]) {
+      core.dataSet(name, definitions[name], data[name]);
+    }
+  }
+
+  window.binfo = binfo;
+
+  return binfo;
+});
 
 
-binfo._register('core', [], function(core) {
 
-  var ui = core.dependency('ui'),
-      rendering = core.dependency('rendering'),
-      chartsApi = core.dependency('charts'),
-      hash = core.dependency('hash'),
-      arrange = core.dependency('arrange'),
-      stylesheet = core.dependency('stylesheet'),
+define('binfo/core', function(require) {
+
+  var ui = require('./ui'),
+      rendering = require('./rendering'),
+      chartsApi = require('./charts'),
+      hash = require('./hash'),
+      arrange = require('./arrange'),
+      stylesheet = require('./stylesheet'),
       dataSets = {},
       cross,
       crossAll,
@@ -107,7 +170,8 @@ binfo._register('core', [], function(core) {
       charts,
       nextDataName,
       nextChartIds,
-      nextCharts;
+      nextCharts,
+      core = {};
 
   core.isMouseOut = function() {
     var e = d3.event,
@@ -152,7 +216,7 @@ binfo._register('core', [], function(core) {
     };
   };
 
-  binfo.setup = function(setup) {
+  core.setup = function(setup) {
     var outer = d3.select(setup.holder).attr('class', 'outer-holder'),
         holder = outer.append('div'),
         root = d3.select(setup.root);
@@ -236,7 +300,7 @@ binfo._register('core', [], function(core) {
     }
   };
 
-  binfo.defaultRender = function(dataName, charts, filters) {
+  core.defaultRender = function(dataName, charts, filters) {
     if (!renderFreshLater) {
       core.renderFresh(dataName, charts, filters);
     }
@@ -362,5 +426,7 @@ binfo._register('core', [], function(core) {
     rendering.refresh(crossAll.value(), cross.size());
     hash.refresh(dataName, chartIds, charts);
   };
+
+  return core;
 });
 

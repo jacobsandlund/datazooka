@@ -1,7 +1,7 @@
 
-.PHONY: all pack
+.PHONY: all build
 
-all: | pack min
+all: | build min
 
 min: minjs mincss
 
@@ -11,12 +11,6 @@ minjs:
 mincss:
 	java -jar node_modules/yuicompressor/build/yuicompressor-*.jar binfo.css > binfo.min.css
 
-pack:
-	cat \
-		src/core.js \
-		src/arrange.js \
-		src/charts.js \
-		src/logic.js \
-		src/other.js \
-		src/ui.js \
-		> binfo.js
+build:
+	sh build.sh
+

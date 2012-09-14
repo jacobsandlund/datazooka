@@ -1,8 +1,14 @@
 
-binfo._register('charts', ['core', 'logic', 'arrange'],
-                function(charts, core, logic, arrange) {
+define('binfo/charts', function(require) {
 
-  "use strict";
+  var logic = require('./logic'),
+      arrange = require('./arrange'),
+      config = require('./config'),
+      core,
+      charts = {};
+
+  // TODO: Remove circular dependency
+  window._vaccine.on('binfo/core', function() { core = require('./core'); });
 
   charts.barChart = function(spec, data) {
     var bar = {api: {}};
@@ -31,7 +37,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
 
   function findDim(spec) {
     var dim = spec.dimensions || {},
-        defaultDim = binfo.chartDimensions,
+        defaultDim = config.chartDimensions,
         dimName;
     for (dimName in defaultDim) {
       if (defaultDim.hasOwnProperty(dimName)) {
@@ -95,8 +101,8 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
   }
 
   function baseArrange(div, api) {
-    var width = div.property('offsetWidth') - binfo.chartBorder,
-        innerWidth = width - binfo.chartPadding * 2 - binfo.chartBorder,
+    var width = div.property('offsetWidth') - config.chartBorder,
+        innerWidth = width - config.chartPadding * 2 - config.chartBorder,
         height,
         levels;
     api.width = width;
@@ -104,11 +110,11 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     div.select('.title')
         .style('width', (innerWidth - 15) + 'px')   // 15 for Remove 'x'
         .style('display', null);
-    height = div.property('offsetHeight') - binfo.chartBorder - 5;
-    levels = Math.ceil(height / binfo.chartHeight);
+    height = div.property('offsetHeight') - config.chartBorder - 5;
+    levels = Math.ceil(height / config.chartHeight);
     api.levels = levels;
-    api.height = levels * binfo.chartHeight;
-    height = api.height - (binfo.chartBorder + 2 * binfo.chartPadding);
+    api.height = levels * config.chartHeight;
+    height = api.height - (config.chartBorder + 2 * config.chartPadding);
     api.snapped = false;
     div.style('height', height + 'px');
   }
@@ -212,10 +218,10 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     var dim = findDim(spec),
         baseDim = findBaseDim(dim),
         defaultOrientFlip = false,
-        compareHeightScale = spec.compareHeightScale || binfo.compareHeightScale,
+        compareHeightScale = spec.compareHeightScale || config.compareHeightScale,
         x = spec.x,
         y = spec.y || d3.scale.linear().range([dim.height, 0]),
-        tickSpacing = spec.tickSpacing || binfo.tickSpacing,
+        tickSpacing = spec.tickSpacing || config.tickSpacing,
         ticks = spec.ticks,
         axis = d3.svg.axis(),
         brush = d3.svg.brush(),
@@ -235,7 +241,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     bar.api.defaultOrientFlip = defaultOrientFlip;
     bar.api.dim = dim;
 
-    dim.labelWidth = findTextWidth(bar.api.label, binfo.axisLabelSize);
+    dim.labelWidth = findTextWidth(bar.api.label, config.axisLabelSize);
 
     function filter(range) {
       bar.api.filter(range);
@@ -527,13 +533,13 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           maxTickWidth = 0;
       if (bar.ordinal) {
         bar.ordinal().forEach(function(ord) {
-          maxOrd = Math.max(maxOrd, findTextWidth(ord, binfo.axisTickSize));
+          maxOrd = Math.max(maxOrd, findTextWidth(ord, config.axisTickSize));
         });
         dim.bottom = baseDim.bottom + maxOrd;
         dim.maxTickWidth = 0;
       } else {
         fmt = axis.tickFormat() || x.tickFormat();
-        tix = axis.tickValues() || x.ticks(tix || binfo.numGroups);
+        tix = axis.tickValues() || x.ticks(tix || config.numGroups);
         lowestWidth = findTextWidth(fmt(tix[0]));
         highestWidth = findTextWidth(fmt(tix[tix.length - 1]));
         tix.forEach(function(t) {
@@ -574,7 +580,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         brush = d3.svg.brush(),
         bgPath,
         paths = [],
-        levels = binfo.compareLevels,
+        levels = config.compareLevels,
         hoverEnabled = true,
         i,
         filteredLevels,
@@ -943,5 +949,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     }
 
   };
+
+  return charts;
 });
 

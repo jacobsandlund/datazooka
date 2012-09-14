@@ -1,10 +1,7 @@
 
-binfo._register('ui', ['core'], function(ui, core) {
+define('binfo/ui', function(require) {
 
-  "use strict";
-
-  var rendering = ui.dependency('rendering'),
-      setup = ui.dependency('setup'),
+  var core,
       holder,
       panel,
       disableModeTimer,
@@ -12,7 +9,11 @@ binfo._register('ui', ['core'], function(ui, core) {
       numDataSets = 0,
       needsUpdate,
       chartMode,
-      firstCompare;
+      firstCompare,
+      ui = {};
+
+  // TODO: Remove circular dependency
+  window._vaccine.on('binfo/core', function() { core = require('./core'); });
 
   ui.setup = function(h) {
     holder = h;
@@ -277,5 +278,6 @@ binfo._register('ui', ['core'], function(ui, core) {
     ui.updating(false);
   };
 
+  return ui;
 });
 

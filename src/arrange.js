@@ -1,7 +1,8 @@
 
-binfo._register('arrange', ['core'], function(arrange, core) {
+define('binfo/arrange', function(require) {
 
-  var outer,
+  var config = require('./config'),
+      outer,
       holder,
       maxLevel,
       maxBottomLevel,
@@ -13,7 +14,8 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       holderNode,
       root,
       zIndex = 1,
-      layout;
+      layout,
+      arrange = {};
 
   arrange.setup = function(r, o, h) {
     root = r;
@@ -31,10 +33,10 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     maxLevel = 0;
     maxBottomLevel = 0;
     layout = [];
-    dummyChart = {left: binfo.holderMargin, width: 0,
+    dummyChart = {left: config.holderMargin, width: 0,
                   id: 'dummy', levels: 0, startLevel: 0};
     var i;
-    for (i = 0; i < binfo.maxLevels; i++) {
+    for (i = 0; i < config.maxLevels; i++) {
       layout[i] = [dummyChart];
     }
     root.on('mousemove.arrange', function() {
@@ -56,11 +58,11 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     zIndex += 1;
     chart.div.style('z-index', zIndex);
     ghost.width = chart.width;
-    ghost.height = chart.height - binfo.chartBorder / 2;
+    ghost.height = chart.height - config.chartBorder / 2;
     ghost.left = chart.left;
     ghost.top = chart.top;
-    positioner.height = chart.height + binfo.chartBorder;
-    positioner.width = chart.width + binfo.chartBorder;
+    positioner.height = chart.height + config.chartBorder;
+    positioner.width = chart.width + config.chartBorder;
     ghost.levels = chart.levels;
     ghost
         .style('display', 'block')
@@ -106,7 +108,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         diffX,
         diffY,
         abs = Math.abs,
-        snapDiff = binfo.arrangeSnap;
+        snapDiff = config.arrangeSnap;
     ghost.left = x - offsetX;
     ghost.top = y - offsetY;
     reposition(ghost);
@@ -127,7 +129,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   };
 
   function whereToSnap(chart) {
-    var level = Math.round(ghost.top / binfo.chartHeight),
+    var level = Math.round(ghost.top / config.chartHeight),
         scale,
         bestEdge,
         bestDiff = 1e10,
@@ -146,11 +148,11 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         bestEdge = edge;
       }
     });
-    topDiff = Math.abs(ghost.top - level * binfo.chartHeight);
-    scale = 0.5 * binfo.chartHeight;
-    scale *= 1 / (binfo.arrangeInsertFocalDiff * binfo.arrangeInsertFocalDiff);
+    topDiff = Math.abs(ghost.top - level * config.chartHeight);
+    scale = 0.5 * config.chartHeight;
+    scale *= 1 / (config.arrangeInsertFocalDiff * config.arrangeInsertFocalDiff);
     // y < scale * x ^ 2
-    if (topDiff < binfo.arrangeInsertMaxDiff && topDiff < scale * bestDiff * bestDiff) {
+    if (topDiff < config.arrangeInsertMaxDiff && topDiff < scale * bestDiff * bestDiff) {
       insert = true;
       forChartAt(level, level + 1, function(chart) {
         if (chart.startLevel < level) {
@@ -171,10 +173,10 @@ binfo._register('arrange', ['core'], function(arrange, core) {
 
   function maybeSnap(chart) {
     var snap = whereToSnap(chart);
-    if (Math.abs(snap.topDiff) >= binfo.arrangeSnap) {
+    if (Math.abs(snap.topDiff) >= config.arrangeSnap) {
       return;
     }
-    if (snap.diff >= binfo.arrangeSnap) {
+    if (snap.diff >= config.arrangeSnap) {
       return;
     }
     doSnap(chart, snap);
@@ -341,7 +343,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   function snapPosition(chart, left, level) {
     chart.left = left;
     chart.startLevel = level;
-    chart.top = level * binfo.chartHeight;
+    chart.top = level * config.chartHeight;
     reposition(chart);
   }
 
@@ -358,7 +360,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   }
 
   arrange.add = function(added, charts) {
-    var maxWidth = window.innerWidth - binfo.holderMargin - binfo.chartBorder;
+    var maxWidth = window.innerWidth - config.holderMargin - config.chartBorder;
     added.forEach(function(id) {
       var chart = charts[id],
           levels = chart.levels,
@@ -382,7 +384,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         if (remaining >= width || row.length === 1) {
           if (fitting) {
             fitWidthDiff = Math.abs(remaining - fitWidth);
-            if (fitWidthDiff <= binfo.fitWidthMaxDiff) {
+            if (fitWidthDiff <= config.fitWidthMaxDiff) {
               fitting += 1;
               fitWidth = Math.min(remaining, fitWidth);
             } else {
@@ -423,7 +425,8 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   // Also adds height to holder
   arrange.orderedChartIds = function() {
     if (!reordered) return null;
-    var chartIds = core.chartIds(),
+    var core = require('./core'),
+        chartIds = core.chartIds(),
         charts = core.charts(),
         ordered,
         orderedIds,
@@ -446,6 +449,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     return orderedIds;
   };
 
+  return arrange;
 });
 
 

@@ -1,7 +1,9 @@
 
-binfo._register('logic', ['hash'], function(logic, hash) {
+define('binfo/logic', function(require) {
 
-  "use strict";
+  var hash = require('./hash'),
+      config = require('./config'),
+      logic = {};
 
   function floorBy(number) {
     return function(d) { return Math.floor((d / number) + 1e-7) * number; };
@@ -203,7 +205,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
             min = +dimensionFunc(top[top.length - 1]),
             domain = Math.abs(max - min),
             scale = d3.scale.linear().domain([0, domain]),
-            ticks = scale.ticks(spec.numGroups || binfo.numGroups);
+            ticks = scale.ticks(spec.numGroups || config.numGroups);
 
         separation = ticks[1] - ticks[0];
         groupFunc = floorBy(separation);
@@ -310,7 +312,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
         xcGroups,
         ycGroups,
         levelsMatrix,
-        levels = binfo.compareLevels,
+        levels = config.compareLevels,
         ycScale = Math.pow(2, 20),  // About a million
         dimensionFunc,
         filterRange,
@@ -547,5 +549,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
     };
 
   };
+
+  return logic;
 });
 

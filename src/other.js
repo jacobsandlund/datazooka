@@ -1,120 +1,14 @@
 
-binfo._register('setup', ['core'], function(setup, core) {
+define('binfo/stylesheet', function(require) {
 
-  "use strict";
-
-  var definitions = {},
-      data = {},
-      untypedData = {};
-
-  binfo.definitionsFromJSON = function(dataName, defns) {
-    /*jshint evil:true */
-    var id, defn,
-        evil = [],
-        evalParts = ['dimension', 'group', 'round', 'x', 'y', 'format'],
-        evalPartsIfFunc = ['type', 'ordinal'];
-    function makeEvil(defn, id) {
-      return function(part) {
-        if (!defn[part]) {
-          return;
-        }
-        evil.push('defns["', id, '"].', part, ' = ', defn[part], ';');
-      };
-    }
-    function maybeMakeEvil(defn, id) {
-      var evalPart = makeEvil(defn, id);
-      return function(part) {
-        if (typeof defn[part] === 'string' &&
-            defn[part].slice(0, 8) === 'function') {
-          evalPart(part);
-        }
-      };
-    }
-
-    for (id in defns) {
-      if (defns.hasOwnProperty(id)) {
-        defn = defns[id];
-        evalParts.forEach(makeEvil(defn, id));
-        evalPartsIfFunc.forEach(maybeMakeEvil(defn, id));
-      }
-    }
-    eval(evil.join(''));
-    binfo.definitions(dataName, defns);
-  };
-
-  binfo.definitions = function(dataName, defns) {
-    var id;
-    for (id in defns) {
-      if (defns.hasOwnProperty(id)) {
-        defns[id].id = id;
-        defns[id].type = defns[id].type || 'number';
-      }
-    }
-    definitions[dataName] = defns;
-    if (untypedData[dataName]) {
-      binfo.dataFromUntyped(dataName, untypedData[dataName]);
-    } else {
-      checkLoaded(dataName);
-    }
-  };
-
-  binfo.dataFromUntyped = function(dataName, data) {
-    if (!definitions[dataName]) {
-      untypedData[dataName] = data;
-      return;
-    }
-    var defns = definitions[dataName],
-        id,
-        defn;
-    data.forEach(function(d) {
-      for (id in defns) {
-        if (!defns.hasOwnProperty(id)) {
-          continue;
-        }
-        defn = defns[id];
-        if (defn.derived) {
-          continue;
-        }
-        if (typeof defn.type === 'function') {
-          d[id] = defn.type(d[id]);
-          return;
-        }
-        switch (defn.type) {
-        case 'number':
-          d[id] = +d[id];
-          break;
-        case 'date':
-          d[id] = new Date(d[id]);
-          break;
-        default:
-          // string, so no modification needed
-        }
-      }
-    });
-    binfo.data(dataName, data);
-  };
-
-  binfo.data = function(dataName, _) {
-    data[dataName] = _;
-    checkLoaded(dataName);
-  };
-
-  function checkLoaded(name) {
-    if (definitions[name] && data[name]) {
-      core.dataSet(name, definitions[name], data[name]);
-    }
-  }
-
-});
-
-
-binfo._register('stylesheet', [], function(stylesheet) {
+  var stylesheet = {},
+      config = require('./config');
 
   stylesheet.setup = function(holder) {
     var css = '',
         i,
         lvl,
-        levels = binfo.compareLevels,
+        levels = config.compareLevels,
         level = d3.scale.linear(),
         pts = [],
         domain,
@@ -184,13 +78,13 @@ binfo._register('stylesheet', [], function(stylesheet) {
     holder.append('style').html(css);
   };
 
-
+  return stylesheet;
 });
 
 
-binfo._register('hashRetrieval', ['core'], function(_, core) {
+define('binfo/hash_retrieval', function(require) {
 
-  "use strict";
+  var core = require('./core');
 
   // Yarin's answer on this SO post:
   // http://stackoverflow.com/questions/4197591/
@@ -245,19 +139,23 @@ binfo._register('hashRetrieval', ['core'], function(_, core) {
   window.onhashchange = renderFromHash;
 
   renderFromHash();
+
+  return true;
 });
 
 
 
-binfo._register('hash', ['arrange'], function(hash, arrange) {
+define('binfo/hash', function(require) {
 
-  var chartIds,
+  var arrange = require('./arrange'),
+      chartIds,
       charts,
       dataName,
       hashParams = [0,0,0],
       isEnable = true,
       hashUpdatedRecently = false,
-      hashNeedsUpdated = false;
+      hashNeedsUpdated = false,
+      hash = {};
 
   hash.disable = function() {
     isEnable = false;
@@ -331,16 +229,17 @@ binfo._register('hash', ['arrange'], function(hash, arrange) {
     }
   }
   setInterval(updateWindowHash, 600);
+
+  return hash;
 });
 
 
-binfo._register('rendering', ['core'], function(rendering, core) {
-
-  "use strict";
+define('binfo/rendering', function() {
 
   var chartSelection,
       formatNumber = d3.format(',d'),
-      formatPercent = d3.format('.3p');
+      formatPercent = d3.format('.3p'),
+      rendering = {};
 
   function callCharts(name) {
     return function(chartData) {
@@ -382,6 +281,8 @@ binfo._register('rendering', ['core'], function(rendering, core) {
 
     chartSelection.order();
   };
+
+  return rendering;
 
 });
 
