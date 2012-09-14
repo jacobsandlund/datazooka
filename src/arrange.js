@@ -1,5 +1,5 @@
 
-define('binfo/arrange', function(require) {
+define('binfo/arrange', function(require, arrange) {
 
   var config = require('./config'),
       outer,
@@ -14,8 +14,7 @@ define('binfo/arrange', function(require) {
       holderNode,
       root,
       zIndex = 1,
-      layout,
-      arrange = {};
+      layout;
 
   arrange.setup = function(r, o, h) {
     root = r;
@@ -449,7 +448,5 @@ define('binfo/arrange', function(require) {
     return orderedIds;
   };
 
-  return arrange;
 });
-
 

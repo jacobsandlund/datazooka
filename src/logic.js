@@ -1,9 +1,8 @@
 
-define('binfo/logic', function(require) {
+define('binfo/logic', function(require, logic) {
 
   var hash = require('./hash'),
-      config = require('./config'),
-      logic = {};
+      config = require('./config');
 
   function floorBy(number) {
     return function(d) { return Math.floor((d / number) + 1e-7) * number; };
@@ -550,6 +549,5 @@ define('binfo/logic', function(require) {
 
   };
 
-  return logic;
 });
 

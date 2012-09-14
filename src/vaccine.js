@@ -24,7 +24,8 @@ function define(id, defn) {
   // MINIMAL-VACCINE-END
 
   var parts = id.split('/'),
-      globalVaccine = window._vaccine;
+      globalVaccine = window._vaccine,
+      module = {exports: {}};
 
   function require(reqId) {
     var matching = /(\.?\.\/?)*/.exec(reqId)[0],
@@ -46,7 +47,8 @@ function define(id, defn) {
   }
 
   try {
-    globalVaccine.set(id, defn(require));
+    defn(require, module.exports, module);
+    globalVaccine.set(id, module.exports);
   } catch (e) {
     if (e != require) throw e;
     globalVaccine.on(require.id, function() { define(id, defn); });

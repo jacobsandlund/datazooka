@@ -1,6 +1,6 @@
 
-define('binfo/config', function() {
-  return {
+define('binfo/config', function(require, exports, module) {
+  module.exports = {
     numGroups: 35,
     tickSpacing: 46,
     compareHeightScale: 0.20,
@@ -29,13 +29,12 @@ define('binfo/config', function() {
 });
 
 
-define('binfo', function(require) {
+define('binfo', function(require, binfo) {
 
   var core = require('binfo/core'),
       definitions = {},
       data = {},
-      untypedData = {},
-      binfo = {};
+      untypedData = {};
 
   binfo.setup = core.setup;
   binfo.defaultRender = core.defaultRender;
@@ -140,12 +139,11 @@ define('binfo', function(require) {
 
   window.binfo = binfo;
 
-  return binfo;
 });
 
 
 
-define('binfo/core', function(require) {
+define('binfo/core', function(require, core) {
 
   var ui = require('./ui'),
       rendering = require('./rendering'),
@@ -170,8 +168,7 @@ define('binfo/core', function(require) {
       charts,
       nextDataName,
       nextChartIds,
-      nextCharts,
-      core = {};
+      nextCharts;
 
   core.isMouseOut = function() {
     var e = d3.event,
@@ -427,6 +424,5 @@ define('binfo/core', function(require) {
     hash.refresh(dataName, chartIds, charts);
   };
 
-  return core;
 });
 

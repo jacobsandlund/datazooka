@@ -1,11 +1,10 @@
 
-define('binfo/charts', function(require) {
+define('binfo/charts', function(require, charts) {
 
   var logic = require('./logic'),
       arrange = require('./arrange'),
       config = require('./config'),
-      core,
-      charts = {};
+      core;
 
   // TODO: Remove circular dependency
   window._vaccine.on('binfo/core', function() { core = require('./core'); });
@@ -950,6 +949,5 @@ define('binfo/charts', function(require) {
 
   };
 
-  return charts;
 });
 

@@ -1,5 +1,5 @@
 
-define('binfo/ui', function(require) {
+define('binfo/ui', function(require, ui) {
 
   var core,
       holder,
@@ -9,8 +9,7 @@ define('binfo/ui', function(require) {
       numDataSets = 0,
       needsUpdate,
       chartMode,
-      firstCompare,
-      ui = {};
+      firstCompare;
 
   // TODO: Remove circular dependency
   window._vaccine.on('binfo/core', function() { core = require('./core'); });
@@ -278,6 +277,5 @@ define('binfo/ui', function(require) {
     ui.updating(false);
   };
 
-  return ui;
 });
 

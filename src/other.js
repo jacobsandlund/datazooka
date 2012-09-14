@@ -1,8 +1,7 @@
 
-define('binfo/stylesheet', function(require) {
+define('binfo/stylesheet', function(require, stylesheet) {
 
-  var stylesheet = {},
-      config = require('./config');
+  var config = require('./config');
 
   stylesheet.setup = function(holder) {
     var css = '',
@@ -78,7 +77,6 @@ define('binfo/stylesheet', function(require) {
     holder.append('style').html(css);
   };
 
-  return stylesheet;
 });
 
 
@@ -140,12 +138,11 @@ define('binfo/hash_retrieval', function(require) {
 
   renderFromHash();
 
-  return true;
 });
 
 
 
-define('binfo/hash', function(require) {
+define('binfo/hash', function(require, hash) {
 
   var arrange = require('./arrange'),
       chartIds,
@@ -154,8 +151,7 @@ define('binfo/hash', function(require) {
       hashParams = [0,0,0],
       isEnable = true,
       hashUpdatedRecently = false,
-      hashNeedsUpdated = false,
-      hash = {};
+      hashNeedsUpdated = false;
 
   hash.disable = function() {
     isEnable = false;
@@ -230,16 +226,14 @@ define('binfo/hash', function(require) {
   }
   setInterval(updateWindowHash, 600);
 
-  return hash;
 });
 
 
-define('binfo/rendering', function() {
+define('binfo/rendering', function(require, rendering) {
 
   var chartSelection,
       formatNumber = d3.format(',d'),
-      formatPercent = d3.format('.3p'),
-      rendering = {};
+      formatPercent = d3.format('.3p');
 
   function callCharts(name) {
     return function(chartData) {
@@ -281,8 +275,6 @@ define('binfo/rendering', function() {
 
     chartSelection.order();
   };
-
-  return rendering;
 
 });
 
