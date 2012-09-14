@@ -13,10 +13,10 @@ mincss:
 
 pack:
 	cat \
-		core.js \
-		arrange.js \
-		charts.js \
-		logic.js \
-		other.js \
-		ui.js \
+		src/core.js \
+		src/arrange.js \
+		src/charts.js \
+		src/logic.js \
+		src/other.js \
+		src/ui.js \
 		> binfo.js
