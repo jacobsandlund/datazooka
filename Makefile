@@ -1,7 +1,12 @@
 
-.PHONY: all build
+.PHONY: all test configure min minjs mincss build
 
 all: | build min
+
+test:
+	./configure_test.sh
+	printf '\n\n!!!\nOpen localhost:3000 in a browser.\n!!!\n\n'
+	node dev_server.js
 
 min: minjs mincss
 
