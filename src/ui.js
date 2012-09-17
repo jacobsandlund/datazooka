@@ -12,7 +12,7 @@ define('binfo/ui', function(require, ui) {
       firstCompare;
 
   // TODO: Remove circular dependency
-  window._vaccine.on('binfo/core', function() { core = require('./core'); });
+  window.vaccine.on('binfo/core', function() { core = require('./core'); });
 
   ui.setup = function(h) {
     holder = h;

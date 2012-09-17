@@ -1,12 +1,11 @@
 
 function define(id, defn) {
 
-  // MINIMAL-VACCINE-START
-  if (!window._vaccine) {
+  if (!window.vaccine) {
     // The minimal code required to be vaccine compliant.
     (function() {
       var waiting = {}, modules = {};
-      window._vaccine = {
+      window.vaccine = {
         on: function(id, callback) {
           (waiting[id] = waiting[id] || []).push(callback);
         },
@@ -20,11 +19,10 @@ function define(id, defn) {
       };
     }());
   }
-  // Set your library with _vaccine.set('mylib', mylib);
-  // MINIMAL-VACCINE-END
+  // Set your library with vaccine.set('mylib', mylib);
 
   var parts = id.split('/'),
-      globalVaccine = window._vaccine,
+      globalVaccine = window.vaccine,
       module = {exports: {}};
 
   function require(reqId) {

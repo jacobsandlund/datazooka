@@ -7,7 +7,7 @@ define('binfo/charts', function(require, charts) {
       core;
 
   // TODO: Remove circular dependency
-  window._vaccine.on('binfo/core', function() { core = require('./core'); });
+  window.vaccine.on('binfo/core', function() { core = require('./core'); });
 
   charts.barChart = function(spec, data) {
     var bar = {api: {}};
