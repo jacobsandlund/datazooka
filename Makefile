@@ -1,5 +1,5 @@
 
-.PHONY: all test configure min minjs mincss build
+.PHONY: test build
 
 all: | build min
 
@@ -8,6 +8,9 @@ test:
 	printf '\n\n!!!\nOpen localhost:3000 in a browser.\n!!!\n\n'
 	node dev_server.js
 
+build:
+	./build > binfo.js
+
 min: minjs mincss
 
 minjs:
@@ -15,7 +18,4 @@ minjs:
 
 mincss:
 	java -jar node_modules/yuicompressor/build/yuicompressor-*.jar binfo.css > binfo.min.css
-
-build:
-	sh build.sh
 

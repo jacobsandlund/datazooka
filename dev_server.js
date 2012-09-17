@@ -1,7 +1,6 @@
 
-var outputFile = 'binfo.js',   // Change this to your app file name.
-    buildScript = './build';    // Change this to your app's build script
-
+var outputFile = 'binfo.js';   // Change this to your app file name.
+var buildScript = './build';   // Change this to your app's build script.
 
 
 var http = require('http'),
@@ -29,12 +28,12 @@ http.createServer(function (req, res) {
       res.end(stdout);
     });
   } else {
-    findFile('.' + req.url, res);
+    findFile(req.url, res);
   }
 }).listen(3000, 'localhost');
 
 function findFile(path, res) {
-  fs.stat(path, function(err, stats) {
+  fs.stat('.' + path, function(err, stats) {
     if (err) return notFound(path, res);
     if (stats.isDirectory()) {
       findFile(path + '/index.html', res);
@@ -42,15 +41,16 @@ function findFile(path, res) {
     }
     if (!stats.isFile()) return notFound(path, res);
 
-    fs.readFile(path, 'utf8', function(err, data) {
+    fs.readFile('.' + path, 'utf8', function(err, fileText) {
       if (err) throw err;
       var type = types[path.split('.').pop()];
       if (!type) type = 'text/plain';
       res.writeHead(200, {'Content-Type': type});
-      res.end(data);
+      res.end(fileText);
     });
   });
 }
+
 
 function notFound(path, res) {
   console.log('404: ' + path);
