@@ -17,5 +17,6 @@ start Loader | sed '/<\/body>/i\
   <script src="crossfilter.v1.js"></script>\
   <script src="d3.v2.js"></script>\
   <script src="../vaccine_loader.js"></script>\
+  <script>vaccine_load("/test/test.js");</script>\
   ' > test/loader.html
 
