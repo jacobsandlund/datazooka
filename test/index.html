@@ -4,75 +4,17 @@
     <meta charset="utf-8">
     <title>Binfo</title>
     <link rel="stylesheet" type="text/css" href="../binfo.css">
-
-<style>
-
-body {
-  font-family: "Helvetica Neue";
-  margin: 0;
-  padding: 40px;
-  position: relative;
-  min-height: 2000px;
-}
-
-.main {
-  width: 940px;
-  margin: 0 auto;
-}
-
-footer {
-  padding: 2em 0 1em 0;
-  font-size: 12px;
-}
-
-h1 {
-  font-size: 96px;
-  margin-top: .3em;
-  margin-bottom: 0;
-}
-
-h1 + h2 {
-  margin-top: 0;
-}
-
-h2 {
-  font-weight: 400;
-  font-size: 28px;
-}
-
-h1, h2 {
-  font-family: "Tahoma";
-  text-rendering: optimizeLegibility;
-}
-
-#body > p {
-  line-height: 1.5em;
-  width: 640px;
-  text-rendering: optimizeLegibility;
-}
-
-</style>
-
+    <link rel="stylesheet" type="text/css" href="test.css">
   </head>
 
   <body>
+
   <div class="main">
     <a href="https://github.com/jakesandlund/binfo"><img style="position: absolute; right: 0px; top: 0px; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
 
     <a href="/">Index (to switch between combined and separate)</a>
     <h1>Binfo</h1>
 
-    <h2>Multivariate Analysis Tool using Crossfilter and D3</h2>
-
-    <p>
-    This is the <a href="http://square.github.com/crossfilter/">Crossfilter's</a>
-    home page demo generalized so you can more easily fit it to your data.
-    </p>
-    <p>
-    I can't thank Mike Bostock (<a href="https://github.com/mbostock">mbostock</a>)
-    enough for the awesome <a href="http://square.github.com/crossfilter/">Crossfilter</a>
-    and <a href="http://d3js.org/">D3</a> libraries that this is built on.
-    </p>
     <p> Test Links:
       <a href="#data=flights&charts=time,delay,day,time-day,delay-time&given=&filterLevels=time-day*53*100&filter=delay*1.8181818181818201*20.909090909090907,day*2*5">one</a>
       <a href="#data=flights&charts=time,delay,day,time-day,delay-time&given=delay-time*xc&filterLevels=&filter=delay*20*150">two</a>
@@ -84,22 +26,14 @@ h1, h2 {
 
     <div id="charts"></div>
 
-    <footer>
-      <span style="float:right;">
-        Released under the <a href="http://www.apache.org/licenses/LICENSE-2.0.html">Apache License 2.0</a>.
-      </span>
-      Copyright 2012 Jake Sandlund, <a href="http://squareup.com">Square, Inc.</a>
-    </footer>
+    <footer>Copyright 2012 Jake Sandlund</footer>
 
   </div>
 
 
-  </body>
-
   <script src="../src/vaccine.js"></script>
   <script src="crossfilter.v1.js"></script>
   <script src="d3.v2.js"></script>
-  <!-- script placeholder -->
   <script src="../src/core.js"></script>
   <script src="../src/config.js"></script>
   <script src="../src/index.js"></script>
@@ -112,57 +46,10 @@ h1, h2 {
   <script src="../src/stylesheet.js"></script>
   <script src="../src/arrange.js"></script>
 
-<script>
+  <script src="test.js"></script>
 
-binfo.setup({
-  root: document,
-  holder: '#charts'
-});
-binfo.defaultRender('flights', ['time-delay', 'distance'], {
-  filter: {distance: [200, 600]},
-  given: {'time-delay': 'yc'}
-});
 
-// Randomly get the definitions before or after the data comes in.
-var before = Math.random() < 0.5
-console.log(before ? 'definitions first' : 'data first');
-
-function definitions() {
-  d3.json('test.json', function(jsonDefinitions) {
-    binfo.definitionsFromJSON('flights', jsonDefinitions);
-  });
-}
-
-if (before) definitions();
-
-// (It's CSV, but GitHub Pages only gzip's JSON at the moment.)
-d3.csv("flights-3m.json", function(flights) {
-  binfo.dataFromUntyped('flights', flights);
-  if (!before) definitions();
-});
-
-binfo.definitions('compare-test', {
-  x: {label: 'x', dimension: function(d) { return d.x; }, groupBy: 1, round: 1},
-  y: {label: 'y', dimension: function(d) { return d.y; }, groupBy: 1, round: 1}
-});
-
-var data = [],
-    i,
-    j,
-    k;
-
-for (i = 0; i < binfo.compareLevels; i++) {
-  for (j = 0; j < i; j++) {
-    for (k = 0; k < binfo.compareLevels; k++) {
-      data.push({x: i, y: k});
-    }
-  }
-}
-data.push({x: 0, y: 0});
-
-binfo.data('compare-test', data);
-
-</script>
+  </body>
 
 </html>
 

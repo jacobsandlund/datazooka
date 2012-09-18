@@ -11,11 +11,33 @@
   var libraryDir = 'lib';
 
 
+  // Figure out your app's main module based on the path to it (appMain).
+  // Also determine the source directory.
   var appMainSplit = appMain.split('/'),
       appMainModule = appMainSplit.pop(),
       sourceDir = appMainSplit.join('/') || '.';
 
+  // The scripts that are currently loading. Don't touch this.
   var loading = {};
+
+  // The first define, which will trigger the loading of your app.
+  define('initial_scripts', function(require) {
+    require(appName);   // Pull in your app and all it's dependencies.
+
+    loadScript('/test/test.js');
+    // If you need to load any other scripts, do so here.
+    //
+    // Example:
+    //    require('test_my_app');
+    //
+    // Or, if you have a script that isn't in 'sourceDir' or
+    // 'libraryDir', you can load it with 'loadScript'.
+    //
+    // Example:
+    //    loadScript('test_my_app');
+    //
+  });
+
 
   function define(id, defn) {
 
@@ -80,20 +102,22 @@
       } else {
         src = libraryDir + '/' + root;
       }
-      src = '/' + src + '.js';
-      if (!loading[src]) {
-        loading[src] = src;
-        script = document.createElement('script');
-        script.src = src;
-        document.head.appendChild(script);
-      }
-
+      loadScript('/' + src + '.js');
       globalVaccine.on(require.id, function() { define(id, defn); });
     }
   }
 
+
+  function loadScript(src) {
+    if (!loading[src]) {
+      loading[src] = src;
+      script = document.createElement('script');
+      script.src = src;
+      document.head.appendChild(script);
+    }
+  }
+
   window.define = define;
-  define('vaccine_loader', function(require) { require(appName); });
 
 }());
 

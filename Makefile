@@ -3,10 +3,12 @@
 
 all: | build min
 
-test:
-	./configure_test.sh
+test: configure-test
 	printf '\n\n!!!\nOpen localhost:3000 in a browser.\n!!!\n\n'
 	node dev_server.js
+
+configure-test:
+	test/configure.sh
 
 build:
 	./build > binfo.js
