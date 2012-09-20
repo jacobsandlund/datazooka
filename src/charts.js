@@ -1,5 +1,5 @@
 
-define('binfo/charts', function(require, charts) {
+define('binfo/charts', function(require, exports) {
 
   var d3 = require('d3'),
       logic = require('./logic'),
@@ -10,14 +10,14 @@ define('binfo/charts', function(require, charts) {
   // TODO: Remove circular dependency
   window.vaccine.on('binfo/core', function() { core = require('./core'); });
 
-  charts.barChart = function(spec, data) {
+  exports.barChart = function(spec, data) {
     var bar = {api: {}};
     logic.barLogic(bar, spec, data);
     barChart(bar, spec);
     return bar.api;
   };
 
-  charts.compareChart = function(spec) {
+  exports.compareChart = function(spec) {
     var compare = {api: {}};
     logic.compareLogic(compare, spec);
     compareChart(compare, spec);

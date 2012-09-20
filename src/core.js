@@ -1,5 +1,5 @@
 
-define('binfo/core', function(require, core) {
+define('binfo/core', function(require, exports) {
 
   var crossfilter = require('crossfilter'),
       d3 = require('d3'),
@@ -28,7 +28,7 @@ define('binfo/core', function(require, core) {
       nextChartIds,
       nextCharts;
 
-  core.isMouseOut = function() {
+  exports.isMouseOut = function() {
     var e = d3.event,
         tgt = e.currentTarget,
         related;
@@ -45,7 +45,7 @@ define('binfo/core', function(require, core) {
     return true;
   };
 
-  core.dataSet = function(name, definitions, data) {
+  exports.dataSet = function(name, definitions, data) {
     var set,
         id;
     if (!definitions) {
@@ -67,18 +67,18 @@ define('binfo/core', function(require, core) {
     set.chartIds = set.definitionIds.slice();
     ui.addDataName(name);
     if (renderFreshLater && renderFreshLater[0] === name) {
-      core.renderFresh.apply(null, renderFreshLater);
+      exports.renderFresh.apply(null, renderFreshLater);
     };
   };
 
-  core.setup = function(setup) {
+  exports.setup = function(setup) {
     var outer = d3.select(setup.holder).attr('class', 'outer-holder'),
         holder = outer.append('div'),
         root = d3.select(setup.root);
     ui.setup(holder);
     arrange.setup(root, outer, holder);
     stylesheet.setup(holder);
-    root.on('mousemove.core', function() {
+    root.on('mousemove.exports', function() {
       if (smartTimer !== null) {
         clearSmartTimer();
         startSmartTimer();
@@ -86,7 +86,7 @@ define('binfo/core', function(require, core) {
     });
   };
 
-  core.dataName = function(_) {
+  exports.dataName = function(_) {
     if (!arguments.length) return dataName;
     if (_ === dataName) return;
     needsToUpdate = true;
@@ -95,39 +95,39 @@ define('binfo/core', function(require, core) {
     nextChartIds = [];
   };
 
-  core.addChart = function(add) {
+  exports.addChart = function(add) {
     if (nextChartIds.indexOf(add) >= 0) {
       return;
     }
-    core.chartIds(nextChartIds.concat([add]));
-    core.update();
+    exports.chartIds(nextChartIds.concat([add]));
+    exports.update();
   };
 
-  core.removeChart = function(remove) {
+  exports.removeChart = function(remove) {
     var ids = nextChartIds.slice();
     ids.splice(ids.indexOf(remove), 1);
-    core.chartIds(ids);
-    core.update();
+    exports.chartIds(ids);
+    exports.update();
   };
 
-  core.changeDataName = function(name) {
-    core.dataName(name);
-    core.update();
+  exports.changeDataName = function(name) {
+    exports.dataName(name);
+    exports.update();
   };
 
-  core.clearCharts = function() {
-    core.chartIds([]);
-    core.update();
+  exports.clearCharts = function() {
+    exports.chartIds([]);
+    exports.update();
   };
 
-  core.cancel = function() {
+  exports.cancel = function() {
     nextDataName = dataName;
     nextCharts = charts;
     nextChartIds = chartIds;
     doneUpdating();
   };
 
-  core.reorder = function(reorder) {
+  exports.reorder = function(reorder) {
     chartIds = reorder;
   };
 
@@ -137,9 +137,9 @@ define('binfo/core', function(require, core) {
     });
   }
 
-  core.charts = function() { return charts; };
+  exports.charts = function() { return charts; };
 
-  core.chartIds = function(_) {
+  exports.chartIds = function(_) {
     if (!arguments.length) return chartIds;
     nextChartIds = _;
     nextChartIds.forEach(function(id) {
@@ -155,25 +155,25 @@ define('binfo/core', function(require, core) {
     }
   };
 
-  core.defaultRender = function(dataName, charts, filters) {
+  exports.defaultRender = function(dataName, charts, filters) {
     if (!renderFreshLater) {
-      core.renderFresh(dataName, charts, filters);
+      exports.renderFresh(dataName, charts, filters);
     }
   };
 
-  core.renderFresh = function(name, ids, params) {
+  exports.renderFresh = function(name, ids, params) {
     if (!dataSets[name]) {
       renderFreshLater = [name, ids, params];
       return;
     }
-    core.dataName(name);
-    core.chartIds(ids);
+    exports.dataName(name);
+    exports.chartIds(ids);
     renderFresh = true;
     renderFreshParams = params || {filters: {}, given: {}, filterLevels: {}};
-    core.update('force');
+    exports.update('force');
   };
 
-  core.updateMode = function(_) {
+  exports.updateMode = function(_) {
     if (!arguments.length) return updateMode;
     updateMode = _;
   };
@@ -187,11 +187,11 @@ define('binfo/core', function(require, core) {
 
   function startSmartTimer() {
     smartTimer = setTimeout(function() {
-      core.update('always');
+      exports.update('always');
     }, 700);
   }
 
-  core.update = function(mode) {
+  exports.update = function(mode) {
     if (!mode) mode = updateMode;
     if (!needsToUpdate && mode !== 'force') return;
     if (mode === 'manual') {
@@ -209,7 +209,7 @@ define('binfo/core', function(require, core) {
       if (!updating) {
         updating = true;
         ui.updating(true);
-        setTimeout(function() { core.update(mode); }, 30);
+        setTimeout(function() { exports.update(mode); }, 30);
         return;
       }
     }
@@ -277,7 +277,7 @@ define('binfo/core', function(require, core) {
     ui.updated(dataName);
   };
 
-  core.refresh = function() {
+  exports.refresh = function() {
     rendering.refresh(crossAll.value(), cross.size());
     hash.refresh(dataName, chartIds, charts);
   };

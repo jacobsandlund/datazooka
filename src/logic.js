@@ -1,5 +1,5 @@
 
-define('binfo/logic', function(require, logic) {
+define('binfo/logic', function(require, exports) {
 
   var d3 = require('d3'),
       hash = require('./hash'),
@@ -23,7 +23,7 @@ define('binfo/logic', function(require, logic) {
     chart.ceil = ceilBy(number);
   }
 
-  logic.barLogic = function(bar, spec, data) {
+  exports.barLogic = function(bar, spec, data) {
 
     var added = 0,
         addedCross = 0,
@@ -295,7 +295,7 @@ define('binfo/logic', function(require, logic) {
   };
 
 
-  logic.compareLogic = function(compare, spec) {
+  exports.compareLogic = function(compare, spec) {
 
     var ids = spec.id.split('-'),
         xc = spec.charts[ids[0]],

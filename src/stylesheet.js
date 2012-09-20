@@ -1,10 +1,10 @@
 
-define('binfo/stylesheet', function(require, stylesheet) {
+define('binfo/stylesheet', function(require, exports) {
 
   var d3 = require('d3'),
       config = require('./config');
 
-  stylesheet.setup = function(holder) {
+  exports.setup = function(holder) {
     var css = '',
         i,
         lvl,

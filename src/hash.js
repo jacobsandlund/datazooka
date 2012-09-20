@@ -1,5 +1,5 @@
 
-define('binfo/hash', function(require, hash) {
+define('binfo/hash', function(require, exports) {
 
   var arrange = require('./arrange'),
       chartIds,
@@ -10,19 +10,19 @@ define('binfo/hash', function(require, hash) {
       hashUpdatedRecently = false,
       hashNeedsUpdated = false;
 
-  hash.disable = function() {
+  exports.disable = function() {
     isEnable = false;
   };
 
-  hash.refresh = function(name, ids, c) {
+  exports.refresh = function(name, ids, c) {
     dataName = name;
     chartIds = ids;
     charts = c;
     isEnable = true;
-    hash.refreshParams();
+    exports.refreshParams();
   };
 
-  hash.refreshParams = function() {
+  exports.refreshParams = function() {
     if (!isEnable) {
       return;
     }

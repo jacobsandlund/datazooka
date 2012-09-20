@@ -3,17 +3,17 @@ define('binfo', function(require, exports, module) {
   module.exports = require('binfo/index');
 });
 
-define('binfo/index', function(require, binfo) {
+define('binfo/index', function(require, exports) {
 
   var core = require('binfo/core'),
       definitions = {},
       data = {},
       untypedData = {};
 
-  binfo.setup = core.setup;
-  binfo.defaultRender = core.defaultRender;
+  exports.setup = core.setup;
+  exports.defaultRender = core.defaultRender;
 
-  binfo.definitionsFromJSON = function(dataName, defns) {
+  exports.definitionsFromJSON = function(dataName, defns) {
     /*jshint evil:true */
     var id, defn,
         evil = [],
@@ -45,10 +45,10 @@ define('binfo/index', function(require, binfo) {
       }
     }
     eval(evil.join(''));
-    binfo.definitions(dataName, defns);
+    exports.definitions(dataName, defns);
   };
 
-  binfo.definitions = function(dataName, defns) {
+  exports.definitions = function(dataName, defns) {
     var id;
     for (id in defns) {
       if (defns.hasOwnProperty(id)) {
@@ -58,13 +58,13 @@ define('binfo/index', function(require, binfo) {
     }
     definitions[dataName] = defns;
     if (untypedData[dataName]) {
-      binfo.dataFromUntyped(dataName, untypedData[dataName]);
+      exports.dataFromUntyped(dataName, untypedData[dataName]);
     } else {
       checkLoaded(dataName);
     }
   };
 
-  binfo.dataFromUntyped = function(dataName, data) {
+  exports.dataFromUntyped = function(dataName, data) {
     if (!definitions[dataName]) {
       untypedData[dataName] = data;
       return;
@@ -97,10 +97,10 @@ define('binfo/index', function(require, binfo) {
         }
       }
     });
-    binfo.data(dataName, data);
+    exports.data(dataName, data);
   };
 
-  binfo.data = function(dataName, _) {
+  exports.data = function(dataName, _) {
     data[dataName] = _;
     checkLoaded(dataName);
   };
@@ -111,6 +111,7 @@ define('binfo/index', function(require, binfo) {
     }
   }
 
-  window.binfo = binfo;
+  window.binfo = exports;
 
 });
+

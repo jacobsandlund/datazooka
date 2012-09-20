@@ -1,5 +1,5 @@
 
-define('binfo/arrange', function(require, arrange) {
+define('binfo/arrange', function(require, exports) {
 
   var d3 = require('d3'),
       config = require('./config'),
@@ -17,7 +17,7 @@ define('binfo/arrange', function(require, arrange) {
       zIndex = 1,
       layout;
 
-  arrange.setup = function(r, o, h) {
+  exports.setup = function(r, o, h) {
     root = r;
     outer = o;
     holder = h;
@@ -39,20 +39,20 @@ define('binfo/arrange', function(require, arrange) {
     for (i = 0; i < config.maxLevels; i++) {
       layout[i] = [dummyChart];
     }
-    root.on('mousemove.arrange', function() {
+    root.on('mousemove.exports', function() {
       var coords = mouseCoords();
       if (arranging) {
         drag.apply(null, coords);
       }
     });
-    root.on('mouseup.arrange', function() {
+    root.on('mouseup.exports', function() {
       if (arranging) {
         arrangeEnd();
       }
     });
   };
 
-  arrange.start = function(chart) {
+  exports.start = function(chart) {
     var coords = mouseCoords();
     root.node().onselectstart = function() { return false; };
     zIndex += 1;
@@ -224,7 +224,7 @@ define('binfo/arrange', function(require, arrange) {
     }
   }
 
-  arrange.remove = function(removed, charts) {
+  exports.remove = function(removed, charts) {
     removed.forEach(function(id) { remove(charts[id]); });
     setMaxLevel();
     reordered = true;
@@ -359,7 +359,7 @@ define('binfo/arrange', function(require, arrange) {
         .style('top', chart.top + 'px');
   }
 
-  arrange.add = function(added, charts) {
+  exports.add = function(added, charts) {
     var maxWidth = window.innerWidth - config.holderMargin - config.chartBorder;
     added.forEach(function(id) {
       var chart = charts[id],
@@ -423,7 +423,7 @@ define('binfo/arrange', function(require, arrange) {
   };
 
   // Also adds height to holder
-  arrange.orderedChartIds = function() {
+  exports.orderedChartIds = function() {
     if (!reordered) return null;
     var core = require('./core'),
         chartIds = core.chartIds(),

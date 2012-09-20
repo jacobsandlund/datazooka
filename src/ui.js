@@ -1,5 +1,5 @@
 
-define('binfo/ui', function(require, ui) {
+define('binfo/ui', function(require, exports) {
 
   var d3 = require('d3'),
       core,
@@ -15,7 +15,7 @@ define('binfo/ui', function(require, ui) {
   // TODO: Remove circular dependency
   window.vaccine.on('binfo/core', function() { core = require('./core'); });
 
-  ui.setup = function(h) {
+  exports.setup = function(h) {
     holder = h;
     holder.attr('class', 'holder');
 
@@ -232,7 +232,7 @@ define('binfo/ui', function(require, ui) {
     }
   }
 
-  ui.addDataName = function(name) {
+  exports.addDataName = function(name) {
     numDataSets += 1;
     if (numDataSets === 1) {
       panel.select('.data-name')
@@ -247,7 +247,7 @@ define('binfo/ui', function(require, ui) {
             changeDataName(this.value);
             core.changeDataName(this.value);
           });
-      ui.addDataName(firstName);
+      exports.addDataName(firstName);
       numDataSets -= 1;
       changeDataName(firstName);
     }
@@ -258,7 +258,7 @@ define('binfo/ui', function(require, ui) {
     }
   };
 
-  ui.needsUpdate = function(needs) {
+  exports.needsUpdate = function(needs) {
     needsUpdate = needs;
     if (needs) {
       panel.select('.statistics').style('display', 'block');
@@ -267,15 +267,15 @@ define('binfo/ui', function(require, ui) {
     panel.select('.cancel.button').style('display', needs ? null : 'none');
   }
 
-  ui.updating = function(updating) {
+  exports.updating = function(updating) {
     holder.style('opacity', updating ? 0.3 : null);
     panel.classed('updating', updating);
   };
 
-  ui.updated = function(name) {
+  exports.updated = function(name) {
     changeDataName(name);
-    ui.needsUpdate(false);
-    ui.updating(false);
+    exports.needsUpdate(false);
+    exports.updating(false);
   };
 
 });

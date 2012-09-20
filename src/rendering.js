@@ -1,5 +1,5 @@
 
-define('binfo/rendering', function(require, rendering) {
+define('binfo/rendering', function(require, exports) {
 
   var d3 = require('d3'),
       chartSelection,
@@ -17,7 +17,7 @@ define('binfo/rendering', function(require, rendering) {
       renderCharts = callCharts('render'),
       cleanUpCharts = callCharts('resetUpdate');
 
-  rendering.refresh = function(active, total) {
+  exports.refresh = function(active, total) {
     chartSelection.each(updateCharts);
     chartSelection.each(renderCharts);
     chartSelection.each(cleanUpCharts);
@@ -26,7 +26,7 @@ define('binfo/rendering', function(require, rendering) {
     d3.select('.percent-active').text(' (' + formatPercent(active / total) + ')');
   }
 
-  rendering.render = function(chartIds, charts) {
+  exports.render = function(chartIds, charts) {
     var chartData;
 
     chartData = chartIds.map(function(id, i) {
