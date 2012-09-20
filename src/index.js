@@ -5,7 +5,10 @@ define('datazooka', function(require, exports, module) {
 
 define('datazooka/index', function(require, exports) {
 
-  var core = require('datazooka/core'),
+  // TODO: move to datazooka.com
+  require('./hash_retrieval');
+
+  var core = require('./core'),
       definitions = {},
       data = {},
       untypedData = {};

@@ -39,13 +39,13 @@ define('datazooka/arrange', function(require, exports) {
     for (i = 0; i < config.maxLevels; i++) {
       layout[i] = [dummyChart];
     }
-    root.on('mousemove.exports', function() {
+    root.on('mousemove.arrange', function() {
       var coords = mouseCoords();
       if (arranging) {
         drag.apply(null, coords);
       }
     });
-    root.on('mouseup.exports', function() {
+    root.on('mouseup.arrange', function() {
       if (arranging) {
         arrangeEnd();
       }
