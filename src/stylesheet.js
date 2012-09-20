@@ -1,5 +1,5 @@
 
-define('binfo/stylesheet', function(require, exports) {
+define('datazooka/stylesheet', function(require, exports) {
 
   var d3 = require('d3'),
       config = require('./config');

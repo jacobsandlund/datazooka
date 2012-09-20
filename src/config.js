@@ -1,5 +1,5 @@
 
-define('binfo/config', function(require, exports, module) {
+define('datazooka/config', function(require, exports, module) {
 
   module.exports = {
     numGroups: 35,

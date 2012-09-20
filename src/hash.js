@@ -1,5 +1,5 @@
 
-define('binfo/hash', function(require, exports) {
+define('datazooka/hash', function(require, exports) {
 
   var arrange = require('./arrange'),
       chartIds,

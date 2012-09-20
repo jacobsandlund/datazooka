@@ -1,5 +1,5 @@
 
-var outputFile = 'binfo.js';   // Change this to your app file name.
+var outputFile = 'datazooka.js';   // Change this to your app file name.
 var buildScript = './build';   // Change this to your app's build script.
 
 

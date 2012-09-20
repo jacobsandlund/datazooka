@@ -1,5 +1,5 @@
 
-define('binfo/rendering', function(require, exports) {
+define('datazooka/rendering', function(require, exports) {
 
   var d3 = require('d3'),
       chartSelection,

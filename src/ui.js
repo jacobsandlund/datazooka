@@ -1,5 +1,5 @@
 
-define('binfo/ui', function(require, exports) {
+define('datazooka/ui', function(require, exports) {
 
   var d3 = require('d3'),
       core,
@@ -13,7 +13,7 @@ define('binfo/ui', function(require, exports) {
       firstCompare;
 
   // TODO: Remove circular dependency
-  window.vaccine.on('binfo/core', function() { core = require('./core'); });
+  window.vaccine.on('datazooka/core', function() { core = require('./core'); });
 
   exports.setup = function(h) {
     holder = h;

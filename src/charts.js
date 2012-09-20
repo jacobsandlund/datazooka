@@ -1,5 +1,5 @@
 
-define('binfo/charts', function(require, exports) {
+define('datazooka/charts', function(require, exports) {
 
   var d3 = require('d3'),
       logic = require('./logic'),
@@ -8,7 +8,7 @@ define('binfo/charts', function(require, exports) {
       core;
 
   // TODO: Remove circular dependency
-  window.vaccine.on('binfo/core', function() { core = require('./core'); });
+  window.vaccine.on('datazooka/core', function() { core = require('./core'); });
 
   exports.barChart = function(spec, data) {
     var bar = {api: {}};

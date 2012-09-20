@@ -1,9 +1,9 @@
 
-binfo.setup({
+datazooka.setup({
   root: document,
   holder: '#charts'
 });
-binfo.defaultRender('flights', ['time-delay', 'distance'], {
+datazooka.defaultRender('flights', ['time-delay', 'distance'], {
   filter: {distance: [200, 600]},
   given: {'time-delay': 'yc'}
 });
@@ -14,7 +14,7 @@ console.log(before ? 'definitions first' : 'data first');
 
 function definitions() {
   d3.json('test.json', function(jsonDefinitions) {
-    binfo.definitionsFromJSON('flights', jsonDefinitions);
+    datazooka.definitionsFromJSON('flights', jsonDefinitions);
   });
 }
 
@@ -22,11 +22,11 @@ if (before) definitions();
 
 // (It's CSV, but GitHub Pages only gzip's JSON at the moment.)
 d3.csv("flights-3m.json", function(flights) {
-  binfo.dataFromUntyped('flights', flights);
+  datazooka.dataFromUntyped('flights', flights);
   if (!before) definitions();
 });
 
-binfo.definitions('compare-test', {
+datazooka.definitions('compare-test', {
   x: {label: 'x', dimension: function(d) { return d.x; }, groupBy: 1, round: 1},
   y: {label: 'y', dimension: function(d) { return d.y; }, groupBy: 1, round: 1}
 });
@@ -36,14 +36,14 @@ var data = [],
     j,
     k;
 
-for (i = 0; i < binfo.compareLevels; i++) {
+for (i = 0; i < datazooka.compareLevels; i++) {
   for (j = 0; j < i; j++) {
-    for (k = 0; k < binfo.compareLevels; k++) {
+    for (k = 0; k < datazooka.compareLevels; k++) {
       data.push({x: i, y: k});
     }
   }
 }
 data.push({x: 0, y: 0});
 
-binfo.data('compare-test', data);
+datazooka.data('compare-test', data);
 

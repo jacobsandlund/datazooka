@@ -1,5 +1,5 @@
 
-define('binfo/hash_retrieval', function(require) {
+define('datazooka/hash_retrieval', function(require) {
 
   var core = require('./core');
 

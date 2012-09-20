@@ -1,7 +1,7 @@
 
 (function() {
 
-  var appName = 'binfo';   // Change this to your app name.
+  var appName = 'datazooka';   // Change this to your app name.
 
   // Change appMain to the location of your app's main/index file,
   // but without .js at the end.
@@ -43,11 +43,13 @@
     }
     // Set your library with vaccine.set('mylib', mylib);
 
-    var parts = id.split('/'),
-        globalVaccine = window.vaccine,
+    var parts = id.split('/');
+
+    var globalVaccine = window.vaccine,
         module = {exports: {}};
 
     function require(reqId) {
+
       var matching = /(\.?\.\/?)*/.exec(reqId)[0],
           // Some code golf to get the number of "directories" back we want to go
           back = Math.floor(matching.replace(/\//g, '').length / 1.9 + 0.99),
@@ -63,6 +65,7 @@
         require.id = reqId;
         throw require;  // Throw require, to ensure correct error gets handled
       }
+
       return mod;
     }
 

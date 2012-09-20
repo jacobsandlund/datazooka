@@ -1,11 +1,11 @@
 
-define('binfo', function(require, exports, module) {
-  module.exports = require('binfo/index');
+define('datazooka', function(require, exports, module) {
+  module.exports = require('datazooka/index');
 });
 
-define('binfo/index', function(require, exports) {
+define('datazooka/index', function(require, exports) {
 
-  var core = require('binfo/core'),
+  var core = require('datazooka/core'),
       definitions = {},
       data = {},
       untypedData = {};
@@ -111,7 +111,7 @@ define('binfo/index', function(require, exports) {
     }
   }
 
-  window.binfo = exports;
+  window.datazooka = exports;
 
 });
 

@@ -1,5 +1,5 @@
 
-define('binfo/arrange', function(require, exports) {
+define('datazooka/arrange', function(require, exports) {
 
   var d3 = require('d3'),
       config = require('./config'),
