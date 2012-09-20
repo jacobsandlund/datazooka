@@ -1,7 +1,8 @@
 
 define('binfo/logic', function(require, logic) {
 
-  var hash = require('./hash'),
+  var d3 = require('d3'),
+      hash = require('./hash'),
       config = require('./config');
 
   function floorBy(number) {

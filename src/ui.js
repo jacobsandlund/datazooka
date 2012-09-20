@@ -1,7 +1,8 @@
 
 define('binfo/ui', function(require, ui) {
 
-  var core,
+  var d3 = require('d3'),
+      core,
       holder,
       panel,
       disableModeTimer,

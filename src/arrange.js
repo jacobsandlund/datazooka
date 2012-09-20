@@ -1,7 +1,8 @@
 
 define('binfo/arrange', function(require, arrange) {
 
-  var config = require('./config'),
+  var d3 = require('d3'),
+      config = require('./config'),
       outer,
       holder,
       maxLevel,

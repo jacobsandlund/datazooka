@@ -14,8 +14,6 @@ start Combined | sed '/<\/body>/i\
   ' > test/combined.html
 
 start Loader | sed '/<\/body>/i\
-  <script src="/lib/crossfilter.js"></script>\
-  <script src="/lib/d3.js"></script>\
   <script src="/vaccine_loader.js"></script>\
   <script>vaccine_load("/test/test.js");</script>\
   ' > test/loader.html

@@ -1,7 +1,8 @@
 
 define('binfo/rendering', function(require, rendering) {
 
-  var chartSelection,
+  var d3 = require('d3'),
+      chartSelection,
       formatNumber = d3.format(',d'),
       formatPercent = d3.format('.3p');
 

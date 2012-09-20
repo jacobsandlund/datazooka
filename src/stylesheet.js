@@ -1,7 +1,8 @@
 
 define('binfo/stylesheet', function(require, stylesheet) {
 
-  var config = require('./config');
+  var d3 = require('d3'),
+      config = require('./config');
 
   stylesheet.setup = function(holder) {
     var css = '',

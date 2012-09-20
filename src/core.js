@@ -1,7 +1,9 @@
 
 define('binfo/core', function(require, core) {
 
-  var ui = require('./ui'),
+  var crossfilter = require('crossfilter'),
+      d3 = require('d3'),
+      ui = require('./ui'),
       rendering = require('./rendering'),
       chartsApi = require('./charts'),
       hash = require('./hash'),

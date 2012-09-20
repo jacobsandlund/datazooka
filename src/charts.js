@@ -1,7 +1,8 @@
 
 define('binfo/charts', function(require, charts) {
 
-  var logic = require('./logic'),
+  var d3 = require('d3'),
+      logic = require('./logic'),
       arrange = require('./arrange'),
       config = require('./config'),
       core;
