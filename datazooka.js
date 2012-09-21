@@ -2713,7 +2713,7 @@ define('datazooka/ui', function(require, exports) {
 
     panel.append('div')
         .attr('class', 'tool title')
-        .text('Binfo');
+        .text('DataZooka');
 
     config = panel.append('div')
         .attr('class', 'config');
