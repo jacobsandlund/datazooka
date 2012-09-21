@@ -1,373 +1,10 @@
+(function() {"use strict";
 
-var binfo = {
-  numGroups: 35,
-  tickSpacing: 46,
-  compareHeightScale: 0.20,
-  chartHeight: 200,
-  chartPadding: 5,
-  chartBorder: 5,
-  maxLevels: 50,
-  arrangeSnap: 40,
-  arrangeInsertFocalDiff: 550,
-  arrangeInsertMaxDiff: 50,
-  holderMargin: 15,
-  compareLevels: 100,
-  axisTickSize: 12,
-  axisLabelSize: 14,
-  fitWidthMaxDiff: 220,
-  chartDimensions: {
-    top: 16,
-    right: 10,
-    bottom: 20,
-    left: 10,
-    height: 100,
-    width: 100,
-    binWidth: 11
-  }
-};
+define('datazooka/arrange', function(require, exports) {
 
-
-binfo._register = (function() {
-
-  "use strict";
-
-  var componentNames = [],
-      modules = {},
-      dependencies = {},
-      compFuncs = {},
-      completed = {};
-
-  function ensureExistence(dep) {
-    return modules[dep] = modules[dep] || module();
-  }
-
-  function module() {
-    return {
-      dependency: ensureExistence
-    };
-  }
-
-  return function(name, deps, component) {
-    var names = componentNames,
-        completedOne = true;
-    names.push(name);
-    ensureExistence(name);
-    deps.forEach(function(d) { ensureExistence(d); });
-    dependencies[name] = deps;
-    compFuncs[name] = component;
-    completed[name] = false;
-
-    function notCompleted(c) {
-      return !completed[c];
-    }
-
-    function completeLoop(name) {
-      var func = compFuncs[name],
-          deps = dependencies[name],
-          compArgs;
-      if (completed[name]) return;
-      if (deps.some(notCompleted)) return;
-      compArgs = [name].concat(deps).map(function(d) { return modules[d]; });
-      compFuncs[name].apply(null, compArgs);
-      completed[name] = true;
-      completedOne = true;
-    }
-
-    while (names.some(notCompleted) && completedOne) {
-      completedOne = false;
-      names.forEach(completeLoop);
-    }
-  };
-
-}());
-
-
-binfo._register('core', [], function(core) {
-
-  var ui = core.dependency('ui'),
-      rendering = core.dependency('rendering'),
-      chartsApi = core.dependency('charts'),
-      hash = core.dependency('hash'),
-      arrange = core.dependency('arrange'),
-      stylesheet = core.dependency('stylesheet'),
-      dataSets = {},
-      cross,
-      crossAll,
-      updateMode = 'always',
-      smartTimer = null,
-      renderFreshLater,
-      renderFreshParams,
-      renderFresh,
-      needsToUpdate = true,
-      updating,
-      addedIds,
-      removedIds,
-      dataName,
-      chartIds = [],
-      charts,
-      nextDataName,
-      nextChartIds,
-      nextCharts;
-
-  core.isMouseOut = function() {
-    var e = d3.event,
-        tgt = e.currentTarget,
-        related;
-    // Taken from quirksmode
-    related = e.relatedTarget;
-    if (related) {
-      while (related !== tgt && related.nodeName !== 'BODY' && related.parentNode) {
-        related = related.parentNode;
-      }
-      if (related === tgt) {
-        return false;
-      }
-    }
-    return true;
-  };
-
-  core.dataSet = function(name, definitions, data) {
-    var set,
-        id;
-    if (!definitions) {
-      set = dataSets[name];
-      if (!set) {
-        return null;
-      }
-      return set;
-    }
-    dataSets[name] = set = {definitions: definitions, data: data};
-    set.definitionIds = [];
-    set.charts = {};
-    for (id in definitions) {
-      if (definitions.hasOwnProperty(id)) {
-        set.charts[id] = chartsApi.barChart(definitions[id], data)
-          set.definitionIds.push(id);
-      }
-    }
-    set.chartIds = set.definitionIds.slice();
-    ui.addDataName(name);
-    if (renderFreshLater && renderFreshLater[0] === name) {
-      core.renderFresh.apply(null, renderFreshLater);
-    };
-  };
-
-  binfo.setup = function(setup) {
-    var outer = d3.select(setup.holder).attr('class', 'outer-holder'),
-        holder = outer.append('div'),
-        root = d3.select(setup.root);
-    ui.setup(holder);
-    arrange.setup(root, outer, holder);
-    stylesheet.setup(holder);
-    root.on('mousemove.core', function() {
-      if (smartTimer !== null) {
-        clearSmartTimer();
-        startSmartTimer();
-      }
-    });
-  };
-
-  core.dataName = function(_) {
-    if (!arguments.length) return dataName;
-    if (_ === dataName) return;
-    needsToUpdate = true;
-    nextDataName = _;
-    nextCharts = dataSets[nextDataName].charts;
-    nextChartIds = [];
-  };
-
-  core.addChart = function(add) {
-    if (nextChartIds.indexOf(add) >= 0) {
-      return;
-    }
-    core.chartIds(nextChartIds.concat([add]));
-    core.update();
-  };
-
-  core.removeChart = function(remove) {
-    var ids = nextChartIds.slice();
-    ids.splice(ids.indexOf(remove), 1);
-    core.chartIds(ids);
-    core.update();
-  };
-
-  core.changeDataName = function(name) {
-    core.dataName(name);
-    core.update();
-  };
-
-  core.clearCharts = function() {
-    core.chartIds([]);
-    core.update();
-  };
-
-  core.cancel = function() {
-    nextDataName = dataName;
-    nextCharts = charts;
-    nextChartIds = chartIds;
-    doneUpdating();
-  };
-
-  core.reorder = function(reorder) {
-    chartIds = reorder;
-  };
-
-  function arrayDiff(one, two) {
-    return one.filter(function(id) {
-      return two.indexOf(id) < 0;
-    });
-  }
-
-  core.charts = function() { return charts; };
-
-  core.chartIds = function(_) {
-    if (!arguments.length) return chartIds;
-    nextChartIds = _;
-    nextChartIds.forEach(function(id) {
-      if (!nextCharts[id]) {
-        // Must be a compare chart
-        nextCharts[id] = chartsApi.compareChart({id: id, charts: nextCharts});
-      }
-    });
-    removedIds = arrayDiff(chartIds, nextChartIds);
-    addedIds = arrayDiff(nextChartIds, chartIds);
-    if (addedIds.length || removedIds.length) {
-      needsToUpdate = true;
-    }
-  };
-
-  binfo.defaultRender = function(dataName, charts, filters) {
-    if (!renderFreshLater) {
-      core.renderFresh(dataName, charts, filters);
-    }
-  };
-
-  core.renderFresh = function(name, ids, params) {
-    if (!dataSets[name]) {
-      renderFreshLater = [name, ids, params];
-      return;
-    }
-    core.dataName(name);
-    core.chartIds(ids);
-    renderFresh = true;
-    renderFreshParams = params || {filters: {}, given: {}, filterLevels: {}};
-    core.update('force');
-  };
-
-  core.updateMode = function(_) {
-    if (!arguments.length) return updateMode;
-    updateMode = _;
-  };
-
-  function clearSmartTimer() {
-    if (smartTimer !== null) {
-      clearTimeout(smartTimer);
-      smartTimer = null;
-    }
-  }
-
-  function startSmartTimer() {
-    smartTimer = setTimeout(function() {
-      core.update('always');
-    }, 700);
-  }
-
-  core.update = function(mode) {
-    if (!mode) mode = updateMode;
-    if (!needsToUpdate && mode !== 'force') return;
-    if (mode === 'manual') {
-      ui.needsUpdate(true);
-      return;
-    }
-    clearSmartTimer();
-    if (!cross || nextDataName !== dataName ||
-        removedIds.length || addedIds.length) {
-      if (mode === 'smart') {
-        ui.needsUpdate(true);
-        startSmartTimer();
-        return;
-      }
-      if (!updating) {
-        updating = true;
-        ui.updating(true);
-        setTimeout(function() { core.update(mode); }, 30);
-        return;
-      }
-    }
-    hash.disable();
-    var data = dataSets[nextDataName].data,
-        addedCross = addedIds,
-        removedCross = removedIds;
-    if (!cross || nextDataName !== dataName || removedIds.length) {
-      cross = crossfilter(data);
-      crossAll = cross.groupAll();
-      addedCross = nextChartIds;
-      removedCross = chartIds;
-      if (!removedIds.length) {
-        addedIds = addedCross;
-        removedIds = removedCross;
-      }
-    }
-    if (renderFresh) {
-      addedIds = nextChartIds;
-      removedIds = chartIds;
-    }
-    removedCross.forEach(function(id) { charts[id].removeCross(); });
-    addedCross.forEach(function(id) { nextCharts[id].addCross(cross, crossAll); });
-    removedIds.forEach(function(id) { charts[id].remove(); });
-    addedIds.forEach(function(id) { nextCharts[id].add(); });
-
-    rendering.render(nextChartIds, nextCharts);
-    if (renderFresh) {
-      doRenderFresh();
-    }
-    rendering.refresh(crossAll.value(), cross.size());
-
-    arrange.remove(removedIds, charts);
-    arrange.add(addedIds, nextCharts);
-
-    dataName = nextDataName;
-    charts = nextCharts;
-    chartIds = nextChartIds;
-
-    hash.refresh(dataName, chartIds, charts);
-    doneUpdating();
-  };
-
-  function doRenderFresh() {
-    applyParam(renderFreshParams, 'filter');
-    applyParam(renderFreshParams, 'given');
-    applyParam(renderFreshParams, 'filterLevels');
-    renderFreshParams = null;
-    renderFresh = false;
-  }
-
-  function applyParam(params, name) {
-    var id,
-        param = params[name];
-    for (id in param) {
-      if (param.hasOwnProperty(id)) {
-        nextCharts[id][name](param[id]);
-      }
-    }
-  }
-
-  function doneUpdating() {
-    updating = false;
-    needsToUpdate = false;
-    ui.updated(dataName);
-  };
-
-  core.refresh = function() {
-    rendering.refresh(crossAll.value(), cross.size());
-    hash.refresh(dataName, chartIds, charts);
-  };
-});
-
-
-binfo._register('arrange', ['core'], function(arrange, core) {
-
-  var outer,
+  var d3 = require('d3'),
+      config = require('./config'),
+      outer,
       holder,
       maxLevel,
       maxBottomLevel,
@@ -381,7 +18,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
       zIndex = 1,
       layout;
 
-  arrange.setup = function(r, o, h) {
+  exports.setup = function(r, o, h) {
     root = r;
     outer = o;
     holder = h;
@@ -397,10 +34,10 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     maxLevel = 0;
     maxBottomLevel = 0;
     layout = [];
-    dummyChart = {left: binfo.holderMargin, width: 0,
+    dummyChart = {left: config.holderMargin, width: 0,
                   id: 'dummy', levels: 0, startLevel: 0};
     var i;
-    for (i = 0; i < binfo.maxLevels; i++) {
+    for (i = 0; i < config.maxLevels; i++) {
       layout[i] = [dummyChart];
     }
     root.on('mousemove.arrange', function() {
@@ -416,17 +53,17 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     });
   };
 
-  arrange.start = function(chart) {
+  exports.start = function(chart) {
     var coords = mouseCoords();
     root.node().onselectstart = function() { return false; };
     zIndex += 1;
     chart.div.style('z-index', zIndex);
     ghost.width = chart.width;
-    ghost.height = chart.height - binfo.chartBorder / 2;
+    ghost.height = chart.height - config.chartBorder / 2;
     ghost.left = chart.left;
     ghost.top = chart.top;
-    positioner.height = chart.height + binfo.chartBorder;
-    positioner.width = chart.width + binfo.chartBorder;
+    positioner.height = chart.height + config.chartBorder;
+    positioner.width = chart.width + config.chartBorder;
     ghost.levels = chart.levels;
     ghost
         .style('display', 'block')
@@ -472,7 +109,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         diffX,
         diffY,
         abs = Math.abs,
-        snapDiff = binfo.arrangeSnap;
+        snapDiff = config.arrangeSnap;
     ghost.left = x - offsetX;
     ghost.top = y - offsetY;
     reposition(ghost);
@@ -493,7 +130,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   };
 
   function whereToSnap(chart) {
-    var level = Math.round(ghost.top / binfo.chartHeight),
+    var level = Math.round(ghost.top / config.chartHeight),
         scale,
         bestEdge,
         bestDiff = 1e10,
@@ -512,11 +149,11 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         bestEdge = edge;
       }
     });
-    topDiff = Math.abs(ghost.top - level * binfo.chartHeight);
-    scale = 0.5 * binfo.chartHeight;
-    scale *= 1 / (binfo.arrangeInsertFocalDiff * binfo.arrangeInsertFocalDiff);
+    topDiff = Math.abs(ghost.top - level * config.chartHeight);
+    scale = 0.5 * config.chartHeight;
+    scale *= 1 / (config.arrangeInsertFocalDiff * config.arrangeInsertFocalDiff);
     // y < scale * x ^ 2
-    if (topDiff < binfo.arrangeInsertMaxDiff && topDiff < scale * bestDiff * bestDiff) {
+    if (topDiff < config.arrangeInsertMaxDiff && topDiff < scale * bestDiff * bestDiff) {
       insert = true;
       forChartAt(level, level + 1, function(chart) {
         if (chart.startLevel < level) {
@@ -537,10 +174,10 @@ binfo._register('arrange', ['core'], function(arrange, core) {
 
   function maybeSnap(chart) {
     var snap = whereToSnap(chart);
-    if (Math.abs(snap.topDiff) >= binfo.arrangeSnap) {
+    if (Math.abs(snap.topDiff) >= config.arrangeSnap) {
       return;
     }
-    if (snap.diff >= binfo.arrangeSnap) {
+    if (snap.diff >= config.arrangeSnap) {
       return;
     }
     doSnap(chart, snap);
@@ -588,7 +225,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
     }
   }
 
-  arrange.remove = function(removed, charts) {
+  exports.remove = function(removed, charts) {
     removed.forEach(function(id) { remove(charts[id]); });
     setMaxLevel();
     reordered = true;
@@ -707,7 +344,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   function snapPosition(chart, left, level) {
     chart.left = left;
     chart.startLevel = level;
-    chart.top = level * binfo.chartHeight;
+    chart.top = level * config.chartHeight;
     reposition(chart);
   }
 
@@ -723,8 +360,8 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         .style('top', chart.top + 'px');
   }
 
-  arrange.add = function(added, charts) {
-    var maxWidth = window.innerWidth - binfo.holderMargin - binfo.chartBorder;
+  exports.add = function(added, charts) {
+    var maxWidth = window.innerWidth - config.holderMargin - config.chartBorder;
     added.forEach(function(id) {
       var chart = charts[id],
           levels = chart.levels,
@@ -748,7 +385,7 @@ binfo._register('arrange', ['core'], function(arrange, core) {
         if (remaining >= width || row.length === 1) {
           if (fitting) {
             fitWidthDiff = Math.abs(remaining - fitWidth);
-            if (fitWidthDiff <= binfo.fitWidthMaxDiff) {
+            if (fitWidthDiff <= config.fitWidthMaxDiff) {
               fitting += 1;
               fitWidth = Math.min(remaining, fitWidth);
             } else {
@@ -787,9 +424,10 @@ binfo._register('arrange', ['core'], function(arrange, core) {
   };
 
   // Also adds height to holder
-  arrange.orderedChartIds = function() {
+  exports.orderedChartIds = function() {
     if (!reordered) return null;
-    var chartIds = core.chartIds(),
+    var core = require('./core'),
+        chartIds = core.chartIds(),
         charts = core.charts(),
         ordered,
         orderedIds,
@@ -815,20 +453,25 @@ binfo._register('arrange', ['core'], function(arrange, core) {
 });
 
 
+define('datazooka/charts', function(require, exports) {
 
-binfo._register('charts', ['core', 'logic', 'arrange'],
-                function(charts, core, logic, arrange) {
+  var d3 = require('d3'),
+      logic = require('./logic'),
+      arrange = require('./arrange'),
+      config = require('./config'),
+      core;
 
-  "use strict";
+  // TODO: Remove circular dependency
+  window.vaccine.on('datazooka/core', function() { core = require('./core'); });
 
-  charts.barChart = function(spec, data) {
+  exports.barChart = function(spec, data) {
     var bar = {api: {}};
     logic.barLogic(bar, spec, data);
     barChart(bar, spec);
     return bar.api;
   };
 
-  charts.compareChart = function(spec) {
+  exports.compareChart = function(spec) {
     var compare = {api: {}};
     logic.compareLogic(compare, spec);
     compareChart(compare, spec);
@@ -848,7 +491,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
 
   function findDim(spec) {
     var dim = spec.dimensions || {},
-        defaultDim = binfo.chartDimensions,
+        defaultDim = config.chartDimensions,
         dimName;
     for (dimName in defaultDim) {
       if (defaultDim.hasOwnProperty(dimName)) {
@@ -912,8 +555,8 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
   }
 
   function baseArrange(div, api) {
-    var width = div.property('offsetWidth') - binfo.chartBorder,
-        innerWidth = width - binfo.chartPadding * 2 - binfo.chartBorder,
+    var width = div.property('offsetWidth') - config.chartBorder,
+        innerWidth = width - config.chartPadding * 2 - config.chartBorder,
         height,
         levels;
     api.width = width;
@@ -921,11 +564,11 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     div.select('.title')
         .style('width', (innerWidth - 15) + 'px')   // 15 for Remove 'x'
         .style('display', null);
-    height = div.property('offsetHeight') - binfo.chartBorder - 5;
-    levels = Math.ceil(height / binfo.chartHeight);
+    height = div.property('offsetHeight') - config.chartBorder - 5;
+    levels = Math.ceil(height / config.chartHeight);
     api.levels = levels;
-    api.height = levels * binfo.chartHeight;
-    height = api.height - (binfo.chartBorder + 2 * binfo.chartPadding);
+    api.height = levels * config.chartHeight;
+    height = api.height - (config.chartBorder + 2 * config.chartPadding);
     api.snapped = false;
     div.style('height', height + 'px');
   }
@@ -1029,10 +672,10 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     var dim = findDim(spec),
         baseDim = findBaseDim(dim),
         defaultOrientFlip = false,
-        compareHeightScale = spec.compareHeightScale || binfo.compareHeightScale,
+        compareHeightScale = spec.compareHeightScale || config.compareHeightScale,
         x = spec.x,
         y = spec.y || d3.scale.linear().range([dim.height, 0]),
-        tickSpacing = spec.tickSpacing || binfo.tickSpacing,
+        tickSpacing = spec.tickSpacing || config.tickSpacing,
         ticks = spec.ticks,
         axis = d3.svg.axis(),
         brush = d3.svg.brush(),
@@ -1052,7 +695,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     bar.api.defaultOrientFlip = defaultOrientFlip;
     bar.api.dim = dim;
 
-    dim.labelWidth = findTextWidth(bar.api.label, binfo.axisLabelSize);
+    dim.labelWidth = findTextWidth(bar.api.label, config.axisLabelSize);
 
     function filter(range) {
       bar.api.filter(range);
@@ -1344,13 +987,13 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
           maxTickWidth = 0;
       if (bar.ordinal) {
         bar.ordinal().forEach(function(ord) {
-          maxOrd = Math.max(maxOrd, findTextWidth(ord, binfo.axisTickSize));
+          maxOrd = Math.max(maxOrd, findTextWidth(ord, config.axisTickSize));
         });
         dim.bottom = baseDim.bottom + maxOrd;
         dim.maxTickWidth = 0;
       } else {
         fmt = axis.tickFormat() || x.tickFormat();
-        tix = axis.tickValues() || x.ticks(tix || binfo.numGroups);
+        tix = axis.tickValues() || x.ticks(tix || config.numGroups);
         lowestWidth = findTextWidth(fmt(tix[0]));
         highestWidth = findTextWidth(fmt(tix[tix.length - 1]));
         tix.forEach(function(t) {
@@ -1391,7 +1034,7 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
         brush = d3.svg.brush(),
         bgPath,
         paths = [],
-        levels = binfo.compareLevels,
+        levels = config.compareLevels,
         hoverEnabled = true,
         i,
         filteredLevels,
@@ -1760,12 +1403,601 @@ binfo._register('charts', ['core', 'logic', 'arrange'],
     }
 
   };
+
 });
 
 
-binfo._register('logic', ['hash'], function(logic, hash) {
+define('datazooka/config', function(require, exports, module) {
 
-  "use strict";
+  module.exports = {
+    numGroups: 35,
+    tickSpacing: 46,
+    compareHeightScale: 0.20,
+    chartHeight: 200,
+    chartPadding: 5,
+    chartBorder: 5,
+    maxLevels: 50,
+    arrangeSnap: 40,
+    arrangeInsertFocalDiff: 550,
+    arrangeInsertMaxDiff: 50,
+    holderMargin: 15,
+    compareLevels: 100,
+    axisTickSize: 12,
+    axisLabelSize: 14,
+    fitWidthMaxDiff: 220,
+    chartDimensions: {
+      top: 16,
+      right: 10,
+      bottom: 20,
+      left: 10,
+      height: 100,
+      width: 100,
+      binWidth: 11
+    }
+  };
+
+});
+
+
+define('datazooka/core', function(require, exports) {
+
+  var crossfilter = require('crossfilter'),
+      d3 = require('d3'),
+      ui = require('./ui'),
+      rendering = require('./rendering'),
+      chartsApi = require('./charts'),
+      hash = require('./hash'),
+      arrange = require('./arrange'),
+      stylesheet = require('./stylesheet'),
+      dataSets = {},
+      cross,
+      crossAll,
+      updateMode = 'always',
+      smartTimer = null,
+      renderFreshLater,
+      renderFreshParams,
+      renderFresh,
+      needsToUpdate = true,
+      updating,
+      addedIds,
+      removedIds,
+      dataName,
+      chartIds = [],
+      charts,
+      nextDataName,
+      nextChartIds,
+      nextCharts;
+
+  exports.isMouseOut = function() {
+    var e = d3.event,
+        tgt = e.currentTarget,
+        related;
+    // Taken from quirksmode
+    related = e.relatedTarget;
+    if (related) {
+      while (related !== tgt && related.nodeName !== 'BODY' && related.parentNode) {
+        related = related.parentNode;
+      }
+      if (related === tgt) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  exports.dataSet = function(name, definitions, data) {
+    var set,
+        id;
+    if (!definitions) {
+      set = dataSets[name];
+      if (!set) {
+        return null;
+      }
+      return set;
+    }
+    dataSets[name] = set = {definitions: definitions, data: data};
+    set.definitionIds = [];
+    set.charts = {};
+    for (id in definitions) {
+      if (definitions.hasOwnProperty(id)) {
+        set.charts[id] = chartsApi.barChart(definitions[id], data)
+          set.definitionIds.push(id);
+      }
+    }
+    set.chartIds = set.definitionIds.slice();
+    ui.addDataName(name);
+    if (renderFreshLater && renderFreshLater[0] === name) {
+      exports.renderFresh.apply(null, renderFreshLater);
+    };
+  };
+
+  exports.setup = function(setup) {
+    var outer = d3.select(setup.holder).attr('class', 'outer-holder'),
+        holder = outer.append('div'),
+        root = d3.select(setup.root);
+    ui.setup(holder);
+    arrange.setup(root, outer, holder);
+    stylesheet.setup(holder);
+    root.on('mousemove.exports', function() {
+      if (smartTimer !== null) {
+        clearSmartTimer();
+        startSmartTimer();
+      }
+    });
+  };
+
+  exports.dataName = function(_) {
+    if (!arguments.length) return dataName;
+    if (_ === dataName) return;
+    needsToUpdate = true;
+    nextDataName = _;
+    nextCharts = dataSets[nextDataName].charts;
+    nextChartIds = [];
+  };
+
+  exports.addChart = function(add) {
+    if (nextChartIds.indexOf(add) >= 0) {
+      return;
+    }
+    exports.chartIds(nextChartIds.concat([add]));
+    exports.update();
+  };
+
+  exports.removeChart = function(remove) {
+    var ids = nextChartIds.slice();
+    ids.splice(ids.indexOf(remove), 1);
+    exports.chartIds(ids);
+    exports.update();
+  };
+
+  exports.changeDataName = function(name) {
+    exports.dataName(name);
+    exports.update();
+  };
+
+  exports.clearCharts = function() {
+    exports.chartIds([]);
+    exports.update();
+  };
+
+  exports.cancel = function() {
+    nextDataName = dataName;
+    nextCharts = charts;
+    nextChartIds = chartIds;
+    doneUpdating();
+  };
+
+  exports.reorder = function(reorder) {
+    chartIds = reorder;
+  };
+
+  function arrayDiff(one, two) {
+    return one.filter(function(id) {
+      return two.indexOf(id) < 0;
+    });
+  }
+
+  exports.charts = function() { return charts; };
+
+  exports.chartIds = function(_) {
+    if (!arguments.length) return chartIds;
+    nextChartIds = _;
+    nextChartIds.forEach(function(id) {
+      if (!nextCharts[id]) {
+        // Must be a compare chart
+        nextCharts[id] = chartsApi.compareChart({id: id, charts: nextCharts});
+      }
+    });
+    removedIds = arrayDiff(chartIds, nextChartIds);
+    addedIds = arrayDiff(nextChartIds, chartIds);
+    if (addedIds.length || removedIds.length) {
+      needsToUpdate = true;
+    }
+  };
+
+  exports.defaultRender = function(dataName, charts, filters) {
+    if (!renderFreshLater) {
+      exports.renderFresh(dataName, charts, filters);
+    }
+  };
+
+  exports.renderFresh = function(name, ids, params) {
+    if (!dataSets[name]) {
+      renderFreshLater = [name, ids, params];
+      return;
+    }
+    exports.dataName(name);
+    exports.chartIds(ids);
+    renderFresh = true;
+    renderFreshParams = params || {filters: {}, given: {}, filterLevels: {}};
+    exports.update('force');
+  };
+
+  exports.updateMode = function(_) {
+    if (!arguments.length) return updateMode;
+    updateMode = _;
+  };
+
+  function clearSmartTimer() {
+    if (smartTimer !== null) {
+      clearTimeout(smartTimer);
+      smartTimer = null;
+    }
+  }
+
+  function startSmartTimer() {
+    smartTimer = setTimeout(function() {
+      exports.update('always');
+    }, 700);
+  }
+
+  exports.update = function(mode) {
+    if (!mode) mode = updateMode;
+    if (!needsToUpdate && mode !== 'force') return;
+    if (mode === 'manual') {
+      ui.needsUpdate(true);
+      return;
+    }
+    clearSmartTimer();
+    if (!cross || nextDataName !== dataName ||
+        removedIds.length || addedIds.length) {
+      if (mode === 'smart') {
+        ui.needsUpdate(true);
+        startSmartTimer();
+        return;
+      }
+      if (!updating) {
+        updating = true;
+        ui.updating(true);
+        setTimeout(function() { exports.update(mode); }, 30);
+        return;
+      }
+    }
+    hash.disable();
+    var data = dataSets[nextDataName].data,
+        addedCross = addedIds,
+        removedCross = removedIds;
+    if (!cross || nextDataName !== dataName || removedIds.length) {
+      cross = crossfilter(data);
+      crossAll = cross.groupAll();
+      addedCross = nextChartIds;
+      removedCross = chartIds;
+      if (!removedIds.length) {
+        addedIds = addedCross;
+        removedIds = removedCross;
+      }
+    }
+    if (renderFresh) {
+      addedIds = nextChartIds;
+      removedIds = chartIds;
+    }
+    removedCross.forEach(function(id) { charts[id].removeCross(); });
+    addedCross.forEach(function(id) { nextCharts[id].addCross(cross, crossAll); });
+    removedIds.forEach(function(id) { charts[id].remove(); });
+    addedIds.forEach(function(id) { nextCharts[id].add(); });
+
+    rendering.render(nextChartIds, nextCharts);
+    if (renderFresh) {
+      doRenderFresh();
+    }
+    rendering.refresh(crossAll.value(), cross.size());
+
+    arrange.remove(removedIds, charts);
+    arrange.add(addedIds, nextCharts);
+
+    dataName = nextDataName;
+    charts = nextCharts;
+    chartIds = nextChartIds;
+
+    hash.refresh(dataName, chartIds, charts);
+    doneUpdating();
+  };
+
+  function doRenderFresh() {
+    applyParam(renderFreshParams, 'filter');
+    applyParam(renderFreshParams, 'given');
+    applyParam(renderFreshParams, 'filterLevels');
+    renderFreshParams = null;
+    renderFresh = false;
+  }
+
+  function applyParam(params, name) {
+    var id,
+        param = params[name];
+    for (id in param) {
+      if (param.hasOwnProperty(id)) {
+        nextCharts[id][name](param[id]);
+      }
+    }
+  }
+
+  function doneUpdating() {
+    updating = false;
+    needsToUpdate = false;
+    ui.updated(dataName);
+  };
+
+  exports.refresh = function() {
+    rendering.refresh(crossAll.value(), cross.size());
+    hash.refresh(dataName, chartIds, charts);
+  };
+
+});
+
+
+define('datazooka/hash', function(require, exports) {
+
+  var arrange = require('./arrange'),
+      chartIds,
+      charts,
+      dataName,
+      hashParams = [0,0,0],
+      isEnable = true,
+      hashUpdatedRecently = false,
+      hashNeedsUpdated = false;
+
+  exports.disable = function() {
+    isEnable = false;
+  };
+
+  exports.refresh = function(name, ids, c) {
+    dataName = name;
+    chartIds = ids;
+    charts = c;
+    isEnable = true;
+    exports.refreshParams();
+  };
+
+  exports.refreshParams = function() {
+    if (!isEnable) {
+      return;
+    }
+    var params = {filter: {}, given: {}, filterLevels: {}};
+    chartIds.forEach(function(id) { charts[id].addToParams(params); });
+    hashParams = [
+      'data=' + dataName,
+      null,   // Reserved for chart ids
+      paramString(params, 'given'),
+      paramString(params, 'filterLevels'),
+      paramString(params, 'filter')
+    ];
+    hashNeedsUpdated = true;
+    if (!hashUpdatedRecently) {
+      updateWindowHash();
+    }
+  };
+
+  function paramString(params, string) {
+    var param = params[string],
+        data,
+        id,
+        paramArray = [];
+    function filterEncode(d) {
+      if (typeof d === 'object') {
+        d = d.valueOf();
+      }
+      return encodeURIComponent(d);
+    }
+    for (id in param) {
+      if (param.hasOwnProperty(id) && param[id]) {
+        data = param[id];
+        if (Array.isArray(data)) {
+          data = data.map(filterEncode).join('*');
+        }
+        paramArray.push(id + '*' + data);
+      }
+    }
+    return string + '=' + paramArray.join(',');
+  }
+
+  function updateWindowHash() {
+    hashUpdatedRecently = false;
+    var ordered = arrange.orderedChartIds(chartIds, charts);
+    if (ordered) {
+      hashNeedsUpdated = true;
+      chartIds = ordered;
+    } else {
+      ordered = chartIds;
+    }
+    if (hashNeedsUpdated) {
+      hashParams[1] = 'charts=' + ordered.join(',');
+      var currentHash = '#' + hashParams.join('&');
+      window.history.replaceState({}, '', currentHash);
+      hashUpdatedRecently = true;
+      hashNeedsUpdated = false;
+    }
+  }
+  setInterval(updateWindowHash, 600);
+
+});
+
+
+define('datazooka/hash_retrieval', function(require) {
+
+  var core = require('./core');
+
+  // Yarin's answer on this SO post:
+  // http://stackoverflow.com/questions/4197591/
+  // parsing-url-hash-fragment-identifier-with-javascript
+  function getHashParams() {
+    var hashParams = {};
+    var e,
+        a = /\+/g,  // Regex for replacing addition symbol with a space
+        r = /([^&;=]+)=?([^&;]*)/g,
+        d = function (s) { return decodeURIComponent(s.replace(a, ' ')); },
+        q = window.location.hash.substring(1);
+
+    e = r.exec(q);
+    while (e) {
+      hashParams[d(e[1])] = d(e[2]);
+      e = r.exec(q);
+    }
+    return hashParams;
+  }
+
+  function renderFromHash() {
+    var hashParams = getHashParams();
+    var dataName = hashParams.data,
+        charts = hashParams.charts && hashParams.charts.split(','),
+        params = {};
+
+    params.given = getParams(hashParams.given);
+    params.filter = getParams(hashParams.filter);
+    params.filterLevels = getParams(hashParams.filterLevels);
+    if (!dataName || !charts || !charts.length) {
+      return;
+    }
+    core.renderFresh(dataName, charts, params);
+  }
+
+  function getParams(hashParam) {
+    var paramArray = hashParam && hashParam.split(','),
+        param = {};
+    if (paramArray) {
+      paramArray.forEach(function(p) {
+        var map = p.split('*'),
+            data = map.slice(1);
+        if (data.length === 1) {
+          data = data[0];
+        }
+        param[map[0]] = data;
+      });
+    }
+    return param;
+  }
+
+  window.onhashchange = renderFromHash;
+
+  renderFromHash();
+
+});
+
+
+define('datazooka', function(require, exports, module) {
+  module.exports = require('datazooka/index');
+});
+
+define('datazooka/index', function(require, exports) {
+
+  // TODO: move to datazooka.com
+  require('./hash_retrieval');
+
+  var core = require('./core'),
+      definitions = {},
+      data = {},
+      untypedData = {};
+
+  exports.setup = core.setup;
+  exports.defaultRender = core.defaultRender;
+
+  exports.definitionsFromJSON = function(dataName, defns) {
+    /*jshint evil:true */
+    var id, defn,
+        evil = [],
+        evalParts = ['dimension', 'group', 'round', 'x', 'y', 'format'],
+        evalPartsIfFunc = ['type', 'ordinal'];
+    function makeEvil(defn, id) {
+      return function(part) {
+        if (!defn[part]) {
+          return;
+        }
+        evil.push('defns["', id, '"].', part, ' = ', defn[part], ';');
+      };
+    }
+    function maybeMakeEvil(defn, id) {
+      var evalPart = makeEvil(defn, id);
+      return function(part) {
+        if (typeof defn[part] === 'string' &&
+            defn[part].slice(0, 8) === 'function') {
+          evalPart(part);
+        }
+      };
+    }
+
+    for (id in defns) {
+      if (defns.hasOwnProperty(id)) {
+        defn = defns[id];
+        evalParts.forEach(makeEvil(defn, id));
+        evalPartsIfFunc.forEach(maybeMakeEvil(defn, id));
+      }
+    }
+    eval(evil.join(''));
+    exports.definitions(dataName, defns);
+  };
+
+  exports.definitions = function(dataName, defns) {
+    var id;
+    for (id in defns) {
+      if (defns.hasOwnProperty(id)) {
+        defns[id].id = id;
+        defns[id].type = defns[id].type || 'number';
+      }
+    }
+    definitions[dataName] = defns;
+    if (untypedData[dataName]) {
+      exports.dataFromUntyped(dataName, untypedData[dataName]);
+    } else {
+      checkLoaded(dataName);
+    }
+  };
+
+  exports.dataFromUntyped = function(dataName, data) {
+    if (!definitions[dataName]) {
+      untypedData[dataName] = data;
+      return;
+    }
+    var defns = definitions[dataName],
+        id,
+        defn;
+    data.forEach(function(d) {
+      for (id in defns) {
+        if (!defns.hasOwnProperty(id)) {
+          continue;
+        }
+        defn = defns[id];
+        if (defn.derived) {
+          continue;
+        }
+        if (typeof defn.type === 'function') {
+          d[id] = defn.type(d[id]);
+          return;
+        }
+        switch (defn.type) {
+        case 'number':
+          d[id] = +d[id];
+          break;
+        case 'date':
+          d[id] = new Date(d[id]);
+          break;
+        default:
+          // string, so no modification needed
+        }
+      }
+    });
+    exports.data(dataName, data);
+  };
+
+  exports.data = function(dataName, _) {
+    data[dataName] = _;
+    checkLoaded(dataName);
+  };
+
+  function checkLoaded(name) {
+    if (definitions[name] && data[name]) {
+      core.dataSet(name, definitions[name], data[name]);
+    }
+  }
+
+  window.datazooka = exports;
+
+});
+
+
+define('datazooka/logic', function(require, exports) {
+
+  var d3 = require('d3'),
+      hash = require('./hash'),
+      config = require('./config');
 
   function floorBy(number) {
     return function(d) { return Math.floor((d / number) + 1e-7) * number; };
@@ -1785,7 +2017,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
     chart.ceil = ceilBy(number);
   }
 
-  logic.barLogic = function(bar, spec, data) {
+  exports.barLogic = function(bar, spec, data) {
 
     var added = 0,
         addedCross = 0,
@@ -1967,7 +2199,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
             min = +dimensionFunc(top[top.length - 1]),
             domain = Math.abs(max - min),
             scale = d3.scale.linear().domain([0, domain]),
-            ticks = scale.ticks(spec.numGroups || binfo.numGroups);
+            ticks = scale.ticks(spec.numGroups || config.numGroups);
 
         separation = ticks[1] - ticks[0];
         groupFunc = floorBy(separation);
@@ -2057,7 +2289,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
   };
 
 
-  logic.compareLogic = function(compare, spec) {
+  exports.compareLogic = function(compare, spec) {
 
     var ids = spec.id.split('-'),
         xc = spec.charts[ids[0]],
@@ -2074,7 +2306,7 @@ binfo._register('logic', ['hash'], function(logic, hash) {
         xcGroups,
         ycGroups,
         levelsMatrix,
-        levels = binfo.compareLevels,
+        levels = config.compareLevels,
         ycScale = Math.pow(2, 20),  // About a million
         dimensionFunc,
         filterRange,
@@ -2311,125 +2543,71 @@ binfo._register('logic', ['hash'], function(logic, hash) {
     };
 
   };
+
 });
 
 
-binfo._register('setup', ['core'], function(setup, core) {
+define('datazooka/rendering', function(require, exports) {
 
-  "use strict";
+  var d3 = require('d3'),
+      chartSelection,
+      formatNumber = d3.format(',d'),
+      formatPercent = d3.format('.3p');
 
-  var definitions = {},
-      data = {},
-      untypedData = {};
-
-  binfo.definitionsFromJSON = function(dataName, defns) {
-    /*jshint evil:true */
-    var id, defn,
-        evil = [],
-        evalParts = ['dimension', 'group', 'round', 'x', 'y', 'format'],
-        evalPartsIfFunc = ['type', 'ordinal'];
-    function makeEvil(defn, id) {
-      return function(part) {
-        if (!defn[part]) {
-          return;
-        }
-        evil.push('defns["', id, '"].', part, ' = ', defn[part], ';');
-      };
-    }
-    function maybeMakeEvil(defn, id) {
-      var evalPart = makeEvil(defn, id);
-      return function(part) {
-        if (typeof defn[part] === 'string' &&
-            defn[part].slice(0, 8) === 'function') {
-          evalPart(part);
-        }
-      };
-    }
-
-    for (id in defns) {
-      if (defns.hasOwnProperty(id)) {
-        defn = defns[id];
-        evalParts.forEach(makeEvil(defn, id));
-        evalPartsIfFunc.forEach(maybeMakeEvil(defn, id));
-      }
-    }
-    eval(evil.join(''));
-    binfo.definitions(dataName, defns);
-  };
-
-  binfo.definitions = function(dataName, defns) {
-    var id;
-    for (id in defns) {
-      if (defns.hasOwnProperty(id)) {
-        defns[id].id = id;
-        defns[id].type = defns[id].type || 'number';
-      }
-    }
-    definitions[dataName] = defns;
-    if (untypedData[dataName]) {
-      binfo.dataFromUntyped(dataName, untypedData[dataName]);
-    } else {
-      checkLoaded(dataName);
-    }
-  };
-
-  binfo.dataFromUntyped = function(dataName, data) {
-    if (!definitions[dataName]) {
-      untypedData[dataName] = data;
-      return;
-    }
-    var defns = definitions[dataName],
-        id,
-        defn;
-    data.forEach(function(d) {
-      for (id in defns) {
-        if (!defns.hasOwnProperty(id)) {
-          continue;
-        }
-        defn = defns[id];
-        if (defn.derived) {
-          continue;
-        }
-        if (typeof defn.type === 'function') {
-          d[id] = defn.type(d[id]);
-          return;
-        }
-        switch (defn.type) {
-        case 'number':
-          d[id] = +d[id];
-          break;
-        case 'date':
-          d[id] = new Date(d[id]);
-          break;
-        default:
-          // string, so no modification needed
-        }
-      }
-    });
-    binfo.data(dataName, data);
-  };
-
-  binfo.data = function(dataName, _) {
-    data[dataName] = _;
-    checkLoaded(dataName);
-  };
-
-  function checkLoaded(name) {
-    if (definitions[name] && data[name]) {
-      core.dataSet(name, definitions[name], data[name]);
-    }
+  function callCharts(name) {
+    return function(chartData) {
+      /*jshint validthis:true */
+      d3.select(this).each(chartData.chart[name]);
+    };
   }
 
+  var updateCharts = callCharts('update'),
+      renderCharts = callCharts('render'),
+      cleanUpCharts = callCharts('resetUpdate');
+
+  exports.refresh = function(active, total) {
+    chartSelection.each(updateCharts);
+    chartSelection.each(renderCharts);
+    chartSelection.each(cleanUpCharts);
+    d3.select('.active-data').text(formatNumber(active));
+    d3.select('.total').text(formatNumber(total));
+    d3.select('.percent-active').text(' (' + formatPercent(active / total) + ')');
+  }
+
+  exports.render = function(chartIds, charts) {
+    var chartData;
+
+    chartData = chartIds.map(function(id, i) {
+      return {chart: charts[id]};
+    });
+
+    chartSelection = d3.select('.holder').selectAll('.chart')
+        .data(chartData, function(d) { return d.chart.id; });
+
+    chartSelection.enter()
+      .append('div')
+        .attr('class', 'chart')
+      .append('div')
+        .attr('class', 'title');
+
+    chartSelection.exit().remove();
+
+    chartSelection.order();
+  };
+
 });
 
 
-binfo._register('stylesheet', [], function(stylesheet) {
+define('datazooka/stylesheet', function(require, exports) {
 
-  stylesheet.setup = function(holder) {
+  var d3 = require('d3'),
+      config = require('./config');
+
+  exports.setup = function(holder) {
     var css = '',
         i,
         lvl,
-        levels = binfo.compareLevels,
+        levels = config.compareLevels,
         level = d3.scale.linear(),
         pts = [],
         domain,
@@ -2499,214 +2677,13 @@ binfo._register('stylesheet', [], function(stylesheet) {
     holder.append('style').html(css);
   };
 
-
 });
 
 
-binfo._register('hashRetrieval', ['core'], function(_, core) {
+define('datazooka/ui', function(require, exports) {
 
-  "use strict";
-
-  // Yarin's answer on this SO post:
-  // http://stackoverflow.com/questions/4197591/
-  // parsing-url-hash-fragment-identifier-with-javascript
-  function getHashParams() {
-    var hashParams = {};
-    var e,
-        a = /\+/g,  // Regex for replacing addition symbol with a space
-        r = /([^&;=]+)=?([^&;]*)/g,
-        d = function (s) { return decodeURIComponent(s.replace(a, ' ')); },
-        q = window.location.hash.substring(1);
-
-    e = r.exec(q);
-    while (e) {
-      hashParams[d(e[1])] = d(e[2]);
-      e = r.exec(q);
-    }
-    return hashParams;
-  }
-
-  function renderFromHash() {
-    var hashParams = getHashParams();
-    var dataName = hashParams.data,
-        charts = hashParams.charts && hashParams.charts.split(','),
-        params = {};
-
-    params.given = getParams(hashParams.given);
-    params.filter = getParams(hashParams.filter);
-    params.filterLevels = getParams(hashParams.filterLevels);
-    if (!dataName || !charts || !charts.length) {
-      return;
-    }
-    core.renderFresh(dataName, charts, params);
-  }
-
-  function getParams(hashParam) {
-    var paramArray = hashParam && hashParam.split(','),
-        param = {};
-    if (paramArray) {
-      paramArray.forEach(function(p) {
-        var map = p.split('*'),
-            data = map.slice(1);
-        if (data.length === 1) {
-          data = data[0];
-        }
-        param[map[0]] = data;
-      });
-    }
-    return param;
-  }
-
-  window.onhashchange = renderFromHash;
-
-  renderFromHash();
-});
-
-
-
-binfo._register('hash', ['arrange'], function(hash, arrange) {
-
-  var chartIds,
-      charts,
-      dataName,
-      hashParams = [0,0,0],
-      isEnable = true,
-      hashUpdatedRecently = false,
-      hashNeedsUpdated = false;
-
-  hash.disable = function() {
-    isEnable = false;
-  };
-
-  hash.refresh = function(name, ids, c) {
-    dataName = name;
-    chartIds = ids;
-    charts = c;
-    isEnable = true;
-    hash.refreshParams();
-  };
-
-  hash.refreshParams = function() {
-    if (!isEnable) {
-      return;
-    }
-    var params = {filter: {}, given: {}, filterLevels: {}};
-    chartIds.forEach(function(id) { charts[id].addToParams(params); });
-    hashParams = [
-      'data=' + dataName,
-      null,   // Reserved for chart ids
-      paramString(params, 'given'),
-      paramString(params, 'filterLevels'),
-      paramString(params, 'filter')
-    ];
-    hashNeedsUpdated = true;
-    if (!hashUpdatedRecently) {
-      updateWindowHash();
-    }
-  };
-
-  function paramString(params, string) {
-    var param = params[string],
-        data,
-        id,
-        paramArray = [];
-    function filterEncode(d) {
-      if (typeof d === 'object') {
-        d = d.valueOf();
-      }
-      return encodeURIComponent(d);
-    }
-    for (id in param) {
-      if (param.hasOwnProperty(id) && param[id]) {
-        data = param[id];
-        if (Array.isArray(data)) {
-          data = data.map(filterEncode).join('*');
-        }
-        paramArray.push(id + '*' + data);
-      }
-    }
-    return string + '=' + paramArray.join(',');
-  }
-
-  function updateWindowHash() {
-    hashUpdatedRecently = false;
-    var ordered = arrange.orderedChartIds(chartIds, charts);
-    if (ordered) {
-      hashNeedsUpdated = true;
-      chartIds = ordered;
-    } else {
-      ordered = chartIds;
-    }
-    if (hashNeedsUpdated) {
-      hashParams[1] = 'charts=' + ordered.join(',');
-      var currentHash = '#' + hashParams.join('&');
-      window.history.replaceState({}, '', currentHash);
-      hashUpdatedRecently = true;
-      hashNeedsUpdated = false;
-    }
-  }
-  setInterval(updateWindowHash, 600);
-});
-
-
-binfo._register('rendering', ['core'], function(rendering, core) {
-
-  "use strict";
-
-  var chartSelection,
-      formatNumber = d3.format(',d'),
-      formatPercent = d3.format('.3p');
-
-  function callCharts(name) {
-    return function(chartData) {
-      /*jshint validthis:true */
-      d3.select(this).each(chartData.chart[name]);
-    };
-  }
-
-  var updateCharts = callCharts('update'),
-      renderCharts = callCharts('render'),
-      cleanUpCharts = callCharts('resetUpdate');
-
-  rendering.refresh = function(active, total) {
-    chartSelection.each(updateCharts);
-    chartSelection.each(renderCharts);
-    chartSelection.each(cleanUpCharts);
-    d3.select('.active-data').text(formatNumber(active));
-    d3.select('.total').text(formatNumber(total));
-    d3.select('.percent-active').text(' (' + formatPercent(active / total) + ')');
-  }
-
-  rendering.render = function(chartIds, charts) {
-    var chartData;
-
-    chartData = chartIds.map(function(id, i) {
-      return {chart: charts[id]};
-    });
-
-    chartSelection = d3.select('.holder').selectAll('.chart')
-        .data(chartData, function(d) { return d.chart.id; });
-
-    chartSelection.enter()
-      .append('div')
-        .attr('class', 'chart')
-      .append('div')
-        .attr('class', 'title');
-
-    chartSelection.exit().remove();
-
-    chartSelection.order();
-  };
-
-});
-
-
-binfo._register('ui', ['core'], function(ui, core) {
-
-  "use strict";
-
-  var rendering = ui.dependency('rendering'),
-      setup = ui.dependency('setup'),
+  var d3 = require('d3'),
+      core,
       holder,
       panel,
       disableModeTimer,
@@ -2716,7 +2693,10 @@ binfo._register('ui', ['core'], function(ui, core) {
       chartMode,
       firstCompare;
 
-  ui.setup = function(h) {
+  // TODO: Remove circular dependency
+  window.vaccine.on('datazooka/core', function() { core = require('./core'); });
+
+  exports.setup = function(h) {
     holder = h;
     holder.attr('class', 'holder');
 
@@ -2933,7 +2913,7 @@ binfo._register('ui', ['core'], function(ui, core) {
     }
   }
 
-  ui.addDataName = function(name) {
+  exports.addDataName = function(name) {
     numDataSets += 1;
     if (numDataSets === 1) {
       panel.select('.data-name')
@@ -2948,7 +2928,7 @@ binfo._register('ui', ['core'], function(ui, core) {
             changeDataName(this.value);
             core.changeDataName(this.value);
           });
-      ui.addDataName(firstName);
+      exports.addDataName(firstName);
       numDataSets -= 1;
       changeDataName(firstName);
     }
@@ -2959,7 +2939,7 @@ binfo._register('ui', ['core'], function(ui, core) {
     }
   };
 
-  ui.needsUpdate = function(needs) {
+  exports.needsUpdate = function(needs) {
     needsUpdate = needs;
     if (needs) {
       panel.select('.statistics').style('display', 'block');
@@ -2968,16 +2948,75 @@ binfo._register('ui', ['core'], function(ui, core) {
     panel.select('.cancel.button').style('display', needs ? null : 'none');
   }
 
-  ui.updating = function(updating) {
+  exports.updating = function(updating) {
     holder.style('opacity', updating ? 0.3 : null);
     panel.classed('updating', updating);
   };
 
-  ui.updated = function(name) {
+  exports.updated = function(name) {
     changeDataName(name);
-    ui.needsUpdate(false);
-    ui.updating(false);
+    exports.needsUpdate(false);
+    exports.updating(false);
   };
 
 });
 
+
+function define(id, defn) {
+
+  if (!window.vaccine) {
+    // The minimal code required to be vaccine compliant.
+    (function() {
+      var waiting = {}, modules = {};
+      window.vaccine = {
+        on: function(id, callback) {
+          (waiting[id] = waiting[id] || []).push(callback);
+        },
+        get: function(id) {
+          return modules[id];
+        },
+        set: function(id, val) {
+          modules[id] = val;
+          (waiting[id] || []).forEach(function(w) { w(); });
+        }
+      };
+    }());
+  }
+  // Set your library with vaccine.set('mylib', mylib);
+
+  var parts = id.split('/');
+
+  var globalVaccine = window.vaccine,
+      module = {exports: {}};
+
+  function require(reqId) {
+
+    var matching = /(\.?\.\/?)*/.exec(reqId)[0],
+        // Some code golf to get the number of "directories" back we want to go
+        back = Math.floor(matching.replace(/\//g, '').length / 1.9 + 0.99),
+        base;
+    if (back) {
+      base = parts.slice(0, parts.length - back).join('/');
+      if (base) base += '/';
+      reqId = base + reqId.slice(matching.length);
+    }
+    reqId = reqId.replace(/\/$/, '');
+    var mod = globalVaccine.get(reqId);
+    if (!mod) {
+      require.id = reqId;
+      throw require;  // Throw require, to ensure correct error gets handled
+    }
+
+    return mod;
+  }
+
+  try {
+    defn(require, module.exports, module);
+    globalVaccine.set(id, module.exports);
+  } catch (e) {
+    if (e != require) throw e;
+    globalVaccine.on(require.id, function() { define(id, defn); });
+  }
+}
+
+}());

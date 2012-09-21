@@ -1,7 +1,7 @@
 {
-  "name": "binfo",
-  "description": "Visually find correlations in your data",
-  "version": "0.1.1",
+  "name": "datazooka",
+  "description": "Analyze and understand your data",
+  "version": "0.1.2",
   "private": true,
   "dependencies": {
   },
@@ -9,14 +9,14 @@
     "uglify-js": "1.3.x",
     "yuicompressor": "2.4.x"
   },
-  "homepage": "http://jakesandlund.com/binfo",
+  "homepage": "http://www.datazooka.com",
   "author": {
     "name": "Jake Sandlund",
-    "url": "http://jakesandlund.com/"
+    "url": "http://jakesandlund.com"
   },
   "repository": {
     "type": "git",
-    "url": "http://github.com/jakesandlund/binfo.git"
+    "url": "http://github.com/jakesandlund/datazooka.git"
   }
 }
 
