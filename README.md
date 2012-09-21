@@ -1,11 +1,10 @@
-Binfo
+DataZooka
 =====
 
-Binfo is a tool aimed to help make it easier to pick out relationships in
+DataZooka is a tool aimed to help make it easier to pick out relationships in
 data.
 
-Check out the [home page](http://jakesandlund.com/binfo) for a
-nice introduction and demo.
+Check out the [site](http://datazooka.com/) for a nice introduction and demo.
 
 TODO
 ----
