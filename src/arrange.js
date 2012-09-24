@@ -425,6 +425,8 @@ define('datazooka/arrange', function(require, exports) {
   // Also adds height to holder
   exports.orderedChartIds = function() {
     if (!reordered) return null;
+
+    // TODO: Remove circular dependency
     var core = require('./core'),
         chartIds = core.chartIds(),
         charts = core.charts(),

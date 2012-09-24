@@ -7,10 +7,11 @@ define('datazooka/charts', function(require, exports) {
       config = require('./config'),
       core;
 
-  // TODO: Remove circular dependency
-  window.vaccine.on('datazooka/core', function() { core = require('./core'); });
-
   exports.barChart = function(spec, data) {
+
+    // TODO: Remove circular dependency
+    core = require('./core');
+
     var bar = {api: {}};
     logic.barLogic(bar, spec, data);
     barChart(bar, spec);

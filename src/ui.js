@@ -12,10 +12,12 @@ define('datazooka/ui', function(require, exports) {
       chartMode,
       firstCompare;
 
-  // TODO: Remove circular dependency
-  window.vaccine.on('datazooka/core', function() { core = require('./core'); });
 
   exports.setup = function(h) {
+
+    // TODO: Remove circular dependency
+    core = require('./core');
+
     holder = h;
     holder.attr('class', 'holder');
 

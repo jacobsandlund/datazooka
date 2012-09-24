@@ -23,30 +23,31 @@
 
   function define(id, defn) {
 
-    if (!window.vaccine) {
+    var globalVaccine =
+    window.vaccine || (window.vaccine = {
       // The minimal code required to be vaccine compliant.
-      (function() {
-        var waiting = {}, modules = {};
-        window.vaccine = {
-          on: function(id, callback) {
-            (waiting[id] = waiting[id] || []).push(callback);
-          },
-          get: function(id) {
-            return modules[id];
-          },
-          set: function(id, val) {
-            modules[id] = val;
-            (waiting[id] || []).forEach(function(w) { w(); });
-          }
-        };
-      }());
-    }
-    // Set your library with vaccine.set('mylib', mylib);
+
+      // w = waiting: Functions to be called when a modules
+      // gets defined. w[moduleId] = [array of functions];
+      w: {},
+
+      // m = modules: Modules that have been fully defined.
+      // m[moduleId] = module.exports value
+      m: {},
+
+      // s = set: When a module becomes fully defined, set
+      // the module.exports value here.
+      // s(moduleId, module.exports)
+      s: function(id, val) {
+        this.m[id] = val;
+        (this.w[id] || []).forEach(function(w) { w(); });
+      }
+    });
+    // Set your library with vaccine.s('mylib', mylib);
 
     var parts = id.split('/');
 
-    var globalVaccine = window.vaccine,
-        module = {exports: {}};
+    var module = {exports: {}};
 
     function require(reqId) {
 
@@ -60,7 +61,7 @@
         reqId = base + reqId.slice(matching.length);
       }
       reqId = reqId.replace(/\/$/, '');
-      var mod = globalVaccine.get(reqId);
+      var mod = globalVaccine.m[reqId];
       if (!mod) {
         require.id = reqId;
         throw require;  // Throw require, to ensure correct error gets handled
@@ -71,7 +72,7 @@
 
     try {
       defn(require, module.exports, module);
-      globalVaccine.set(id, module.exports);
+      globalVaccine.s(id, module.exports);
     } catch (e) {
       if (e != require) throw e;
 
@@ -88,7 +89,8 @@
         src = libraryDir + '/' + root;
       }
       loadScript('/' + src + '.js');
-      globalVaccine.on(require.id, function() { define(id, defn); });
+      (globalVaccine.w[require.id] || (globalVaccine.w[require.id] = []))
+          .push(function() { define(id, defn); });
     }
   }
 
