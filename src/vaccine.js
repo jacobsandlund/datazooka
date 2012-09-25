@@ -51,6 +51,9 @@ function define(id, defn) {
   try {
     defn(require, module.exports, module);
     globalVaccine.s(id, module.exports);
+    if (id.match(/\/index$/)) {
+      globalVaccine.s(id.replace(/\/index$/,''), module.exports);
+    }
   } catch (e) {
     if (e != require) throw e;
     (globalVaccine.w[require.id] || (globalVaccine.w[require.id] = []))

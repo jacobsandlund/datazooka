@@ -1,8 +1,4 @@
 
-define('datazooka', function(require, exports, module) {
-  module.exports = require('datazooka/index');
-});
-
 define('datazooka/index', function(require, exports) {
 
   // TODO: move to datazooka.com
