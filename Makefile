@@ -11,7 +11,7 @@ configure-test:
 	test/configure.sh
 
 build:
-	./build > datazooka.js
+	./build.sh > datazooka.js
 
 min: minjs mincss
 
