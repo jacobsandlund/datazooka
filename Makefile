@@ -1,4 +1,3 @@
-
 .PHONY: test build
 
 all: | build min
@@ -11,13 +10,12 @@ configure-test:
 	test/configure.sh
 
 build:
-	./build.sh > datazooka.js
+	./build.sh > public/datazooka.js
 
 min: minjs mincss
 
 minjs:
-	node_modules/uglify-js/bin/uglifyjs datazooka.js > datazooka.min.js
+	node_modules/uglify-js/bin/uglifyjs public/datazooka.js > public/datazooka.min.js
 
 mincss:
-	java -jar node_modules/yuicompressor/build/yuicompressor-*.jar datazooka.css > datazooka.min.css
-
+	java -jar node_modules/yuicompressor/build/yuicompressor-*.jar datazooka.css > public/datazooka.min.css

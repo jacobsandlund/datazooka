@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>DataZooka</title>
+    <link rel="stylesheet" type="text/css" href="../datazooka.css">
+    <link rel="stylesheet" type="text/css" href="test.css">
+  </head>
+
+  <body>
+
+  <div class="main">
+    <a href="https://github.com/jakesandlund/datazooka"><img style="position: absolute; right: 0px; top: 0px; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
+
+    <a href="/">Index (to switch between combined and separate)</a>
+    <h1>DataZooka (Combined)</h1>
+
+    <p> Test Links:
+      <a href="#data=flights&charts=time,delay,day,time-day,delay-time&given=&filterLevels=time-day*53*100&filter=delay*1.8181818181818201*20.909090909090907,day*2*5">one</a>
+      <a href="#data=flights&charts=time,delay,day,time-day,delay-time&given=delay-time*xc&filterLevels=&filter=delay*20*150">two</a>
+      <a href="#data=flights&charts=time,delay,day,time-day,delay-time&given=delay-time*xc&filterLevels=delay-time*37*64&filter=day*4*7">three</a>
+      <a href="#data=flights&charts=time,delay,day,time-day,delay-day&given=delay-day*xc&filterLevels=delay-day*27*59&filter=">four</a>
+      <a href="#data=flights&charts=time,delay,day,time-day,delay-day&given=&filterLevels=&filter=delay*20*150">five</a>
+    </p>
+
+
+    <div id="charts"></div>
+
+    <footer>Copyright 2012 Jake Sandlund</footer>
+
+  </div>
+
+
+
+
+
+<script src="/lib/d3.js"></script>
+<script src="/datazooka.js"></script>
+<script src="/lib/crossfilter.js"></script>
+<script src="test.js"></script>
+  </body>
+
+</html>
+
