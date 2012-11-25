@@ -12,8 +12,6 @@ define('core', function(require, exports) {
       dataSets = {},
       cross,
       crossAll,
-      updateMode = 'always',
-      smartTimer = null,
       renderFreshLater,
       renderFreshParams,
       renderFresh,
@@ -72,18 +70,10 @@ define('core', function(require, exports) {
   };
 
   exports.setup = function(setup) {
-    var outer = d3.select(setup.holder).attr('class', 'outer-holder'),
-        holder = outer.append('div'),
-        root = d3.select(setup.root);
-    ui.setup(holder);
-    arrange.setup(root, outer, holder);
-    stylesheet.setup(holder);
-    root.on('mousemove.exports', function() {
-      if (smartTimer !== null) {
-        clearSmartTimer();
-        startSmartTimer();
-      }
-    });
+    var root = d3.select(document);
+    ui.setup();
+    arrange.setup();
+    stylesheet.setup();
   };
 
   exports.dataName = function(_) {
@@ -118,13 +108,6 @@ define('core', function(require, exports) {
   exports.clearCharts = function() {
     exports.chartIds([]);
     exports.update();
-  };
-
-  exports.cancel = function() {
-    nextDataName = dataName;
-    nextCharts = charts;
-    nextChartIds = chartIds;
-    doneUpdating();
   };
 
   exports.reorder = function(reorder) {
@@ -173,43 +156,14 @@ define('core', function(require, exports) {
     exports.update('force');
   };
 
-  exports.updateMode = function(_) {
-    if (!arguments.length) return updateMode;
-    updateMode = _;
-  };
-
-  function clearSmartTimer() {
-    if (smartTimer !== null) {
-      clearTimeout(smartTimer);
-      smartTimer = null;
-    }
-  }
-
-  function startSmartTimer() {
-    smartTimer = setTimeout(function() {
-      exports.update('always');
-    }, 700);
-  }
-
-  exports.update = function(mode) {
-    if (!mode) mode = updateMode;
-    if (!needsToUpdate && mode !== 'force') return;
-    if (mode === 'manual') {
-      ui.needsUpdate(true);
-      return;
-    }
-    clearSmartTimer();
+  exports.update = function() {
+    if (!needsToUpdate) return;
     if (!cross || nextDataName !== dataName ||
         removedIds.length || addedIds.length) {
-      if (mode === 'smart') {
-        ui.needsUpdate(true);
-        startSmartTimer();
-        return;
-      }
       if (!updating) {
         updating = true;
         ui.updating(true);
-        setTimeout(function() { exports.update(mode); }, 30);
+        setTimeout(function() { exports.update(); }, 30);
         return;
       }
     }

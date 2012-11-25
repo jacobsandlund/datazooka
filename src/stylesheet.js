@@ -4,7 +4,7 @@ define('stylesheet', function(require, exports) {
   var d3 = require('d3'),
       config = require('./config');
 
-  exports.setup = function(holder) {
+  exports.setup = function() {
     var css = '',
         i,
         lvl,
@@ -75,7 +75,7 @@ define('stylesheet', function(require, exports) {
     addCss('level', saturation, fullScale);
     addCss('level-fade', fadeSaturation, fadeScale);
 
-    holder.append('style').html(css);
+    d3.select('body').append('style').html(css);
   };
 
 });

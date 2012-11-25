@@ -28,7 +28,7 @@ define('charts', function(require, exports) {
 
   function findTextWidth(text, size) {
     if (typeof size === 'number') size += 'px';
-    var span = d3.select('.holder').append('span')
+    var span = d3.select('#holder').append('span')
         .style('font-size', size)
         .text(text);
     var width = span.property('offsetWidth');

@@ -33,7 +33,7 @@ define('rendering', function(require, exports) {
       return {chart: charts[id]};
     });
 
-    chartSelection = d3.select('.holder').selectAll('.chart')
+    chartSelection = d3.select('#holder').selectAll('.chart')
         .data(chartData, function(d) { return d.chart.id; });
 
     chartSelection.enter()

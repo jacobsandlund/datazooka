@@ -1,8 +1,5 @@
 
-datazooka.setup({
-  root: document,
-  holder: '#charts'
-});
+datazooka.setup();
 
 datazooka.defaultRender('flights', ['time', 'delay', 'delay-time', 'time-day', 'day'], {
   filter: {'delay': [20, 150]}, given: {'delay-time': 'xc'}, filterLevels: {'delay-time': [34, 76]}

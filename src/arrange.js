@@ -3,7 +3,6 @@ define('arrange', function(require, exports) {
 
   var d3 = require('d3'),
       config = require('./config'),
-      outer,
       holder,
       maxLevel,
       maxBottomLevel,
@@ -17,10 +16,9 @@ define('arrange', function(require, exports) {
       zIndex = 1,
       layout;
 
-  exports.setup = function(r, o, h) {
-    root = r;
-    outer = o;
-    holder = h;
+  exports.setup = function(r, h) {
+    root = d3.select(document);
+    holder = d3.select('#holder');
     holderNode = holder.node();
     ghost = holder.append('div')
         .attr('class', 'ghost')
@@ -444,7 +442,6 @@ define('arrange', function(require, exports) {
         max = last ? last.top + last.height : 0,
         holderHeight = max + 820;
     holder.style('height', holderHeight + 'px');
-    outer.style('height', (holderHeight + 30) + 'px');
     reordered = false;
     orderedIds = ordered.map(function(chart) { return chart.id; });
     core.reorder(orderedIds);

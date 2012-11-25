@@ -6,9 +6,28 @@
     <link rel="stylesheet" type="text/css" href="/datazooka.css">
   </head>
   <body>
-    <a href="https://github.com/jakesandlund/datazooka"><img style="position: absolute; right: 0px; top: 0px; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
-
-    <div id="charts"></div>
+    <div id="control-panel">
+      <div class="tool title">DataZooka</div>
+      <div class="totals pane">
+        <span class="active-data">-</span>
+        <span> of </span>
+        <span class="total">-</span>
+        <span class="data-name"></span>
+      </div>
+      <div id="interactions" class="pane">
+        <div id="variables">
+          <ul>
+          </ul>
+        </div>
+        <span>Add</span>
+        <div class="bar button">Bar</div>
+        <span>or</span>
+        <div class="compare button">Compare</div>
+        <span>charts.</span>
+        <div class="remove-all button">Remove All</div>
+      </div>
+    </div>
+    <div id="holder"></div>
 
     <footer>Copyright 2012 Jake Sandlund</footer>
 
