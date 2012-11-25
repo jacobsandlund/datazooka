@@ -1,5 +1,5 @@
 
-define('datazooka/charts', function(require, exports) {
+define('charts', function(require, exports) {
 
   var d3 = require('d3'),
       logic = require('./logic'),

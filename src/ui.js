@@ -1,5 +1,5 @@
 
-define('datazooka/ui', function(require, exports) {
+define('ui', function(require, exports) {
 
   var d3 = require('d3'),
       core,

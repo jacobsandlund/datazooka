@@ -1,16 +1,17 @@
 function define(id, factory) {
   (vaccineFactories = vaccineFactories || {}
-  )[id] = factory;
+  )['./' + id] = factory;
 }
 
 
 function require(id) {
+  var module = {exports: {}};
 
   if (!vaccineModules[id] && !vaccineWindow[id]) {
-    vaccineModules[id] = vaccineFactories[id](
-        function(reqId) {
-          return require(reqId.replace('.', 'datazooka'));
-        });
+    vaccineFactories[id](
+        require,
+        module.exports, module);
+    vaccineModules[id] = module.exports;
   }
   return vaccineModules[id] || vaccineWindow[id];
 }
@@ -21,6 +22,6 @@ var vaccineFactories,
     vaccineWindow = window;
 
 function requireDev(main) {
-  main = main || 'index';
+  main = main || './index';
   return require(main);
 }

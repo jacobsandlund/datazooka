@@ -1,5 +1,5 @@
 
-define('datazooka/rendering', function(require, exports) {
+define('rendering', function(require, exports) {
 
   var d3 = require('d3'),
       chartSelection,

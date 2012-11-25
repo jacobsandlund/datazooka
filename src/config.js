@@ -1,5 +1,5 @@
 
-define('datazooka/config', function(require, exports, module) {
+define('config', function(require, exports, module) {
 
   module.exports = {
     numGroups: 35,

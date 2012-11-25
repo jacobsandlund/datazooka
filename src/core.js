@@ -1,5 +1,5 @@
 
-define('datazooka/core', function(require, exports) {
+define('core', function(require, exports) {
 
   var crossfilter = require('crossfilter'),
       d3 = require('d3'),

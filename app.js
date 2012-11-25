@@ -12,6 +12,7 @@ if (env === 'development') {
       res.send(built);
     });
   });
+  app.use(express.static('src'));
 }
 
 app.use(express.static('public'));

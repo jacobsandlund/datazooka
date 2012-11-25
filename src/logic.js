@@ -1,5 +1,5 @@
 
-define('datazooka/logic', function(require, exports) {
+define('logic', function(require, exports) {
 
   var d3 = require('d3'),
       hash = require('./hash'),

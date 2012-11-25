@@ -1,5 +1,5 @@
 
-define('datazooka/index', function(require, exports) {
+define('index', function(require, exports) {
 
   // TODO: move to datazooka.com
   require('./hash_retrieval');
