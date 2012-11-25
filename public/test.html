@@ -3,55 +3,35 @@
   <head>
     <meta charset="utf-8">
     <title>DataZooka</title>
-    <link rel="stylesheet" type="text/css" href="../datazooka.css">
-    <link rel="stylesheet" type="text/css" href="test.css">
+    <link rel="stylesheet" type="text/css" href="/datazooka.css">
   </head>
-
   <body>
-
-  <div class="main">
     <a href="https://github.com/jakesandlund/datazooka"><img style="position: absolute; right: 0px; top: 0px; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
-    <h1>DataZooka</h1>
-
-    <p> Test Links:
-      <a href="#data=flights&charts=time,delay,day,time-day,delay-time&given=&filterLevels=time-day*53*100&filter=delay*1.8181818181818201*20.909090909090907,day*2*5">one</a>
-      <a href="#data=flights&charts=time,delay,day,time-day,delay-time&given=delay-time*xc&filterLevels=&filter=delay*20*150">two</a>
-      <a href="#data=flights&charts=time,delay,day,time-day,delay-time&given=delay-time*xc&filterLevels=delay-time*37*64&filter=day*4*7">three</a>
-      <a href="#data=flights&charts=time,delay,day,time-day,delay-day&given=delay-day*xc&filterLevels=delay-day*27*59&filter=">four</a>
-      <a href="#data=flights&charts=time,delay,day,time-day,delay-day&given=&filterLevels=&filter=delay*20*150">five</a>
-    </p>
-
 
     <div id="charts"></div>
 
     <footer>Copyright 2012 Jake Sandlund</footer>
 
-  </div>
+    <script src="/crossfilter.js"></script>
+    <script src="/d3.js"></script>
 
+    <!-- DEVELOPMENT -->
+    <script src="/vaccine_dev.js"></script>
+    <script src="/core.js"></script>
+    <script src="/config.js"></script>
+    <script src="/index.js"></script>
+    <script src="/logic.js"></script>
+    <script src="/charts.js"></script>
+    <script src="/ui.js"></script>
+    <script src="/hash.js"></script>
+    <script src="/hash_retrieval.js"></script>
+    <script src="/rendering.js"></script>
+    <script src="/stylesheet.js"></script>
+    <script src="/arrange.js"></script>
+    <script>var datazooka = requireDev();</script>
+    <!-- /DEVELOPMENT -->
+    <!-- PRODUCTION -->
 
-  <script src="/crossfilter.js"></script>
-  <script src="/d3.js"></script>
-
-  <!-- DEVELOPMENT -->
-  <script src="/vaccine_dev.js"></script>
-  <script src="/core.js"></script>
-  <script src="/config.js"></script>
-  <script src="/index.js"></script>
-  <script src="/logic.js"></script>
-  <script src="/charts.js"></script>
-  <script src="/ui.js"></script>
-  <script src="/hash.js"></script>
-  <script src="/hash_retrieval.js"></script>
-  <script src="/rendering.js"></script>
-  <script src="/stylesheet.js"></script>
-  <script src="/arrange.js"></script>
-  <script>var datazooka = requireDev();</script>
-  <!-- /DEVELOPMENT -->
-
-  <script src="test.js"></script>
-
-
+    <script src="test.js"></script>
   </body>
-
 </html>
-

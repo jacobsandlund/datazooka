@@ -1,3 +1,19 @@
+body {
+  font-family: Tahoma, sans-serif;
+  margin: 0;
+  padding: 40px;
+  position: relative;
+}
+
+footer {
+  text-align: center;
+  padding: 2em 0 1em 0;
+  font-size: 12px;
+}
+
+#charts {
+  min-height: 1400px;
+}
 
 .outer-holder {
   overflow: auto;

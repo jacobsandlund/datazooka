@@ -1,7 +1,6 @@
-
 datazooka.setup({
   root: document,
-  holder: '#charts'
+  holder: '#charts',
 });
 
 datazooka.defaultRender('flights', ['time', 'delay', 'delay-time', 'time-day', 'day'], {
@@ -54,26 +53,3 @@ datazooka.definitions('flights', {
 d3.csv("/demos/flights.json", function(flights) {
   datazooka.dataFromUntyped('flights', flights);
 });
-
-datazooka.definitions('compare-test', {
-  x: {label: 'x', dimension: function(d) { return d.x; }, groupBy: 1, round: 1},
-  y: {label: 'y', dimension: function(d) { return d.y; }, groupBy: 1, round: 1}
-});
-
-var data = [],
-    i,
-    j,
-    k,
-    compareLevels = 100;  // copied from config
-
-for (i = 0; i < compareLevels; i++) {
-  for (j = 0; j < i; j++) {
-    for (k = 0; k < compareLevels; k++) {
-      data.push({x: i, y: k});
-    }
-  }
-}
-data.push({x: 0, y: 0});
-
-datazooka.data('compare-test', data);
-
