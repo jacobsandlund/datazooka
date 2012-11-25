@@ -1,8 +1,6 @@
 body {
   font-family: Tahoma, sans-serif;
   margin: 0;
-  padding: 40px;
-  position: relative;
 }
 
 footer {
@@ -12,9 +10,8 @@ footer {
 }
 
 #holder {
-  position: absolute;
-  left: 0px;
-  width: 100%;
+  margin-top: 50px;
+  position: relative;
 }
 
 .chart, .ghost, .positioner {
@@ -88,16 +85,18 @@ footer {
   top: 0px;
   left: 50%;
   height: 40px;
-  width: 700px;
-  margin-left: -350px;
+  width: 850px;
+  margin-left: -425px;
   color: #eee;
   z-index: 16000001;
-  background-color: #333;
-  background-image: -ms-linear-gradient(top, #333, #111);
-  background-image: -webkit-linear-gradient(top, #333, #111);
-  background-image: -o-linear-gradient(top, #333, #111);
-  background-image: -moz-linear-gradient(top, #333, #111);
-  background-image: linear-gradient(top, #333, #111);
+  background-color: #555;
+  background-image: -ms-linear-gradient(top, #555, #111);
+  background-image: -webkit-linear-gradient(top, #555, #111);
+  background-image: -o-linear-gradient(top, #555, #111);
+  background-image: -moz-linear-gradient(top, #555, #111);
+  background-image: linear-gradient(top, #555, #111);
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
 
 #control-panel.updating {
@@ -113,23 +112,28 @@ footer {
   opacity: 0.3;
 }
 
-#control-panel .pane {
+#control-panel > div {
+  float: left;
   padding: 8px;
   height: 20px;
   vertical-align: bottom;
 }
 
-.tool.title {
-  float: left;
-  font-size: 24px;
-  padding: 4px;
-  margin-left: 20px;
+#datazooka-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-left: 5px;
+  padding-top: 5px !important;
 }
 
-.totals {
-  float: left;
+#totals {
+  width: 345px;
   top: 3px;
   text-align: right;
+}
+
+#interactions {
+  position: relative;
 }
 
 .data-name {
@@ -139,7 +143,7 @@ footer {
 .data-name select {
   vertical-align: text-top;
   position: relative;
-  top: -3px;
+  top: -1px;
 }
 
 #interactions .button {
@@ -157,13 +161,14 @@ footer {
 
 #control-panel .button.down {
   border-color: #666;
+  color: white;
 }
 
 .remove-all.button {
   width: 76px;
 }
 
-#variables, .options-panel {
+#variables {
   border: solid 5px #aaa;
   border-radius: 10px;
 }
@@ -171,11 +176,11 @@ footer {
 #variables {
   color: black;
   position: absolute;
-  bottom: 40px;
+  top: 40px;
   left: 0px;
-  border-bottom-width: 0;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+  border-top-width: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
   background-color: white;
   width: 225px;
   display: none;
@@ -209,44 +214,6 @@ footer {
 #variables li:hover {
   background-color: #ddd;
 }
-
-.update.panel {
-  padding: 15px 10px;
-}
-
-.cancel.button {
-  float: right;
-}
-
-.options-panel {
-  color: black;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  width: 200px;
-  margin-left: -100px;
-  margin-top: -70px;
-  font-size: 12px;
-  padding: 10px;
-  background-color: white;
-}
-
-.options-panel label {
-  margin-left: 5px;
-}
-
-.options-panel .title {
-  font-size: 16px;
-  margin-top: -5px;
-  margin-bottom: 10px;
-}
-
-.close-options.button {
-  display: block;
-  margin: 12px auto 0 auto;
-  width: 43px;
-}
-
 
 .button {
   font-size: 14px;

@@ -36,7 +36,7 @@ define('ui', function(require, exports) {
     panel.select('#interactions .compare.button')
         .on('click', function() { setChartMode('compare'); });
 
-    panel.select('#interactions .remove-all.button')
+    panel.select('.remove-all.button')
         .on('click', core.clearCharts);
   };
 
