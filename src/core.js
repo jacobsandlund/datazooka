@@ -153,7 +153,7 @@ define('core', function(require, exports) {
     exports.chartIds(ids);
     renderFresh = true;
     renderFreshParams = params || {filters: {}, given: {}, filterLevels: {}};
-    exports.update('force');
+    exports.update();
   };
 
   exports.update = function() {

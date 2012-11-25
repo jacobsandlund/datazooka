@@ -8,3 +8,4 @@ configure:
 
 mincss:
 	java -jar node_modules/yuicompressor/build/yuicompressor-*.jar datazooka.css > public/datazooka.min.css
+	java -jar node_modules/yuicompressor/build/yuicompressor-*.jar public/easydemo.css > public/easydemo.min.css

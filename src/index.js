@@ -1,16 +1,38 @@
 
 define('index', function(require, exports) {
 
-  // TODO: move to datazooka.com
   require('./hash_retrieval');
 
-  var core = require('./core'),
+  var easydemo = require('./easydemo'),
+      core = require('./core'),
       definitions = {},
       data = {},
       untypedData = {};
 
   exports.setup = core.setup;
   exports.defaultRender = core.defaultRender;
+  exports.renderFresh = core.renderFresh;
+
+  exports.demo = function(title, states) {
+    easydemo.delay = 500;
+    var render = function(params) {
+      return function(finished) {
+        datazooka.renderFresh('flights', params.ids, params);
+        finished();
+      };
+    };
+    states = states.map(function(s, i) {
+      return {
+        enter: s.enter || render(s),
+        signals: s.signals,
+        exit: s.exit,
+      };
+    });
+    d3.selectAll('#demo-text > p').each(function(d, i) {
+      states[i].text = this.innerHTML;
+    });
+    easydemo.start('DataZooka - ' + title, states);
+  };
 
   exports.definitions = function(dataName, defns) {
     var id;
