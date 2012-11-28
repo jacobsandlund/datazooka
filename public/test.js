@@ -108,6 +108,9 @@ datazooka.demo('flights', 'Flights', [
     ],
   },
   {
+    ids: ['time', 'delay-time'],
+  },
+  {
     ids: ['delay-time'],
     signals: [
       {under: '.remove', right: -3, top: 0},
