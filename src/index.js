@@ -14,7 +14,7 @@ define('index', function(require, exports) {
   exports.renderFresh = core.renderFresh;
 
   exports.demo = function(dataName, title, states) {
-    easydemo.delay = 500;
+    easydemo.delay = 350;
     var render = function(params) {
       return function(finished) {
         datazooka.renderFresh(dataName, params.ids, params, finished);

@@ -14,9 +14,18 @@ datazooka.demo('flights', 'Flights', [
   },
   {
     ids: ['time', 'delay'],
+  },
+  {
+    ids: ['time', 'delay'],
+    filter: {'delay': [20, 150]},
+    signals: [
+      {under: '.filter.button', top: -5, left: -4},
+    ],
+  },
+  {
+    ids: ['time', 'delay'],
     filter: {'delay': [20, 150], 'time': [13, 24]},
     signals: [
-      {under: '.chart-delay', top: 20, left: 365},
       {under: '.chart-time', top: 20, left: 240},
       {under: 'span.percent-active', top: -3, right: 5},
     ],
@@ -26,6 +35,7 @@ datazooka.demo('flights', 'Flights', [
     filter: {'delay-time': [10, 5, 14, 23]},
     signals: [
       {under: '.chart-delay-time', top: 24, left: 260},
+      {under: '.chart-delay-time', top: 91, left: 185},
     ]
   },
   {
@@ -60,7 +70,6 @@ datazooka.demo('flights', 'Flights', [
   },
   {
     ids: ['delay-day', 'time-day', 'day', 'delay'],
-    filter: {'delay': [20, 150]},
     given: {'delay-day': 'xc'},
     filterLevels: {'delay-day': [26, 49]},
   },
@@ -84,6 +93,25 @@ datazooka.demo('flights', 'Flights', [
     ids: ['delay-distance', 'distance', 'delay'],
     given: {'delay-distance': 'xc'},
     filter: {'delay': [-60, 0]},
+  },
+  {
+    ids: [],
+    signals: [
+      {under: '.remove-all.button', left: -5, top: -4},
+    ],
+  },
+  {
+    ids: ['delay-time', 'time'],
+    signals: [
+      {under: '.bar.button', left: -5, top: -4},
+      {under: '.compare.button', left: -5, top: -4},
+    ],
+  },
+  {
+    ids: ['delay-time'],
+    signals: [
+      {under: '.remove', right: -3, top: 0},
+    ],
   },
   startingRender,
   startingRender,
