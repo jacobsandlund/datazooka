@@ -58,7 +58,7 @@ datazooka.demo('flights', 'Flights', [
     given: {'delay-time': 'xc'},
     filterLevels: {'delay-time': [34, 70]},
     signals: [
-      {under: '.chart-delay-time', top: 18, left: 547},
+      {under: '.chart-delay-time', top: 86, left: 558},
     ],
   },
   {
