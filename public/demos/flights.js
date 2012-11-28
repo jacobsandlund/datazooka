@@ -1,8 +1,123 @@
-datazooka.setup();
 
-datazooka.defaultRender('flights', ['time', 'delay', 'delay-time', 'time-day', 'day'], {
-  filter: {'delay': [20, 150]}, given: {'delay-time': 'xc'}, filterLevels: {'delay-time': [34, 76]}
-});
+var startingRender = {
+  ids: ['time', 'delay', 'delay-time', 'time-day', 'day'],
+  filter: {'delay': [20, 150]},
+  given: {'delay-time': 'xc'},
+  filterLevels: {'delay-time': [34, 76]},
+};
+
+datazooka.demo('flights', 'Flights', [
+  startingRender,
+  {
+    ids: ['delay-distance', 'delay-time', 'delay'],
+    given: {'delay-distance': 'xc'},
+  },
+  {
+    ids: ['time', 'delay'],
+  },
+  {
+    ids: ['time', 'delay'],
+    filter: {'delay': [20, 150]},
+    signals: [
+      {under: '.filter.button', top: -5, left: -4},
+    ],
+  },
+  {
+    ids: ['time', 'delay'],
+    filter: {'delay': [20, 150], 'time': [13, 24]},
+    signals: [
+      {under: '.chart-time', top: 20, left: 240},
+      {under: 'span.percent-active', top: -3, right: 5},
+    ],
+  },
+  {
+    ids: ['delay-time', 'time', 'delay'],
+    filter: {'delay-time': [10, 5, 14, 23]},
+    signals: [
+      {under: '.chart-delay-time', top: 24, left: 260},
+      {under: '.chart-delay-time', top: 91, left: 185},
+    ]
+  },
+  {
+    ids: ['delay-time', 'time', 'delay'],
+    filter: {'delay-time': [10, 5, 14, 23]},
+    signals: [
+      {under: '.chart-delay-time .given.button', top: -7, left: -5},
+    ]
+  },
+  {
+    ids: ['delay-time', 'time', 'delay'],
+    given: {'delay-time': 'yc'},
+  },
+  {
+    ids: ['delay-time', 'time', 'delay'],
+    given: {'delay-time': 'xc'},
+  },
+  {
+    ids: ['delay-time', 'time', 'delay'],
+    given: {'delay-time': 'xc'},
+    filterLevels: {'delay-time': [34, 70]},
+    signals: [
+      {under: '.chart-delay-time', top: 86, left: 558},
+    ],
+  },
+  {
+    ids: ['delay-day', 'time-day', 'day', 'delay'],
+  },
+  {
+    ids: ['delay-day', 'time-day', 'day', 'delay'],
+    filter: {'delay': [20, 150]},
+  },
+  {
+    ids: ['delay-day', 'time-day', 'day', 'delay'],
+    given: {'delay-day': 'xc'},
+    filterLevels: {'delay-day': [26, 49]},
+  },
+  {
+    ids: ['time-day', 'delay-day', 'day', 'delay'],
+    filter: {'delay': [20, 150]},
+    filterLevels: {'time-day': [48, 100]},
+  },
+  {
+    ids: ['delay-distance', 'distance', 'delay'],
+  },
+  {
+    ids: ['delay-distance', 'distance', 'delay'],
+    given: {'delay-distance': 'yc'},
+  },
+  {
+    ids: ['delay-distance', 'distance', 'delay'],
+    given: {'delay-distance': 'xc'},
+  },
+  {
+    ids: ['delay-distance', 'distance', 'delay'],
+    given: {'delay-distance': 'xc'},
+    filter: {'delay': [-60, 0]},
+  },
+  {
+    ids: [],
+    signals: [
+      {under: '.remove-all.button', left: -5, top: -4},
+    ],
+  },
+  {
+    ids: ['delay-time', 'time'],
+    signals: [
+      {under: '.bar.button', left: -5, top: -4},
+      {under: '.compare.button', left: -5, top: -4},
+    ],
+  },
+  {
+    ids: ['delay-time'],
+    signals: [
+      {under: '.remove', right: -3, top: 0},
+    ],
+  },
+  startingRender,
+  startingRender,
+]);
+
+datazooka.setup();
 
 datazooka.definitions('flights', {
   time: {
