@@ -9,8 +9,16 @@ footer {
   font-size: 12px;
 }
 
-#easydemo {
+#easydemo, .easydemo-signal {
   z-index: 16000001;
+}
+
+#easydemo .header {
+  background-image: -ms-linear-gradient(top, #444, #111);
+  background-image: -webkit-linear-gradient(top, #444, #111);
+  background-image: -o-linear-gradient(top, #444, #111);
+  background-image: -moz-linear-gradient(top, #444, #111);
+  background-image: linear-gradient(top, #444, #111);
 }
 
 #holder {

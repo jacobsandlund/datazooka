@@ -1,5 +1,4 @@
 define('easydemo', function(require, exports) {
-
 (function (root, factory) {
     if (typeof exports === 'object') {
         // CommonJS
@@ -213,7 +212,7 @@ define('easydemo', function(require, exports) {
   var removeSignals = function(state) {
     (state.signals || []).forEach(function(s) {
       s.signalNodes.forEach(function(node) {
-        node.parentNode.removeChild(node);
+        if (node.parentNode) node.parentNode.removeChild(node);
       });
       s.signalNodes = null;
     });
@@ -221,8 +220,8 @@ define('easydemo', function(require, exports) {
 
   var setSignal = function(signal) {
     var under = get(signal.info, 'under'),
-        x = isNaN(signal.info.left) ? 'right' : 'left',
-        y = isNaN(signal.info.top) ? 'bottom' : 'top',
+        xDim = typeof signal.info.left === 'undefined' ? 'right' : 'left',
+        yDim = typeof signal.info.top === 'undefined' ? 'bottom' : 'top',
         underNodes = document.querySelectorAll(under);
 
     signal.signalNodes = [];
@@ -231,11 +230,15 @@ define('easydemo', function(require, exports) {
     underNodes.forEach(function(underNode) {
       var sigNode = createDiv(),
           div = createDiv(),
+          x = signal.info[xDim],
+          y = signal.info[yDim],
           underPosition = window.getComputedStyle(underNode).position;
       if (underPosition === 'static') underNode.style.position = 'relative';
       sigNode.className = 'easydemo-signal';
-      sigNode.style[x] = signal.info[x] + 'px';
-      sigNode.style[y] = signal.info[y] + 'px';
+      if (+x === x) x = x + 'px';
+      if (+y === y) y = y + 'px';
+      sigNode.style[xDim] = x;
+      sigNode.style[yDim] = y;
       sigNode.appendChild(div);
       underNode.appendChild(sigNode);
       signal.signalNodes.push(sigNode);
@@ -444,5 +447,4 @@ define('easydemo', function(require, exports) {
   window.easydemo = easydemo;
 
 }));
-
 });

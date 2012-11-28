@@ -13,12 +13,11 @@ define('index', function(require, exports) {
   exports.defaultRender = core.defaultRender;
   exports.renderFresh = core.renderFresh;
 
-  exports.demo = function(title, states) {
+  exports.demo = function(dataName, title, states) {
     easydemo.delay = 500;
     var render = function(params) {
       return function(finished) {
-        datazooka.renderFresh('flights', params.ids, params);
-        finished();
+        datazooka.renderFresh(dataName, params.ids, params, finished);
       };
     };
     states = states.map(function(s, i) {

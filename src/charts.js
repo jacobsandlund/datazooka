@@ -65,7 +65,8 @@ define('charts', function(require, exports) {
     var title = div.select('.title')
         .text(api.label)
         .style('display', 'none');  // hide title until width is figured out
-    div.append('div')
+    div .classed('chart-' + api.id, true)
+      .append('div')
         .attr('class', 'remove')
         .html('&#10006;')
         .on('click', function() { core.removeChart(api.id); });

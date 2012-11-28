@@ -138,32 +138,36 @@ define('core', function(require, exports) {
     }
   };
 
-  exports.defaultRender = function(dataName, charts, filters) {
+  exports.defaultRender = function(dataName, charts, filters, finished) {
     if (!renderFreshLater) {
-      exports.renderFresh(dataName, charts, filters);
+      exports.renderFresh(dataName, charts, filters, finished);
     }
   };
 
-  exports.renderFresh = function(name, ids, params) {
+  exports.renderFresh = function(name, ids, params, finished) {
     if (!dataSets[name]) {
-      renderFreshLater = [name, ids, params];
+      renderFreshLater = [name, ids, params, finished];
       return;
     }
     exports.dataName(name);
     exports.chartIds(ids);
     renderFresh = true;
-    renderFreshParams = params || {filters: {}, given: {}, filterLevels: {}};
-    exports.update();
+    renderFreshParams = params || {};
+    needsToUpdate = true;
+    exports.update(finished);
   };
 
-  exports.update = function() {
-    if (!needsToUpdate) return;
+  exports.update = function(finished) {
+    if (!needsToUpdate) {
+      if (finished) finished();
+      return;
+    }
     if (!cross || nextDataName !== dataName ||
         removedIds.length || addedIds.length) {
       if (!updating) {
         updating = true;
         ui.updating(true);
-        setTimeout(function() { exports.update(); }, 30);
+        setTimeout(function() { exports.update(finished); }, 30);
         return;
       }
     }
@@ -204,7 +208,7 @@ define('core', function(require, exports) {
     chartIds = nextChartIds;
 
     hash.refresh(dataName, chartIds, charts);
-    doneUpdating();
+    doneUpdating(finished);
   };
 
   function doRenderFresh() {
@@ -217,7 +221,7 @@ define('core', function(require, exports) {
 
   function applyParam(params, name) {
     var id,
-        param = params[name];
+        param = params[name] || {};
     for (id in param) {
       if (param.hasOwnProperty(id)) {
         nextCharts[id][name](param[id]);
@@ -225,10 +229,11 @@ define('core', function(require, exports) {
     }
   }
 
-  function doneUpdating() {
+  function doneUpdating(finished) {
     updating = false;
     needsToUpdate = false;
     ui.updated(dataName);
+    if (finished) finished();
   };
 
   exports.refresh = function() {
