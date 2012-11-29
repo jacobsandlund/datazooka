@@ -147,31 +147,27 @@ define('easydemo', function(require, exports) {
     };
   };
 
-  var setState = function(state) {
-    var delay = get(state, 'delay');
-    if (scrollEndTimer) window.clearTimeout(scrollEndTimer);
-    if (!changingStates && delay) {
-      scrollEndTimer = window.setTimeout(changeState, delay);
-    }
-
-    if (state === currentState) return;
-
+  var setState = function(state, delayed) {
+    var delay = delayed ? get(state, 'delay') : 0,
+        previous = currentState;
     currentState.p.className = 'state';
-    if (delay) state.p.className = 'state activating';
+    state.p.className = 'state activating';
     activeState.p.className = 'state active';
-    if (sameStateTimer) window.clearTimeout(sameStateTimer);
     currentState = state;
-    if (!changingStates) {
-      if (delay) {
-        sameStateTimer = window.setTimeout(changeState, get(state, 'sameDelay'));
-      } else {
-        changeState();
-      }
+    if (scrollEndTimer) window.clearTimeout(scrollEndTimer);
+    if (delay) {
+      scrollEndTimer = window.setTimeout(changeState, delay);
+    } else {
+      changeState();
+    }
+    if (currentState !== previous) {
+      if (sameStateTimer) window.clearTimeout(sameStateTimer);
+      sameStateTimer = window.setTimeout(changeState, get(state, 'sameDelay'));
     }
   };
 
   var changeState = function() {
-    if (currentState === activeState) return;
+    if (changingStates || currentState === activeState) return;
 
     var active = activeState;
     activeState = currentState;
@@ -188,25 +184,25 @@ define('easydemo', function(require, exports) {
   };
 
   var exitFinished = function() {
-    var nowSignals = (currentState.signals || []).filter(function(s) {
+    var nowSignals = (activeState.signals || []).filter(function(s) {
       return !get(s.info, 'finished');
     });
     nowSignals.forEach(setSignal);
 
-    if (currentState.enter) {
-      currentState.enter(enterFinished);
+    if (activeState.enter) {
+      activeState.enter(enterFinished);
     } else {
       enterFinished();
     }
   };
 
   var enterFinished = function() {
-    var finishedSignals = (currentState.signals || []).filter(function(s) {
+    var finishedSignals = (activeState.signals || []).filter(function(s) {
       return get(s.info, 'finished');
     });
     finishedSignals.forEach(setSignal);
     changingStates = false;
-    setState(currentState);
+    setState(currentState, true);
   };
 
   var removeSignals = function(state) {
@@ -272,11 +268,11 @@ define('easydemo', function(require, exports) {
     for (i = 0; i < states.length; ++i) {
       pos -= states[i].p.offsetHeight + pMargin;
       if (pos < 0) {
-        setState(states[i]);
+        setState(states[i], true);
         return;
       }
     }
-    setState(states[states.length - 1]);
+    setState(states[states.length - 1], true);
   };
 
   var show = function() {
