@@ -9,7 +9,7 @@ var replaceAsset = function(asset) {
   };
 };
 
-assetStore.upload(function() {
+var afterUpload = function() {
   var assets = assetStore.assets();
   var transforms = Object.keys(assets).map(function(name) {
     return replaceAsset(assets[name]);
@@ -24,4 +24,11 @@ assetStore.upload(function() {
       console.log('-----> index.html written');
     });
   });
+};
+
+exec('./build.sh', {maxBuffer: 400000}, function(err, datazookaText) {
+  if (err) throw err;
+  var definitions = assetStore.findDefinitions();
+  definitions.push({name: 'datazooka.js', text: datazookaText});
+  assetStore.upload(definitions, afterUpload);
 });
