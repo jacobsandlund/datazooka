@@ -4,6 +4,7 @@
   "version": "0.1.2",
   "private": true,
   "dependencies": {
+    "asset_store": "0.0.12",
     "express": "3.0.x"
   },
   "devDependencies": {

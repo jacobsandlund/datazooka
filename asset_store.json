@@ -1,0 +1,17 @@
+[
+  "datazooka.css",
+  ["public/crossfilter.js", "s/public\\//"],
+  ["public/d3.js", "s/public\\//"],
+  ["public/demos/*.csv", "s/public\\//"],
+  ["public/easydemo.png", "s/public\\//"],
+  {
+    "name": "s/public\\//",
+    "local": "public/demos/flights.js",
+    "dependencyTransform": ["demos/flights.csv", "d3\\.csv\\('(/demos/flights\\.csv)',"]
+  },
+  {
+    "name": "s/public\\//",
+    "local": "public/easydemo.css",
+    "dependencyTransform": ["easydemo.png", "url\\(\"(easydemo.png)\"\\);"]
+  }
+]

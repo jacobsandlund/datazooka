@@ -1,0 +1,3 @@
+#!/usr/bin/env node
+var assetStore = require('asset_store');
+assetStore.upload();
