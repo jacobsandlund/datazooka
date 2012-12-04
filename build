@@ -1,3 +1,27 @@
 #!/usr/bin/env node
-var assetStore = require('asset_store');
-assetStore.upload();
+var fs = require('fs'),
+    exec = require('child_process').exec,
+    assetStore = require('asset_store');
+
+var replaceAsset = function(asset) {
+  return function(text) {
+    return text.replace('/' + asset.name, asset.url);
+  };
+};
+
+assetStore.upload(function() {
+  var assets = assetStore.assets();
+  var transforms = Object.keys(assets).map(function(name) {
+    return replaceAsset(assets[name]);
+  });
+  exec('./configure.sh', function(err, text) {
+    if (err) throw err;
+    text = transforms.reduce(function(text, trans) {
+      return trans(text);
+    }, text);
+    fs.writeFile('public/index.html', text, 'utf8', function(err) {
+      if (err) throw err;
+      console.log('-----> index.html written');
+    });
+  });
+});
