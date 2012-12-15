@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 var fs = require('fs'),
     exec = require('child_process').exec,
-    assetStore = require('asset_store');
+    assetStore = require('asset_store'),
+    jsFile = 'datazooka.js',
+    demo = 'flights';
 
 var replaceAsset = function(asset) {
   return function(text) {
@@ -9,12 +11,29 @@ var replaceAsset = function(asset) {
   };
 };
 
+var injectHtml = function(callback) {
+  fs.readFile('public/test.html', 'utf8', function(err, text) {
+    if (err) callback(err);
+    var prod = '',
+        enabled = true;
+    text.split(/\n/).forEach(function(line) {
+      if (/<!-- DEVELOPMENT -->/.test(line)) enabled = false;
+      line = line.replace(/<!-- PRODUCTION -->/,
+                          '<script src="/' + jsFile + '"></script>');
+      line = line.replace(/"test\.js"/, '"/demos/' + demo + '.js"');
+      if (enabled) prod += line + '\n';
+      if (/<!-- \/DEVELOPMENT -->/.test(line)) enabled = true;
+    });
+    callback(null, prod);
+  });
+};
+
 var afterUpload = function() {
   var assets = assetStore.assets();
   var transforms = Object.keys(assets).map(function(name) {
     return replaceAsset(assets[name]);
   });
-  exec('./configure.sh', function(err, text) {
+  injectHtml(function(err, text) {
     if (err) throw err;
     text = transforms.reduce(function(text, trans) {
       return trans(text);
@@ -26,9 +45,9 @@ var afterUpload = function() {
   });
 };
 
-exec('./build.sh', {maxBuffer: 400000}, function(err, datazookaText) {
+exec('./build.sh', {maxBuffer: 400000}, function(err, jsText) {
   if (err) throw err;
   var definitions = assetStore.findDefinitions();
-  definitions.push({name: 'datazooka.js', text: datazookaText});
+  definitions.push({name: jsFile, text: jsText});
   assetStore.upload(definitions, afterUpload);
 });
