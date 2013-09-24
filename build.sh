@@ -1,5 +1,5 @@
 #!/bin/sh
-echo '(function() {'
+echo ';(function() {'
 
 cat $(find src -type f)   # vaccine.js must NOT be in the source list.
 
